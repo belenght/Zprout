@@ -1,7 +1,19 @@
 {
+	"name": "zprout-backend",
+    "version": "1.0.0",
+    "description": "Backend Node.js + Express + MikroORM",
+    "main": "dist/app.js",
+    "type": "module",
+    "scripts": {
+        "clean": "rm -rf dist",
+        "build": "pnpm clean && tsc",
+        "start": "node dist/app.js",
+        "dev": "tsc-watch --onSuccess \"node dist/app.js\""
+	},
 	"dependencies": {
 		"@mikro-orm/core": "^7.1.9",
 		"@mikro-orm/mysql": "^7.1.9",
+		"@mikro-orm/sql-highlighter": "^1.0.1",
 		"bcrypt": "^6.0.0",
 		"cors": "^2.8.6",
 		"dotenv": "^17.4.2",
