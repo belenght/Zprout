@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    /* Optimización de Desarrollo */
+    "incremental": true,
+    "sourceMap": true,
+
+    /* Lenguaje y Entorno */
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+
+    /* Carpetas */
+    "rootDir": "./src",
+    "outDir": "./dist",
+
+    /* Mikro-ORM (Decoradores) */
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+
+    /* Interoperabilidad y Seguridad */
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "alwaysStrict": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.test.ts"]
+}

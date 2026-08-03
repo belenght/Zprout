@@ -1,0 +1,64 @@
+# ==============================
+# Dependencias
+# ==============================
+node_modules/
+.pnp
+.pnp.js
+
+# ==============================
+# Compilación de TypeScript
+# ==============================
+dist/
+build/
+out/
+
+# ==============================
+# Variables de Entorno y Secretos
+# ==============================
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+*.pem
+
+
+# ==============================
+# Logs
+# ==============================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ==============================
+# Testing (Jest & Supertest)
+# ==============================
+coverage/
+.nyc_output/
+
+# ==============================
+# Mikro-ORM y Base de Datos
+# ==============================
+temp/
+.mikro-orm/
+*.sqlite
+*.sqlite3
+
+# ==============================
+# Archivos del Sistema Operativo
+# ==============================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ==============================
+# Editores de Código / IDEs
+# ==============================
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
