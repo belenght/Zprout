@@ -6,9 +6,8 @@ import rateLimit from 'express-rate-limit';
 import { RequestContext } from '@mikro-orm/core';
 import type { MySqlDriver } from '@mikro-orm/mysql';
 import { MikroORM } from '@mikro-orm/core';
-
-// Importamos las funciones de inicialización que creamos en orm.ts
-import { initORM, syncSchema } from './shared/db/orm.js'; 
+import { initORM, syncSchema } from './shared/db/orm.js';
+import { usuarioRouter } from './usuario/usuario.routes.js'; 
 
 // Variable global para mantener la instancia de la base de datos
 export let orm: MikroORM<MySqlDriver>;
@@ -60,9 +59,8 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// TODO: Importar y agregar tus rutas modulares aquí
-// app.use('/api/auth', authRouter);
-// app.use('/api/usuarios', usuarioRouter);
+// es de prueba
+app.use('/api/usuarios', usuarioRouter);
 
 
 // 5. MANEJO DE ERRORES GLOBALES

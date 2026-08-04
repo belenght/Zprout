@@ -1,6 +1,7 @@
 import { MikroORM } from "@mikro-orm/core";
 import { MySqlDriver, defineConfig } from "@mikro-orm/mysql";
 import { SqlHighlighter } from "@mikro-orm/sql-highlighter";
+import { ReflectMetadataProvider } from "@mikro-orm/decorators/legacy"
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -14,6 +15,7 @@ if (!process.env.DB_NAME || !process.env.DB_USER || !process.env.DB_PASSWORD || 
 export const ormConfig = defineConfig({
   entities: ['dist/**/*.entity.js'],
   entitiesTs: ['src/**/*.entity.ts'],
+  metadataProvider: ReflectMetadataProvider,
   
   dbName: process.env.DB_NAME,
   user: process.env.DB_USER,
