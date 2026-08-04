@@ -9,11 +9,11 @@ export const createTestUser = async (req: Request, res: Response) => {
 
     const newUser = em.create(User, {
       name: 'Admin Prueba',
-      email: 'admin@alquimia.com',
+      email: 'admin@prueba.com',
       password: 'password123'
     });
 
-    await em.persistAndFlush(newUser);
+    await em.persist(newUser).flush();
     const allUsers = await em.find(User, {});
 
     res.json({ 

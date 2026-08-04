@@ -1,7 +1,11 @@
 import { Entity, PrimaryKey, Property } from '@mikro-orm/decorators/legacy';
+import { OptionalProps } from '@mikro-orm/core';
 
 @Entity()
 export class User {
+
+  [OptionalProps]?: 'createdAt';
+
   @PrimaryKey()
   id!: number;
 
