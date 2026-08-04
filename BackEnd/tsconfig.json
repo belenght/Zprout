@@ -3,6 +3,7 @@
     /* Optimización de Desarrollo */
     "incremental": true,
     "sourceMap": true,
+    
 
     /* Lenguaje y Entorno */
     "target": "ES2022",
