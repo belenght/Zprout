@@ -7,7 +7,23 @@ import { RequestContext } from '@mikro-orm/core';
 import type { MySqlDriver } from '@mikro-orm/mysql';
 import { MikroORM } from '@mikro-orm/core';
 import { initORM, syncSchema } from './shared/db/orm.js';
-import { usuarioRouter } from './usuario/usuario.routes.js'; 
+
+import { rolRouter } from './rol/rol.routes.js';
+import { usuarioRouter, authRouter } from './usuario/usuario.routes.js';
+import { campoRouter } from './campo/campo.routes.js';
+import { proveedorRouter } from './proveedor/proveedor.routes.js';
+import { tipoSemillaRouter } from './tipo_semilla/tipo_semilla.routes.js';
+import { almacenRouter } from './almacen/almacen.routes.js';
+import { insumoRouter } from './insumo/insumo.routes.js';
+import { campanaRouter } from './campana/campana.routes.js';
+import { estimacionVentaRouter } from './estimacion_venta/estimacion_venta.routes.js';
+import { estadoRouter } from './estado/estado.routes.js';
+import { loteRouter } from './lote/lote.routes.js';
+import { controlCalidadPorLoteRouter, controlCalidadRouter } from './control_calidad/control_calidad.routes.js';
+import { limpiezaPorLoteRouter, limpiezaRouter } from './limpieza_clasificacion/limpieza_clasificacion.routes.js';
+import { partidaRouter } from './partida/partida.routes.js';
+import { pedidoRouter } from './pedido/pedido.routes.js';
+import { detallePorPedidoRouter, detallePorPartidaRouter } from './pedido_detalle/pedido_detalle.routes.js';
 
 // Variable global para mantener la instancia de la base de datos
 export let orm: MikroORM<MySqlDriver>;
@@ -59,8 +75,43 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// es de prueba
+// --- Auth / Usuario ---
+app.use('/api/auth', authRouter);
 app.use('/api/usuarios', usuarioRouter);
+
+// --- Catalogos ---
+app.use('/api/roles', rolRouter);
+app.use('/api/campos', campoRouter);
+app.use('/api/proveedores', proveedorRouter);
+app.use('/api/tipos-semilla', tipoSemillaRouter);
+app.use('/api/almacenes', almacenRouter);
+app.use('/api/insumos', insumoRouter);
+app.use('/api/campanas', campanaRouter);
+app.use('/api/estimaciones-venta', estimacionVentaRouter);
+
+// --- Estado (solo lectura / historial, ver estado_helper.ts) ---
+app.use('/api/estados', estadoRouter);
+
+// --- Lote (CUU01) ---
+app.use('/api/lotes', loteRouter);
+
+// --- ControlDeCalidad sobre Lote (CUU02) ---
+app.use('/api/lotes/:loteId/controles-calidad', controlCalidadPorLoteRouter);
+app.use('/api/controles-calidad', controlCalidadRouter);
+
+// --- LimpiezaClasificacion (CUU03) ---
+app.use('/api/lotes/:loteId/limpiezas', limpiezaPorLoteRouter);
+app.use('/api/limpiezas', limpiezaRouter);
+
+// --- Partida: curado (CUU05) y control final + informe (CUU06) ---
+app.use('/api/partidas', partidaRouter);
+
+// --- Pedido (CUU07) ---
+app.use('/api/pedidos', pedidoRouter);
+
+// --- PedidoDetalle (solo lectura) ---
+app.use('/api/pedidos/:pedidoId/detalle', detallePorPedidoRouter);
+app.use('/api/partidas/:partidaId/pedidos', detallePorPartidaRouter);
 
 
 // 5. MANEJO DE ERRORES GLOBALES

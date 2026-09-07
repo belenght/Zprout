@@ -3,13 +3,19 @@ import { Entity, PrimaryKey, Property } from '@mikro-orm/decorators/legacy';
 import { OptionalProps } from '@mikro-orm/core';
 
 @Entity()
-export class Rol {
-  [OptionalProps]?: 'id_rol' | 'created_at' | 'updated_at';
+export class Proveedor {
+  [OptionalProps]?: 'id_proveedor' | 'created_at' | 'updated_at';
   @PrimaryKey()
-  id_rol!: number;
+  id_proveedor!: number;
 
   @Property({ unique: true })
-  desc_rol!: string; // ej: 'administrador', 'operario', 'encargado_calidad'
+  razon_social!: string;
+
+  @Property({ nullable: true })
+  cuit?: string;
+
+  @Property({ nullable: true })
+  contacto?: string;
 
   @Property({ type: 'datetime' })
   created_at: Date = new Date();

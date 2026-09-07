@@ -1,4 +1,4 @@
-import { MikroORM } from "@mikro-orm/core";
+import { MikroORM, RequestContext } from "@mikro-orm/core";
 import { MySqlDriver, defineConfig } from "@mikro-orm/mysql";
 import { SqlHighlighter } from "@mikro-orm/sql-highlighter";
 import { ReflectMetadataProvider } from "@mikro-orm/decorators/legacy"
@@ -42,6 +42,19 @@ export const ormConfig = defineConfig({
 
 export const initORM = async (): Promise<MikroORM<MySqlDriver>> => {
   return await MikroORM.init<MySqlDriver>(ormConfig);
+};
+
+/**
+ * Devuelve el EntityManager del RequestContext de la petición actual.
+ * Usar SIEMPRE esto dentro de los controllers (nunca orm.em directamente),
+ * ya que app.ts crea un RequestContext por cada request en el punto 3.
+ */
+export const getEM = () => {
+  const em = RequestContext.getEntityManager();
+  if (!em) {
+    throw new Error('No hay EntityManager en el contexto actual. Revisar el middleware de RequestContext en app.ts.');
+  }
+  return em;
 };
 
 export const syncSchema = async (orm: MikroORM<MySqlDriver>) => {
