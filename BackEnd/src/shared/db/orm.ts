@@ -8,6 +8,15 @@ dotenv.config();
 
 const isProduction = process.env.NODE_ENV === 'production';
 
+// DB_SSL es independiente de NODE_ENV: permite conectar con SSL (ej. Aiven)
+// sin tener que forzar NODE_ENV=production en desarrollo local.
+// - No definís DB_SSL -> se usa SSL solo si NODE_ENV=production (comportamiento anterior).
+// - DB_SSL=true       -> fuerza SSL (usalo para apuntar a Aiven en desarrollo).
+// - DB_SSL=false      -> fuerza sin SSL (usalo para MySQL local sin TLS).
+const useSSL = process.env.DB_SSL !== undefined
+  ? process.env.DB_SSL === 'true'
+  : isProduction;
+
 if (!process.env.DB_NAME || !process.env.DB_USER || !process.env.DB_PASSWORD || !process.env.DB_HOST || !process.env.DB_PORT || !process.env.NODE_ENV)  {
     console.error('FATAL ERROR: Las variables de entorno de la base de datos no están todas configuradas.');
     process.exit(1);
@@ -27,7 +36,7 @@ export const ormConfig = defineConfig({
   
   debug: !isProduction, 
   
-  driverOptions: isProduction ? {
+  driverOptions: useSSL ? {
     connection: {
       ssl: { rejectUnauthorized: false }
     }
