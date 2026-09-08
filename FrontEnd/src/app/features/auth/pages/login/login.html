@@ -1,0 +1,45 @@
+<div class="min-h-screen flex items-center justify-center bg-stone-100 px-4">
+  <div class="w-full max-w-sm bg-white rounded-lg shadow-sm border border-stone-200 p-8">
+    <div class="text-center mb-8">
+      <div class="mx-auto mb-3 h-12 w-12 rounded-full bg-emerald-800 flex items-center justify-center text-white font-semibold">
+        Z
+      </div>
+      <h1 class="text-xl font-semibold text-stone-800">Zprout</h1>
+      <p class="text-sm text-stone-500">Gestion y trazabilidad de semillas</p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="ingresar()" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-stone-700 mb-1" for="usuario">Usuario</label>
+        <input
+          id="usuario"
+          type="text"
+          formControlName="usuario"
+          class="w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700"
+        />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-stone-700 mb-1" for="contrasena">Contrasena</label>
+        <input
+          id="contrasena"
+          type="password"
+          formControlName="contrasena"
+          class="w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700"
+        />
+      </div>
+
+      @if (errorLogin()) {
+        <p class="text-sm text-red-600">{{ errorLogin() }}</p>
+      }
+
+      <button
+        type="submit"
+        [disabled]="cargando()"
+        class="w-full rounded-md bg-emerald-800 text-white text-sm font-medium py-2 hover:bg-emerald-900 transition-colors disabled:opacity-60"
+      >
+        {{ cargando() ? 'Ingresando...' : 'Ingresar' }}
+      </button>
+    </form>
+  </div>
+</div>

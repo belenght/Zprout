@@ -1,0 +1,21 @@
+.layout-container {
+  height: 100vh;
+}
+
+.sidenav {
+  width: 240px;
+}
+
+.brand {
+  padding: 16px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.active-link {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.content {
+  padding: 24px;
+}

@@ -1,0 +1,72 @@
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-xl font-semibold text-stone-800">Lotes</h1>
+  <a
+    routerLink="nuevo"
+    class="rounded-md bg-emerald-800 text-white text-sm font-medium px-4 py-2 hover:bg-emerald-900 transition-colors"
+  >
+    + Nuevo lote
+  </a>
+</div>
+
+<div class="flex flex-wrap items-center gap-2 mb-4">
+  @for (filtro of filtros; track filtro) {
+    <button
+      (click)="seleccionarFiltro(filtro)"
+      class="text-sm px-3 py-1.5 rounded-full border transition-colors"
+      [class.bg-emerald-800]="filtroActivo() === filtro"
+      [class.text-white]="filtroActivo() === filtro"
+      [class.border-emerald-800]="filtroActivo() === filtro"
+      [class.border-stone-300]="filtroActivo() !== filtro"
+      [class.text-stone-600]="filtroActivo() !== filtro"
+    >
+      {{ filtro }}
+    </button>
+  }
+
+  <input
+    [(ngModel)]="busqueda"
+    (keyup.enter)="buscar()"
+    placeholder="Buscar por nro de lote o descripcion..."
+    class="ml-auto w-64 text-sm rounded-md border border-stone-300 px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-700"
+  />
+</div>
+
+@if (cargando()) {
+  <app-loading-spinner mensaje="Cargando lotes..." />
+} @else {
+  <div class="bg-white rounded-lg border border-stone-200 overflow-hidden">
+    <table mat-table [dataSource]="lotes()" class="w-full">
+      <ng-container matColumnDef="nro_lote">
+        <th mat-header-cell *matHeaderCellDef>Nro lote</th>
+        <td mat-cell *matCellDef="let l">{{ l.nro_lote }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="origen_semilla">
+        <th mat-header-cell *matHeaderCellDef>Origen</th>
+        <td mat-cell *matCellDef="let l">{{ l.origen_semilla }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="cantidad_semillas_en_tn">
+        <th mat-header-cell *matHeaderCellDef>Cantidad (tn)</th>
+        <td mat-cell *matCellDef="let l">{{ l.cantidad_semillas_en_tn }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="estado_actual">
+        <th mat-header-cell *matHeaderCellDef>Estado</th>
+        <td mat-cell *matCellDef="let l">{{ l.estado_actual ?? '—' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="fecha_creacion">
+        <th mat-header-cell *matHeaderCellDef>Fecha ingreso</th>
+        <td mat-cell *matCellDef="let l">{{ l.fecha_creacion | date: 'dd/MM/yyyy' }}</td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columnas"></tr>
+      <tr mat-row *matRowDef="let row; columns: columnas;"></tr>
+    </table>
+  </div>
+
+  @if (lotes().length === 0) {
+    <p class="text-sm text-stone-400 text-center py-10">No se encontraron lotes con ese filtro.</p>
+  }
+}

@@ -1,0 +1,47 @@
+<div class="page-header">
+  <h1>Tipos de semilla</h1>
+  <a mat-flat-button color="primary" routerLink="nuevo">
+    <mat-icon>add</mat-icon>
+    Nuevo
+  </a>
+</div>
+
+@if (cargando()) {
+  <app-loading-spinner mensaje="Cargando tipos de semilla..." />
+} @else {
+  <table mat-table [dataSource]="items()" class="mat-elevation-z1">
+    <ng-container matColumnDef="id_semilla">
+      <th mat-header-cell *matHeaderCellDef>ID</th>
+      <td mat-cell *matCellDef="let item">{{ item.id_semilla }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="nombre_semilla">
+      <th mat-header-cell *matHeaderCellDef>Semilla</th>
+      <td mat-cell *matCellDef="let item">{{ item.nombre_semilla }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="variante_semilla">
+      <th mat-header-cell *matHeaderCellDef>Variedad</th>
+      <td mat-cell *matCellDef="let item">{{ item.variante_semilla }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="acciones">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef="let item">
+        <a mat-icon-button [routerLink]="['editar', item.id_semilla]" aria-label="Editar">
+          <mat-icon>edit</mat-icon>
+        </a>
+        <button mat-icon-button (click)="eliminar(item)" aria-label="Eliminar">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="columnas"></tr>
+    <tr mat-row *matRowDef="let row; columns: columnas;"></tr>
+  </table>
+
+  @if (items().length === 0) {
+    <p class="empty-state">Todavia no hay tipos de semilla cargados.</p>
+  }
+}

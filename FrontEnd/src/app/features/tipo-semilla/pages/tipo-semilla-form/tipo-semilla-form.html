@@ -1,0 +1,70 @@
+<h1>{{ modoEdicion() ? 'Editar' : 'Nuevo' }} tipo de semilla</h1>
+
+<form [formGroup]="form" (ngSubmit)="guardar()" class="form">
+  <div class="form-row">
+    <mat-form-field appearance="outline">
+      <mat-label>Semilla</mat-label>
+      <input matInput formControlName="nombre_semilla" />
+      @if (form.controls.nombre_semilla.hasError('required')) {
+        <mat-error>La semilla es obligatoria</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Variedad</mat-label>
+      <input matInput formControlName="variante_semilla" />
+      @if (form.controls.variante_semilla.hasError('required')) {
+        <mat-error>La variedad es obligatoria</mat-error>
+      }
+    </mat-form-field>
+  </div>
+
+  <h2 class="section-title">Rangos aceptables de control de calidad</h2>
+  <p class="section-hint">
+    Estos valores son los que despues usa el modulo de Calidad para determinar si un
+    control esta dentro o fuera de rango.
+  </p>
+
+  <div class="form-row">
+    <mat-form-field appearance="outline">
+      <mat-label>Humedad min (%)</mat-label>
+      <input matInput type="number" formControlName="humedad_min" />
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Humedad max (%)</mat-label>
+      <input matInput type="number" formControlName="humedad_max" />
+    </mat-form-field>
+  </div>
+
+  <div class="form-row">
+    <mat-form-field appearance="outline">
+      <mat-label>Poder germinativo min (%)</mat-label>
+      <input matInput type="number" formControlName="poder_germinativo_min" />
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Poder germinativo max (%)</mat-label>
+      <input matInput type="number" formControlName="poder_germinativo_max" />
+    </mat-form-field>
+  </div>
+
+  <div class="form-row">
+    <mat-form-field appearance="outline">
+      <mat-label>Pureza min (%)</mat-label>
+      <input matInput type="number" formControlName="nivel_pureza_min" />
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Pureza max (%)</mat-label>
+      <input matInput type="number" formControlName="nivel_pureza_max" />
+    </mat-form-field>
+  </div>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Duracion (dias de vigencia del control)</mat-label>
+    <input matInput type="number" formControlName="duracion" />
+  </mat-form-field>
+
+  <div class="form-actions">
+    <button mat-button type="button" (click)="cancelar()">Cancelar</button>
+    <button mat-flat-button color="primary" type="submit">Guardar</button>
+  </div>
+</form>

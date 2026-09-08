@@ -1,0 +1,59 @@
+<div class="min-h-screen flex bg-stone-50">
+  <!-- Sidebar -->
+  <aside class="w-60 shrink-0 bg-emerald-950 text-emerald-50 flex flex-col">
+    <div class="px-5 py-5 text-lg font-semibold tracking-tight border-b border-emerald-900">
+      Zprout
+    </div>
+
+    <nav class="flex-1 overflow-y-auto py-4">
+      @for (grupo of navGroups; track grupo.titulo) {
+        @if (grupo.titulo) {
+          <p class="px-5 mt-4 mb-1 text-xs text-emerald-400">{{ grupo.titulo }}</p>
+        }
+        <ul class="space-y-0.5">
+          @for (item of grupo.items; track item.path) {
+            <li>
+              <a
+                [routerLink]="item.path"
+                routerLinkActive="bg-emerald-800 text-white"
+                class="flex items-center gap-3 px-5 py-2 text-sm text-emerald-100 hover:bg-emerald-900 transition-colors"
+              >
+                <span class="material-symbols-outlined text-[20px]">{{ item.icon }}</span>
+                {{ item.label }}
+              </a>
+            </li>
+          }
+        </ul>
+      }
+    </nav>
+  </aside>
+
+  <!-- Contenido -->
+  <div class="flex-1 flex flex-col min-w-0">
+    <header class="h-16 shrink-0 bg-white border-b border-stone-200 flex items-center justify-between px-6">
+      <div class="flex items-center gap-2 text-sm text-stone-600">
+        <span class="material-symbols-outlined text-[18px] text-emerald-700">event</span>
+        {{ campanaActiva }}
+      </div>
+
+      <div class="flex items-center gap-4">
+        @if (usuario(); as u) {
+          <div class="text-right leading-tight">
+            <p class="text-sm font-medium text-stone-800">{{ u.nombre }}</p>
+            <p class="text-xs text-stone-500">{{ u.perfil }}</p>
+          </div>
+        }
+        <button
+          (click)="cerrarSesion()"
+          class="text-sm text-stone-500 hover:text-red-600 transition-colors"
+        >
+          Cerrar sesion
+        </button>
+      </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-6">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>
