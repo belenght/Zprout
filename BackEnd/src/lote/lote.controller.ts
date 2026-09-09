@@ -1,12 +1,27 @@
 import type { Request, Response } from 'express';
+import { wrap } from '@mikro-orm/core';
 import { getEM } from '../shared/db/orm.js';
 import { Lote, OrigenSemilla } from './lote.entity.js';
 import { Campo } from '../campo/campo.entity.js';
 import { Proveedor } from '../proveedor/proveedor.entity.js';
 import { TipoDeSemilla } from '../tipo_semilla/tipo_semilla.entity.js';
 import { ControlDeCalidad, TipoControl, ResultadoControl } from '../control_calidad/control_calidad.entity.js';
+import { Estado } from '../estado/estado.entity.js';
 import { cambiarEstado } from '../estado/estado_helper.js';
 import { ESTADOS_LOTE } from '../estado/estado_nombres.js';
+
+/**
+ * El front (listado y detalle de lote) necesita el estado vigente de cada
+ * lote, pero Estado vive en su propia tabla (historial). Se resuelve aca en
+ * bloque para no pegarle una consulta N+1 al armar el listado.
+ */
+async function conEstadoActual(em: ReturnType<typeof getEM>, lotes: Lote[]) {
+  if (lotes.length === 0) return [];
+  const ids = lotes.map((l) => l.id_lote);
+  const abiertos = await em.find(Estado, { lote: { id_lote: { $in: ids } }, fecha_hasta: null, deleted_at: null });
+  const mapa = new Map(abiertos.map((e) => [e.lote?.id_lote, e.nombre]));
+  return lotes.map((l) => ({ ...wrap(l).toJSON(), estado_actual: mapa.get(l.id_lote) ?? null }));
+}
 
 export async function listarLotes(req: Request, res: Response) {
   const em = getEM();
@@ -15,7 +30,7 @@ export async function listarLotes(req: Request, res: Response) {
     { deleted_at: null },
     { populate: ['tipo_semilla', 'campo', 'proveedor', 'almacen'], orderBy: { fecha_ingreso: 'DESC' } },
   );
-  res.json(lotes);
+  res.json(await conEstadoActual(em, lotes));
 }
 
 export async function obtenerLote(req: Request, res: Response) {
@@ -26,7 +41,8 @@ export async function obtenerLote(req: Request, res: Response) {
     { populate: ['tipo_semilla', 'campo', 'proveedor', 'almacen', 'campana'] },
   );
   if (!lote) return res.status(404).json({ error: 'Lote no encontrado' });
-  res.json(lote);
+  const [dto] = await conEstadoActual(em, [lote]);
+  res.json(dto);
 }
 
 /**
