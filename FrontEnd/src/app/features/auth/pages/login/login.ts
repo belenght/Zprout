@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
+import { LoginPayload } from '../../models/auth.model';
 
 @Component({
   selector: 'app-login',
@@ -31,7 +32,10 @@ export class LoginComponent {
     this.cargando.set(true);
     this.errorLogin.set(null);
 
-    const payload = this.form.getRawValue() as { usuario: string; contrasena: string };
+    const raw = this.form.getRawValue() as { usuario: string; contrasena: string };
+    // El form usa "usuario"/"contrasena" (copy de la GUI-01); el backend espera
+    // "nombre_usuario"/"password" (ver usuario.controller.ts -> login).
+    const payload: LoginPayload = { nombre_usuario: raw.usuario, password: raw.contrasena };
 
     this.auth.login(payload).subscribe({
       next: () => {

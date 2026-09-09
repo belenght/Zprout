@@ -1,45 +1,75 @@
-<div class="min-h-screen flex items-center justify-center bg-stone-100 px-4">
-  <div class="w-full max-w-sm bg-white rounded-lg shadow-sm border border-stone-200 p-8">
-    <div class="text-center mb-8">
-      <div class="mx-auto mb-3 h-12 w-12 rounded-full bg-emerald-800 flex items-center justify-center text-white font-semibold">
-        Z
-      </div>
-      <h1 class="text-xl font-semibold text-stone-800">Zprout</h1>
-      <p class="text-sm text-stone-500">Gestion y trazabilidad de semillas</p>
+<div class="min-h-screen flex items-stretch bg-brand-50">
+  <!-- Panel de marca (oculto en mobile, igual que un split-screen clasico) -->
+  <div class="hidden md:flex md:w-1/2 relative overflow-hidden bg-brand-900 text-white flex-col justify-center px-16">
+    <!-- Circulos decorativos, como en la GUI -->
+    <div class="pointer-events-none absolute -top-16 -left-10 h-72 w-72 rounded-full bg-brand-700/60"></div>
+    <div class="pointer-events-none absolute top-10 left-40 h-40 w-40 rounded-full bg-brand-500/30"></div>
+    <div class="pointer-events-none absolute -bottom-24 -left-16 h-80 w-80 rounded-full bg-brand-800"></div>
+
+    <div class="relative z-10">
+      <h1 class="font-display text-5xl font-bold leading-none">
+        <span class="text-gold-400">Z</span>prout
+      </h1>
+      <p class="mt-6 max-w-xs text-brand-100 text-lg leading-snug">
+        Gestión integral del ciclo productivo de semillas
+      </p>
     </div>
+  </div>
 
-    <form [formGroup]="form" (ngSubmit)="ingresar()" class="space-y-4">
-      <div>
-        <label class="block text-sm font-medium text-stone-700 mb-1" for="usuario">Usuario</label>
-        <input
-          id="usuario"
-          type="text"
-          formControlName="usuario"
-          class="w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700"
-        />
+  <!-- Panel de formulario -->
+  <div class="flex-1 flex items-center justify-center px-4 py-12">
+    <div class="w-full max-w-sm">
+      <!-- Logo visible solo en mobile, donde no hay panel izquierdo -->
+      <div class="md:hidden text-center mb-8">
+        <h1 class="font-display text-3xl font-bold text-brand-900">
+          <span class="text-gold-500">Z</span>prout
+        </h1>
       </div>
 
-      <div>
-        <label class="block text-sm font-medium text-stone-700 mb-1" for="contrasena">Contrasena</label>
-        <input
-          id="contrasena"
-          type="password"
-          formControlName="contrasena"
-          class="w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700"
-        />
+      <div class="bg-white rounded-2xl shadow-sm border border-stone-200 p-8">
+        <h2 class="font-display text-2xl font-semibold text-brand-900">Iniciar Sesión</h2>
+        <p class="text-sm text-stone-500 mt-1 mb-6">Ingresá tus credenciales para continuar</p>
+
+        <form [formGroup]="form" (ngSubmit)="ingresar()" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-stone-700 mb-1" for="usuario">Usuario</label>
+            <input
+              id="usuario"
+              type="text"
+              formControlName="usuario"
+              class="w-full rounded-md border-0 bg-stone-100 px-3 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-brand-600"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-stone-700 mb-1" for="contrasena">Contraseña</label>
+            <input
+              id="contrasena"
+              type="password"
+              formControlName="contrasena"
+              class="w-full rounded-md border-0 bg-stone-100 px-3 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-brand-600"
+            />
+          </div>
+
+          @if (errorLogin()) {
+            <p class="text-sm text-red-600">{{ errorLogin() }}</p>
+          }
+
+          <button
+            type="submit"
+            [disabled]="cargando()"
+            class="w-full rounded-md bg-brand-700 text-white text-sm font-semibold py-2.5 hover:bg-brand-800 transition-colors disabled:opacity-60"
+          >
+            {{ cargando() ? 'Ingresando...' : 'Ingresar' }}
+          </button>
+
+          <p class="text-center text-sm">
+            <button type="button" class="text-brand-700 hover:text-brand-800 hover:underline">
+              ¿Olvidaste tu contraseña?
+            </button>
+          </p>
+        </form>
       </div>
-
-      @if (errorLogin()) {
-        <p class="text-sm text-red-600">{{ errorLogin() }}</p>
-      }
-
-      <button
-        type="submit"
-        [disabled]="cargando()"
-        class="w-full rounded-md bg-emerald-800 text-white text-sm font-medium py-2 hover:bg-emerald-900 transition-colors disabled:opacity-60"
-      >
-        {{ cargando() ? 'Ingresando...' : 'Ingresar' }}
-      </button>
-    </form>
+    </div>
   </div>
 </div>

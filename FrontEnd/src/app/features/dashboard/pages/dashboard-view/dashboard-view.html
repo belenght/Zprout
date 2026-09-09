@@ -1,41 +1,59 @@
-<h1 class="text-xl font-semibold text-stone-800 mb-6">Dashboard</h1>
+<!-- Banner de bienvenida -->
+@if (usuario(); as u) {
+  <div class="bg-brand-50 border border-brand-100 rounded-xl px-5 py-4 mb-6 flex items-center gap-2">
+    <span class="text-xl">🌱</span>
+    <p class="text-sm text-brand-900">
+      <span class="font-semibold">Buenos días, {{ u.nombre }}</span>
+      <span class="text-brand-700"> · {{ campanaActiva }}</span>
+    </p>
+  </div>
+}
 
+<!-- KPIs -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
   @for (m of metricas(); track m.label) {
-    <div class="bg-white rounded-lg border border-stone-200 p-4">
-      <p class="text-sm text-stone-500">{{ m.label }}</p>
-      <p class="text-2xl font-semibold text-emerald-800 mt-1">{{ m.valor }}</p>
+    <div class="bg-white rounded-xl border border-stone-200 p-4">
+      <span class="inline-block text-xs font-semibold px-2 py-0.5 rounded-full {{ m.colorPill }}">
+        {{ m.label }}
+      </span>
+      <p class="text-2xl font-semibold text-stone-800 mt-3">{{ m.valor }}</p>
+      <p class="text-xs text-stone-400">{{ m.caption }}</p>
     </div>
   }
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-  <div class="lg:col-span-2 bg-white rounded-lg border border-stone-200 p-4">
-    <h2 class="text-sm font-semibold text-stone-700 mb-3">Ultimos lotes ingresados</h2>
+  <!-- Ultimos lotes -->
+  <div class="lg:col-span-2 bg-white rounded-xl border border-stone-200 p-4">
+    <h2 class="text-sm font-semibold text-stone-700 mb-3">Últimos Lotes Ingresados</h2>
 
     @if (ultimosLotes().length === 0) {
-      <p class="text-sm text-stone-400 py-6 text-center">
-        Todavia no hay datos. Conectar con lote.service cuando este disponible.
+      <p class="text-sm text-stone-400 py-10 text-center">
+        Todavía no hay lotes cargados.
       </p>
     } @else {
       <table class="w-full text-sm">
         <thead>
           <tr class="text-left text-stone-500 border-b border-stone-200">
-            <th class="py-2">Nro lote</th>
-            <th class="py-2">Semilla</th>
-            <th class="py-2">Variedad</th>
-            <th class="py-2">Tn</th>
-            <th class="py-2">Estado</th>
+            <th class="py-2 font-medium">Nro Lote</th>
+            <th class="py-2 font-medium">Semilla</th>
+            <th class="py-2 font-medium">Variedad</th>
+            <th class="py-2 font-medium">Kg</th>
+            <th class="py-2 font-medium">Estado</th>
           </tr>
         </thead>
         <tbody>
           @for (fila of ultimosLotes(); track fila.nroLote) {
             <tr class="border-b border-stone-100">
-              <td class="py-2">{{ fila.nroLote }}</td>
-              <td class="py-2">{{ fila.semilla }}</td>
-              <td class="py-2">{{ fila.variedad }}</td>
-              <td class="py-2">{{ fila.cantidadTn }}</td>
-              <td class="py-2">{{ fila.estado }}</td>
+              <td class="py-2.5">{{ fila.nroLote }}</td>
+              <td class="py-2.5">{{ fila.semilla }}</td>
+              <td class="py-2.5">{{ fila.variedad }}</td>
+              <td class="py-2.5">{{ fila.cantidadTn }} tn</td>
+              <td class="py-2.5">
+                <span class="inline-block text-xs font-semibold px-2.5 py-1 rounded-full {{ estadoPill(fila.estado) }}">
+                  {{ fila.estado }}
+                </span>
+              </td>
             </tr>
           }
         </tbody>
@@ -43,17 +61,18 @@
     }
   </div>
 
-  <div class="bg-white rounded-lg border border-stone-200 p-4">
-    <h2 class="text-sm font-semibold text-stone-700 mb-3">Actividad reciente</h2>
+  <!-- Actividad reciente -->
+  <div class="bg-white rounded-xl border border-stone-200 p-4">
+    <h2 class="text-sm font-semibold text-stone-700 mb-3">Actividad Reciente</h2>
 
     @if (actividadReciente().length === 0) {
-      <p class="text-sm text-stone-400 py-6 text-center">Sin eventos todavia.</p>
+      <p class="text-sm text-stone-400 py-10 text-center">Sin eventos todavía.</p>
     } @else {
       <ul class="space-y-3">
         @for (evento of actividadReciente(); track evento.fecha) {
-          <li class="text-sm">
-            <p class="text-stone-700">{{ evento.descripcion }}</p>
+          <li class="text-sm border-b border-stone-100 last:border-0 pb-3 last:pb-0">
             <p class="text-xs text-stone-400">{{ evento.fecha }}</p>
+            <p class="text-stone-700">{{ evento.descripcion }}</p>
           </li>
         }
       </ul>

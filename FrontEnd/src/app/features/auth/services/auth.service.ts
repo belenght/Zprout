@@ -1,8 +1,8 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { Observable, map, tap } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-import { LoginPayload, UsuarioAutenticado } from '../models/auth.model';
+import { LoginPayload, LoginResponse, UsuarioAutenticado } from '../models/auth.model';
 
 const STORAGE_KEY = 'zprout.sesion';
 
@@ -17,14 +17,16 @@ export class AuthService {
   estaAutenticado = computed(() => this.sesion() !== null);
 
   /**
-   * TODO: confirmar con el backend el path real de login (asumido /usuario/login).
-   * Mientras el backend no tenga login propio, se puede simular localmente
-   * comentando la llamada http y resolviendo con un usuario de prueba.
+   * POST /api/auth/login (usuario.routes.ts -> authRouter, ver usuario.controller.ts -> login).
+   * El backend valida nombre_usuario/password en texto plano (sin hashing todavia) y
+   * responde { id_usuario, nombre, rol }. No hay JWT: la sesion se sostiene solo en el
+   * front (localStorage) mientras no se implemente autenticacion por token.
    */
   login(payload: LoginPayload): Observable<UsuarioAutenticado> {
-    return this.http
-      .post<UsuarioAutenticado>(`${environment.apiUrl}/usuario/login`, payload)
-      .pipe(tap((usuario) => this.guardarSesion(usuario)));
+    return this.http.post<LoginResponse>(`${environment.apiUrl}/auth/login`, payload).pipe(
+      map((respuesta) => this.aSesion(respuesta)),
+      tap((usuario) => this.guardarSesion(usuario))
+    );
   }
 
   logout(): void {
@@ -32,8 +34,20 @@ export class AuthService {
     this.sesion.set(null);
   }
 
+  /**
+   * No hay token todavia (ver comentario en login()). Se deja el metodo para no romper
+   * auth.interceptor.ts: mientras no exista JWT, simplemente no agrega header Authorization.
+   */
   getToken(): string | null {
-    return this.sesion()?.token ?? null;
+    return null;
+  }
+
+  private aSesion(respuesta: LoginResponse): UsuarioAutenticado {
+    return {
+      id_usuario: respuesta.id_usuario,
+      nombre: respuesta.nombre,
+      perfil: respuesta.rol?.desc_rol ?? 'Sin rol asignado'
+    };
   }
 
   private guardarSesion(usuario: UsuarioAutenticado): void {

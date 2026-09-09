@@ -9,7 +9,7 @@ export const routes: Routes = [
   {
     path: '',
     loadComponent: () => import('./layout/main-layout/main-layout').then((m) => m.MainLayoutComponent),
-    //canActivate: [authGuard], //DESCOMENTAR CUANDO HABILITEMOS LOGIN
+    canActivate: [authGuard],
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
 
