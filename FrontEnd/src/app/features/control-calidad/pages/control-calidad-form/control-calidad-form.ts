@@ -63,10 +63,8 @@ export class ControlCalidadFormComponent implements OnInit {
         return;
       }
       this.loteService.getById(nroLote).subscribe((lote) => {
-        this.tipoSemillaService.getById(lote.id_semilla).subscribe((tipo) => {
-          this.tipoSemillaSeleccionada.set(tipo);
-          this.form.updateValueAndValidity();
-        });
+        this.tipoSemillaSeleccionada.set(lote.tipo_semilla);
+        this.form.updateValueAndValidity();
       });
     });
   }
@@ -111,16 +109,11 @@ export class ControlCalidadFormComponent implements OnInit {
 
     this.service.create(payload).subscribe(() => {
       if (resultado === 'No Apto' && valores.nro_lote != null) {
-        // Se abre un nuevo estado historico para el lote; el backend deberia
-        // cerrar (fecha_hasta) el estado anterior al recibir este alta.
-        this.estadoService
-          .create({
-            nro_lote: valores.nro_lote,
-            nombre: 'No apto',
-            fecha_desde: new Date().toISOString()
-          })
-          .subscribe();
-
+        // TODO(modulo Calidad, tarea aparte): esto todavia no pega contra el
+        // backend real. Estado no tiene endpoint de escritura (ver
+        // estado.controller.ts) -- el cambio de estado lo dispara el propio
+        // backend a traves de cambiarEstado() cuando se registra el CC en
+        // /api/controles-calidad/lote, no una llamada aparte desde el front.
         this.notification.success('Control registrado. El lote quedo marcado como No Apto.');
         // TODO: redirigir al flujo de "definir destino fisico" (Venta como grano / Descarte)
         // cuando ese modulo exista.

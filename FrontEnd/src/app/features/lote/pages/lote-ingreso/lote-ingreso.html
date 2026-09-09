@@ -1,170 +1,151 @@
-<div class="max-w-2xl">
-  <h1 class="text-xl font-semibold text-stone-800 mb-1">Nuevo ingreso de lote</h1>
-  <p class="text-sm text-stone-500 mb-6">Cargar los datos de un lote de semilla recibido en planta.</p>
+<h1 class="text-xl font-semibold text-stone-800 mb-6">Registrar ingreso de lote</h1>
 
-  <form [formGroup]="form" (ngSubmit)="guardar()" class="space-y-6">
-    <!-- Origen -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <form [formGroup]="form" (ngSubmit)="guardar()" class="lg:col-span-2 space-y-4">
     <div>
-      <label class="block text-sm font-medium text-stone-700 mb-2">Origen de la semilla</label>
-      <div class="flex gap-3">
-        <label
-          class="flex-1 cursor-pointer rounded-md border px-4 py-3 text-sm text-center transition-colors"
-          [class.border-emerald-700]="origenSeleccionado() === 'Propio'"
-          [class.bg-emerald-50]="origenSeleccionado() === 'Propio'"
-          [class.text-emerald-800]="origenSeleccionado() === 'Propio'"
-          [class.border-stone-300]="origenSeleccionado() !== 'Propio'"
-          [class.text-stone-600]="origenSeleccionado() !== 'Propio'"
+      <label class="block text-sm font-medium text-stone-700 mb-1">Origen del lote</label>
+      <div class="inline-flex rounded-md border border-stone-300 overflow-hidden">
+        <button
+          type="button"
+          (click)="form.controls.origen_semilla.setValue('propio')"
+          class="px-4 py-2 text-sm font-medium transition-colors"
+          [class.bg-brand-700]="!esExterno"
+          [class.text-white]="!esExterno"
+          [class.text-stone-600]="esExterno"
         >
-          <input type="radio" formControlName="origen_semilla" value="Propio" class="hidden" />
-          Produccion propia
-        </label>
-
-        <label
-          class="flex-1 cursor-pointer rounded-md border px-4 py-3 text-sm text-center transition-colors"
-          [class.border-emerald-700]="origenSeleccionado() === 'Externo'"
-          [class.bg-emerald-50]="origenSeleccionado() === 'Externo'"
-          [class.text-emerald-800]="origenSeleccionado() === 'Externo'"
-          [class.border-stone-300]="origenSeleccionado() !== 'Externo'"
-          [class.text-stone-600]="origenSeleccionado() !== 'Externo'"
+          Producción propia
+        </button>
+        <button
+          type="button"
+          (click)="form.controls.origen_semilla.setValue('externo')"
+          class="px-4 py-2 text-sm font-medium transition-colors border-l border-stone-300"
+          [class.bg-brand-700]="esExterno"
+          [class.text-white]="esExterno"
+          [class.text-stone-600]="!esExterno"
         >
-          <input type="radio" formControlName="origen_semilla" value="Externo" class="hidden" />
-          Externo (proveedor)
-        </label>
+          Externo
+        </button>
       </div>
     </div>
 
-    <!-- Caso Propio -->
-    @if (origenSeleccionado() === 'Propio') {
-      <div>
-        <label class="block text-sm font-medium text-stone-700 mb-1" for="nro_campo">Campo de procedencia</label>
-        <select
-          id="nro_campo"
-          formControlName="nro_campo"
-          class="w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700"
-        >
-          <option [ngValue]="null" disabled>Seleccionar campo...</option>
-          @for (campo of campos(); track campo.nro_campo) {
-            <option [ngValue]="campo.nro_campo">{{ campo.nombre }}</option>
-          }
-        </select>
-        @if (form.controls.nro_campo.invalid && form.controls.nro_campo.touched) {
-          <p class="text-xs text-red-600 mt-1">El campo de procedencia es obligatorio.</p>
-        }
-      </div>
-    }
-
-    <!-- Caso Externo -->
-    @if (origenSeleccionado() === 'Externo') {
-      <div class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-stone-700 mb-1" for="cuit">Proveedor</label>
-          <select
-            id="cuit"
-            formControlName="cuit"
-            class="w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700"
-          >
-            <option [ngValue]="null" disabled>Seleccionar proveedor...</option>
-            @for (proveedor of proveedores(); track proveedor.cuit) {
-              <option [ngValue]="proveedor.cuit">{{ proveedor.razon_social }}</option>
-            }
-          </select>
-          @if (form.controls.cuit.invalid && form.controls.cuit.touched) {
-            <p class="text-xs text-red-600 mt-1">El proveedor es obligatorio.</p>
-          }
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-stone-700 mb-1">Informe de calidad del proveedor</label>
-          <input
-            type="file"
-            accept="application/pdf,image/jpeg"
-            (change)="onArchivoSeleccionado($event)"
-            class="w-full text-sm text-stone-600 file:mr-3 file:rounded-md file:border-0 file:bg-stone-100 file:px-3 file:py-2 file:text-sm file:font-medium hover:file:bg-stone-200"
-          />
-          <p class="text-xs text-stone-400 mt-1">Formatos aceptados: PDF o JPG.</p>
-          @if (errorArchivo()) {
-            <p class="text-xs text-red-600 mt-1">{{ errorArchivo() }}</p>
-          }
-          @if (archivoInforme()) {
-            <p class="text-xs text-emerald-700 mt-1">Archivo cargado: {{ archivoInforme()!.name }}</p>
-          }
-        </div>
-
-        <!-- Aviso de la regla de negocio -->
-        <div class="flex gap-3 rounded-md border border-orange-200 bg-orange-50 p-4">
-          <span class="text-orange-500 text-lg leading-none">!</span>
-          <p class="text-sm text-orange-800">
-            Por ser un lote de proveedor externo, el control de calidad inicial se considera
-            automaticamente aprobado ("Apto") y salteara los procesos de clasificacion mecanica
-            y curado, ingresando directo a stock curado comercializable.
-          </p>
-        </div>
-      </div>
-    }
-
-    <!-- Datos comunes -->
     <div class="grid grid-cols-2 gap-4">
       <div>
-        <label class="block text-sm font-medium text-stone-700 mb-1" for="id_semilla">Tipo de semilla</label>
+        <label class="block text-sm font-medium text-stone-700 mb-1" for="tipo_semilla_id">Tipo de semilla</label>
         <select
-          id="id_semilla"
-          formControlName="id_semilla"
-          class="w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700"
+          id="tipo_semilla_id"
+          formControlName="tipo_semilla_id"
+          class="w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
         >
           <option [ngValue]="null" disabled>Seleccionar...</option>
-          @for (semilla of tiposSemilla(); track semilla.id_semilla) {
-            <option [ngValue]="semilla.id_semilla">{{ semilla.nombre_semilla }} - {{ semilla.variante_semilla }}</option>
+          @for (t of tiposSemilla(); track t.id_semilla) {
+            <option [ngValue]="t.id_semilla">{{ t.nombre_semilla }} / {{ t.variante_semilla }}</option>
           }
         </select>
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-stone-700 mb-1" for="id_almacen">Almacen destino</label>
-        <select
-          id="id_almacen"
-          formControlName="id_almacen"
-          class="w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700"
-        >
-          <option [ngValue]="null" disabled>Seleccionar...</option>
-          @for (almacen of almacenes(); track almacen.id_almacen) {
-            <option [ngValue]="almacen.id_almacen">{{ almacen.nombre }}</option>
-          }
-        </select>
+        <label class="block text-sm font-medium text-stone-700 mb-1" for="cantidad">Cantidad ingresada (tn)</label>
+        <input
+          id="cantidad"
+          type="number"
+          step="0.1"
+          formControlName="cantidad_semillas_en_tn"
+          placeholder="Ej: 24.0"
+          class="w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+        />
       </div>
     </div>
 
-    <div>
-      <label class="block text-sm font-medium text-stone-700 mb-1" for="cantidad">Cantidad (tn)</label>
-      <input
-        id="cantidad"
-        type="number"
-        step="0.01"
-        formControlName="cantidad_semillas_en_tn"
-        class="w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700"
-      />
-    </div>
+    @if (!esExterno) {
+      <div>
+        <label class="block text-sm font-medium text-stone-700 mb-1" for="campo_id">Campo de procedencia</label>
+        <select
+          id="campo_id"
+          formControlName="campo_id"
+          class="w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+        >
+          <option [ngValue]="null" disabled>Seleccionar...</option>
+          @for (c of campos(); track c.id_campo) {
+            <option [ngValue]="c.id_campo">{{ c.nro_campo }} — {{ c.ubicacion }}</option>
+          }
+        </select>
+      </div>
+    } @else {
+      <div>
+        <label class="block text-sm font-medium text-stone-700 mb-1" for="proveedor_id">Proveedor</label>
+        <select
+          id="proveedor_id"
+          formControlName="proveedor_id"
+          class="w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+        >
+          <option [ngValue]="null" disabled>Seleccionar...</option>
+          @for (p of proveedores(); track p.id_proveedor) {
+            <option [ngValue]="p.id_proveedor">{{ p.razon_social }}</option>
+          }
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-stone-700 mb-1" for="informe">Informe de calidad del proveedor</label>
+        <input
+          id="informe"
+          type="text"
+          formControlName="informe_calidad_externo"
+          placeholder="Referencia o URL del informe (PDF/JPG)"
+          class="w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+        />
+        <p class="text-xs text-stone-400 mt-1">
+          Por ahora es un dato de texto (el backend todavía no acepta subir el archivo real).
+        </p>
+      </div>
+    }
 
     <div>
-      <label class="block text-sm font-medium text-stone-700 mb-1" for="descripcion">Descripcion del origen</label>
+      <label class="block text-sm font-medium text-stone-700 mb-1" for="observaciones">Observaciones</label>
       <textarea
-        id="descripcion"
+        id="observaciones"
         rows="3"
-        formControlName="descripcion_origen"
-        class="w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700"
+        formControlName="observaciones"
+        placeholder="Opcional…"
+        class="w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
       ></textarea>
     </div>
 
-    <div class="flex justify-end gap-3 pt-2">
-      <button type="button" (click)="cancelar()" class="text-sm text-stone-500 hover:text-stone-700 px-4 py-2">
-        Cancelar
-      </button>
+    <div class="flex gap-3 pt-2">
       <button
         type="submit"
         [disabled]="enviando()"
-        class="rounded-md bg-emerald-800 text-white text-sm font-medium px-5 py-2 hover:bg-emerald-900 transition-colors disabled:opacity-60"
+        class="rounded-md bg-brand-700 text-white text-sm font-semibold px-5 py-2.5 hover:bg-brand-800 transition-colors disabled:opacity-60"
       >
-        {{ enviando() ? 'Guardando...' : 'Guardar lote' }}
+        ✓ Registrar ingreso
+      </button>
+      <button
+        type="button"
+        (click)="cancelar()"
+        class="rounded-md border border-stone-300 text-sm font-medium px-5 py-2.5 text-stone-700 hover:bg-stone-50"
+      >
+        Cancelar
       </button>
     </div>
   </form>
+
+  <div>
+    @if (!esExterno) {
+      <div class="bg-brand-50 border border-brand-100 rounded-xl p-4">
+        <p class="text-sm font-semibold text-brand-900 mb-1">ⓘ Información</p>
+        <p class="text-sm text-brand-800">
+          El sistema generará un Nro Lote automáticamente combinando campo y fecha.
+          Queda habilitado el control de calidad inicial (CC).
+        </p>
+      </div>
+    } @else {
+      <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+        <p class="text-sm font-semibold text-amber-800 mb-1">⚠ Lote externo</p>
+        <p class="text-sm text-amber-700">
+          El CC inicial se considera automáticamente aprobado. El lote saltea limpieza y curado
+          e ingresa directo al flujo de control final (solo pasa por el CC final de rutina).
+        </p>
+      </div>
+    }
+  </div>
 </div>

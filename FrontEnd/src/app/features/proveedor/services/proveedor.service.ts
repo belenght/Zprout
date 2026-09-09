@@ -7,7 +7,8 @@ import { Proveedor, ProveedorPayload } from '../models/proveedor.model';
 @Injectable({ providedIn: 'root' })
 export class ProveedorService {
   private http = inject(HttpClient);
-  private readonly baseUrl = `${environment.apiUrl}/proveedor`;
+  // Ruta real: proveedorRouter montado en /api/proveedores (ver app.ts)
+  private readonly baseUrl = `${environment.apiUrl}/proveedores`;
 
   getAll(): Observable<Proveedor[]> {
     return this.http.get<Proveedor[]>(this.baseUrl);

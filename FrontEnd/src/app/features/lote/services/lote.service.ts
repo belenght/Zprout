@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, finalize, tap } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { Lote, LotePayload } from '../models/lote.model';
@@ -7,7 +7,8 @@ import { Lote, LotePayload } from '../models/lote.model';
 @Injectable({ providedIn: 'root' })
 export class LoteService {
   private http = inject(HttpClient);
-  private readonly baseUrl = `${environment.apiUrl}/lote`;
+  // Ruta real: loteRouter montado en /api/lotes (ver app.ts)
+  private readonly baseUrl = `${environment.apiUrl}/lotes`;
 
   // Estado compartido: cualquier componente que se suscriba a lotes$ ve
   // siempre la ultima lista cargada, sin tener que repetir el get().
@@ -18,19 +19,15 @@ export class LoteService {
   cargando$ = this.cargandoSubject.asObservable();
 
   /**
-   * Trae el listado completo y actualiza lotes$.
-   * @param estado filtro rapido por nombre de estado (ej: 'Pendiente CC'). Opcional.
-   * @param busqueda texto libre (nro de lote, descripcion, etc). Opcional.
+   * Trae el listado completo. GET /api/lotes no acepta filtros por query
+   * (ver lote.controller.ts -> listarLotes): siempre devuelve todo, y el
+   * filtrado por estado/busqueda se hace del lado del cliente (ver lote-list.ts).
    */
-  cargarLotes(estado?: string, busqueda?: string): void {
+  cargarLotes(): void {
     this.cargandoSubject.next(true);
 
-    let params = new HttpParams();
-    if (estado && estado !== 'Todos') params = params.set('estado', estado);
-    if (busqueda) params = params.set('q', busqueda);
-
     this.http
-      .get<Lote[]>(this.baseUrl, { params })
+      .get<Lote[]>(this.baseUrl)
       .pipe(
         tap((lotes) => this.lotesSubject.next(lotes)),
         finalize(() => this.cargandoSubject.next(false))
@@ -38,36 +35,20 @@ export class LoteService {
       .subscribe();
   }
 
-  getById(nroLote: number): Observable<Lote> {
-    return this.http.get<Lote>(`${this.baseUrl}/${nroLote}`);
+  getById(idLote: number): Observable<Lote> {
+    return this.http.get<Lote>(`${this.baseUrl}/${idLote}`);
   }
 
   /**
-   * Alta de un lote. El backend es quien decide el estado inicial
-   * ('Pendiente CC' si es Propio, salteo directo a stock curado si es Externo
-   *  segun la regla de negocio descripta en el modulo de Lotes).
+   * Alta de un lote (CUU01). El backend es quien decide el estado inicial
+   * ('Pendiente CC' si es propio, 'Para curar' si es externo con CC automatico).
+   * NOTA: el backend no procesa archivos (no hay multer/multipart configurado),
+   * asi que "informe_calidad_externo" viaja como texto (referencia/URL), no
+   * como un adjunto real. Si mas adelante se quiere subir el archivo de
+   * verdad, hay que agregar manejo de multipart en el backend primero.
    */
-  crear(payload: LotePayload, informeCalidadProveedor?: File | null): Observable<Lote> {
-    if (payload.origen_semilla === 'Externo' && informeCalidadProveedor) {
-      const formData = new FormData();
-      Object.entries(payload).forEach(([key, value]) => {
-        if (value !== null && value !== undefined) {
-          formData.append(key, String(value));
-        }
-      });
-      formData.append('informe_calidad', informeCalidadProveedor);
-      return this.http.post<Lote>(this.baseUrl, formData);
-    }
-
+  crear(payload: LotePayload): Observable<Lote> {
     return this.http.post<Lote>(this.baseUrl, payload);
-  }
-
-  actualizar(nroLote: number, payload: Partial<LotePayload>): Observable<Lote> {
-    return this.http.put<Lote>(`${this.baseUrl}/${nroLote}`, payload);
-  }
-
-  eliminar(nroLote: number): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/${nroLote}`);
   }
 
   /** Snapshot sincronico util para validaciones (ej: volumen disponible en Curado). */

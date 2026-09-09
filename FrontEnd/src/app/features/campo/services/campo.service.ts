@@ -7,7 +7,8 @@ import { Campo, CampoPayload } from '../models/campo.model';
 @Injectable({ providedIn: 'root' })
 export class CampoService {
   private http = inject(HttpClient);
-  private readonly baseUrl = `${environment.apiUrl}/campo`;
+  // Ruta real: campoRouter montado en /api/campos (ver app.ts)
+  private readonly baseUrl = `${environment.apiUrl}/campos`;
 
   getAll(): Observable<Campo[]> {
     return this.http.get<Campo[]>(this.baseUrl);

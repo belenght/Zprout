@@ -1,0 +1,91 @@
+@if (cargando()) {
+  <app-loading-spinner mensaje="Cargando lote..." />
+} @else if (lote(); as l) {
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <a routerLink="/lotes" class="text-sm text-brand-700 hover:underline">← Volver a lotes</a>
+      <h1 class="text-xl font-semibold text-stone-800 mt-1">
+        {{ l.nro_lote }} — {{ l.tipo_semilla.nombre_semilla }} / {{ l.tipo_semilla.variante_semilla }}
+      </h1>
+    </div>
+    <span class="inline-block text-xs font-semibold px-3 py-1.5 rounded-full {{ estadoPill(l.estado_actual) }}">
+      {{ l.estado_actual ?? 'Sin estado' }}
+    </span>
+  </div>
+
+  <!-- Historial de estados: lectura de mejor esfuerzo sobre Estado real,
+       no es el stepper de 8 pasos de la GUI-06 (el backend no lo modela asi). -->
+  @if (historialEstados().length > 0) {
+    <div class="flex items-center gap-2 mb-8 overflow-x-auto pb-1">
+      @for (paso of historialEstados(); track paso.id_estado; let last = $last) {
+        <div class="flex items-center gap-2 shrink-0">
+          <div class="flex flex-col items-center">
+            <span
+              class="h-3 w-3 rounded-full"
+              [class.bg-brand-700]="!paso.fecha_hasta"
+              [class.bg-stone-300]="!!paso.fecha_hasta"
+            ></span>
+            <span class="text-xs text-stone-500 mt-1 whitespace-nowrap">{{ paso.nombre }}</span>
+            <span class="text-[11px] text-stone-400">{{ paso.fecha_desde | date: 'dd/MM' }}</span>
+          </div>
+          @if (!last) {
+            <span class="h-px w-8 bg-stone-300"></span>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="bg-white rounded-xl border border-stone-200 p-4">
+      <h2 class="text-sm font-semibold text-stone-700 mb-3">Datos del lote</h2>
+      <dl class="space-y-2 text-sm">
+        <div class="flex justify-between"><dt class="text-stone-500">Origen</dt><dd class="capitalize">{{ l.origen_semilla }} ({{ procedencia(l) }})</dd></div>
+        <div class="flex justify-between"><dt class="text-stone-500">Kg ingresados</dt><dd>{{ l.cantidad_semillas_en_tn }} tn</dd></div>
+        <div class="flex justify-between"><dt class="text-stone-500">Fecha de ingreso</dt><dd>{{ l.fecha_ingreso | date: 'dd/MM/yy' }}</dd></div>
+        @if (l.observaciones) {
+          <div><dt class="text-stone-500 mb-1">Observaciones</dt><dd>{{ l.observaciones }}</dd></div>
+        }
+      </dl>
+    </div>
+
+    <div class="lg:col-span-2 bg-white rounded-xl border border-stone-200 p-4">
+      <h2 class="text-sm font-semibold text-stone-700 mb-3">Historial de controles de calidad</h2>
+
+      @if (controlesCalidad().length === 0) {
+        <p class="text-sm text-stone-400 py-6 text-center">Todavía no se registraron controles de calidad.</p>
+      } @else {
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-stone-500 border-b border-stone-200">
+              <th class="py-2 font-medium">Instancia</th>
+              <th class="py-2 font-medium">Fecha</th>
+              <th class="py-2 font-medium">Humedad</th>
+              <th class="py-2 font-medium">PG</th>
+              <th class="py-2 font-medium">Pureza</th>
+              <th class="py-2 font-medium">Resultado</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of controlesCalidad(); track c.id_control) {
+              <tr class="border-b border-stone-100 last:border-0">
+                <td class="py-2 capitalize">CC {{ c.tipo_control }}</td>
+                <td class="py-2">{{ c.fecha | date: 'dd/MM/yy' }}</td>
+                <td class="py-2">{{ c.humedad }} %</td>
+                <td class="py-2">{{ c.poder_germinativo }} %</td>
+                <td class="py-2">{{ c.nivel_de_pureza }} %</td>
+                <td class="py-2">
+                  <span class="inline-block text-xs font-semibold px-2 py-0.5 rounded-full {{ resultadoPill(c.resultado) }}">
+                    {{ c.resultado }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+  </div>
+} @else {
+  <p class="text-sm text-stone-400 text-center py-10">No se encontró el lote.</p>
+}

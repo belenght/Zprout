@@ -7,8 +7,8 @@ import { TipoSemilla, TipoSemillaPayload } from '../models/tipo-semilla.model';
 @Injectable({ providedIn: 'root' })
 export class TipoSemillaService {
   private http = inject(HttpClient);
-  // El path debe matchear la ruta expuesta por tipo_semilla.routes.ts en el backend
-  private readonly baseUrl = `${environment.apiUrl}/tipo_semilla`;
+  // Ruta real: tipoSemillaRouter montado en /api/tipos-semilla (ver app.ts)
+  private readonly baseUrl = `${environment.apiUrl}/tipos-semilla`;
 
   getAll(): Observable<TipoSemilla[]> {
     return this.http.get<TipoSemilla[]>(this.baseUrl);

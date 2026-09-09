@@ -1,21 +1,39 @@
-export type OrigenSemilla = 'Propio' | 'Externo';
+import { TipoSemilla } from '../../tipo-semilla/models/tipo-semilla.model';
+import { Campo } from '../../campo/models/campo.model';
+import { Proveedor } from '../../proveedor/models/proveedor.model';
+import { NombreEstadoLote } from '../../estado/models/estado.model';
+
+// Coincide con lote.entity.ts del backend. origen_semilla va en minuscula
+// (enum OrigenSemilla del backend: 'propio' | 'externo'), no 'Propio'/'Externo'.
+export type OrigenSemilla = 'propio' | 'externo';
 
 export interface Lote {
-  nro_lote: number;
-  nro_campo?: number | null;      // requerido si origen_semilla = 'Propio'
-  id_almacen: number;
-  id_semilla: number;
-  cuit?: string | null;           // requerido si origen_semilla = 'Externo' (proveedor)
+  id_lote: number;
+  nro_lote: string; // codigo generado por el backend (campo/proveedor + fecha), no es el id
   origen_semilla: OrigenSemilla;
-  cantidad_semillas_en_tn: number;
-  descripcion_origen: string;
-  fecha_creacion: string;         // ISO date
+  descripcion_origen?: string;
+  cantidad_semillas_en_tn: string; // decimal, el backend lo serializa como string
+  fecha_ingreso: string; // ISO date
+  observaciones?: string;
+  informe_calidad_externo?: string;
 
-  // Campo de conveniencia para el listado: el estado vigente del lote es en
-  // realidad la ultima fila de EstadoLote (fecha_hasta null). Se asume que el
-  // backend lo devuelve ya resuelto en el GET /lote; si no, hay que pedirlo
-  // aparte via estado.service y cruzarlo por nro_lote.
-  estado_actual?: import('../../estado/models/estado.model').NombreEstadoLote;
+  // Populados por el backend en listarLotes/obtenerLote (ver lote.controller.ts)
+  tipo_semilla: TipoSemilla;
+  campo?: Campo;
+  proveedor?: Proveedor;
+
+  // Agregado a mano por el backend (no es una columna de Lote): ultimo Estado
+  // abierto (fecha_hasta null) para este lote. Null si todavia no tiene ninguno.
+  estado_actual?: NombreEstadoLote | null;
 }
 
-export type LotePayload = Omit<Lote, 'nro_lote' | 'fecha_creacion'>;
+// Body real que espera POST /api/lotes (ver lote.controller.ts -> registrarIngresoLote).
+export interface LotePayload {
+  tipo_semilla_id: number;
+  cantidad_semillas_en_tn: number;
+  origen_semilla: OrigenSemilla;
+  campo_id?: number;       // requerido si origen_semilla === 'propio'
+  proveedor_id?: number;   // requerido si origen_semilla === 'externo'
+  informe_calidad_externo?: string; // referencia de texto (URL/nombre); el backend no recibe archivos
+  observaciones?: string;
+}
