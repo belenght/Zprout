@@ -1,0 +1,65 @@
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-xl font-semibold text-stone-800">Almacén</h1>
+  <a
+    routerLink="nuevo"
+    class="rounded-md bg-brand-700 text-white text-sm font-semibold px-4 py-2 hover:bg-brand-800 transition-colors"
+  >
+    + Nuevo almacén
+  </a>
+</div>
+
+@if (cargando()) {
+  <app-loading-spinner mensaje="Cargando almacenes..." />
+} @else {
+  @if (almacenes().length === 0) {
+    <p class="text-sm text-stone-400 text-center py-10">Todavía no hay almacenes cargados.</p>
+  } @else {
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+      @for (a of almacenes(); track a.id_almacen) {
+        <div class="bg-white rounded-xl border border-stone-200 p-4">
+          <p class="font-semibold text-stone-800">{{ etiquetaTipo(a.tipo) }} #{{ a.id_almacen }}</p>
+
+          @if (a.tipo === 'deposito') {
+            <p class="text-xs text-stone-400 mt-1">
+              Sin datos de ocupación (Partida no está vinculada a Almacén en el modelo de dominio).
+            </p>
+          } @else {
+            <p class="text-sm text-stone-500 mb-3">{{ a.ocupado_tn }} tn / {{ a.capacidad }} tn</p>
+            <div class="h-2 rounded-full bg-stone-100 overflow-hidden">
+              <div class="h-full bg-brand-700" [style.width.%]="porcentaje(a)"></div>
+            </div>
+            <p class="text-xs text-stone-400 mt-1">{{ porcentaje(a) }}% capacidad utilizada</p>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <div class="bg-white rounded-xl border border-stone-200 p-4">
+    <h2 class="text-sm font-semibold text-stone-700 mb-1">Stock a granel por variedad</h2>
+    <p class="text-xs text-stone-400 mb-3">Solo lotes con almacén (silo/galpón) asignado.</p>
+
+    @if (stockGranel().length === 0) {
+      <p class="text-sm text-stone-400 text-center py-6">No hay stock a granel asignado a un almacén todavía.</p>
+    } @else {
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-left text-stone-500 border-b border-stone-200">
+            <th class="py-2 font-medium">Semilla</th>
+            <th class="py-2 font-medium">Variedad</th>
+            <th class="py-2 font-medium">A granel</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (fila of stockGranel(); track fila.semilla + fila.variedad) {
+            <tr class="border-b border-stone-100 last:border-0">
+              <td class="py-2">{{ fila.semilla }}</td>
+              <td class="py-2">{{ fila.variedad }}</td>
+              <td class="py-2">{{ fila.aGranelTn }} tn</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+}

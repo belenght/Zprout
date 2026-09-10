@@ -3,6 +3,7 @@ import { wrap } from '@mikro-orm/core';
 import { getEM } from '../shared/db/orm.js';
 import { Lote, OrigenSemilla } from './lote.entity.js';
 import { Campo } from '../campo/campo.entity.js';
+import { Almacen } from '../almacen/almacen.entity.js';
 import { Proveedor } from '../proveedor/proveedor.entity.js';
 import { TipoDeSemilla } from '../tipo_semilla/tipo_semilla.entity.js';
 import { ControlDeCalidad, TipoControl, ResultadoControl } from '../control_calidad/control_calidad.entity.js';
@@ -134,4 +135,29 @@ export async function registrarIngresoLote(req: Request, res: Response) {
 
   await em.flush();
   res.status(201).json(lote);
+}
+
+/**
+ * Asigna/reasigna el almacen fisico donde esta guardado el lote (silo o
+ * galpon, ver GUI-15). No forma parte de ningun CUU original: se agrega
+ * para que el modulo de Almacen tenga datos reales de ocupacion.
+ */
+export async function asignarAlmacenLote(req: Request, res: Response) {
+  const em = getEM();
+  const { almacen_id } = req.body;
+
+  const lote = await em.findOne(Lote, { id_lote: Number(req.params.id), deleted_at: null });
+  if (!lote) return res.status(404).json({ error: 'Lote no encontrado' });
+
+  if (almacen_id == null) {
+    lote.almacen = undefined;
+  } else {
+    const almacen = await em.findOne(Almacen, { id_almacen: almacen_id, deleted_at: null });
+    if (!almacen) return res.status(404).json({ error: 'Almacen no encontrado' });
+    lote.almacen = almacen;
+  }
+
+  await em.flush();
+  const [dto] = await conEstadoActual(em, [lote]);
+  res.json(dto);
 }

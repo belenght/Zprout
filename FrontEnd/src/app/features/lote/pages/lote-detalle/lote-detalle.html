@@ -14,7 +14,7 @@
   </div>
 
   @if (necesitaCC(l.estado_actual)) {
-    <div class="mb-8">
+    <div class="mb-8 flex gap-3">
       <a
         [routerLink]="['/calidad/nuevo']"
         [queryParams]="{ loteId: l.id_lote }"
@@ -22,6 +22,15 @@
       >
         Registrar Control de Calidad →
       </a>
+      @if (l.estado_actual === 'En limpieza') {
+        <a
+          [routerLink]="['/limpieza/nuevo']"
+          [queryParams]="{ loteId: l.id_lote }"
+          class="inline-block rounded-md border border-brand-700 text-brand-700 text-sm font-semibold px-4 py-2 hover:bg-brand-50 transition-colors"
+        >
+          Registrar Limpieza →
+        </a>
+      }
     </div>
   }
 
@@ -59,6 +68,30 @@
           <div><dt class="text-stone-500 mb-1">Observaciones</dt><dd>{{ l.observaciones }}</dd></div>
         }
       </dl>
+
+      <div class="mt-4 pt-4 border-t border-stone-100">
+        <label class="block text-xs font-medium text-stone-500 mb-1" for="almacen">Almacén asignado</label>
+        <div class="flex gap-2">
+          <select
+            id="almacen"
+            [ngModel]="almacenSeleccionado()"
+            (ngModelChange)="almacenSeleccionado.set($event)"
+            class="flex-1 rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+          >
+            <option [ngValue]="null">Sin asignar</option>
+            @for (a of almacenesDisponibles(); track a.id_almacen) {
+              <option [ngValue]="a.id_almacen">{{ a.tipo === 'silo' ? 'Silo' : 'Galpón' }} #{{ a.id_almacen }}</option>
+            }
+          </select>
+          <button
+            (click)="guardarAlmacen()"
+            [disabled]="guardandoAlmacen()"
+            class="rounded-md border border-brand-700 text-brand-700 text-xs font-semibold px-3 hover:bg-brand-50 disabled:opacity-60"
+          >
+            Guardar
+          </button>
+        </div>
+      </div>
     </div>
 
     <div class="lg:col-span-2 bg-white rounded-xl border border-stone-200 p-4">

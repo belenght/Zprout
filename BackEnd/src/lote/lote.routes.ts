@@ -7,3 +7,5 @@ export const loteRouter = Router();
 loteRouter.get('/', loteCtrl.listarLotes);
 loteRouter.get('/:id', loteCtrl.obtenerLote);
 loteRouter.post('/', loteCtrl.registrarIngresoLote);
+// Asignacion de deposito fisico (ver modulo Almacen, GUI-15)
+loteRouter.patch('/:id/almacen', loteCtrl.asignarAlmacenLote);

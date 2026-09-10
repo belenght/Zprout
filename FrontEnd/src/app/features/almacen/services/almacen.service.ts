@@ -7,25 +7,24 @@ import { Almacen, AlmacenPayload } from '../models/almacen.model';
 @Injectable({ providedIn: 'root' })
 export class AlmacenService {
   private http = inject(HttpClient);
-  private readonly baseUrl = `${environment.apiUrl}/almacen`;
+  // Ruta real: almacenRouter montado en /api/almacenes (ver app.ts)
+  private readonly baseUrl = `${environment.apiUrl}/almacenes`;
 
   getAll(): Observable<Almacen[]> {
     return this.http.get<Almacen[]>(this.baseUrl);
-  }
-
-  getById(id: number): Observable<Almacen> {
-    return this.http.get<Almacen>(`${this.baseUrl}/${id}`);
   }
 
   create(payload: AlmacenPayload): Observable<Almacen> {
     return this.http.post<Almacen>(this.baseUrl, payload);
   }
 
-  update(id: number, payload: Partial<AlmacenPayload>): Observable<Almacen> {
-    return this.http.put<Almacen>(`${this.baseUrl}/${id}`, payload);
-  }
-
-  delete(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  /**
+   * Asigna un lote a este almacen. Endpoint nuevo (ver lote.controller.ts ->
+   * asignarAlmacenLote), pero la relacion Lote-Almacen que expone SI esta en
+   * el Modelo de Dominio (Almacen 1 -- 0..* Lote) -- solo se le agrego la
+   * forma de setearla desde la API, no se inventa la relacion.
+   */
+  asignarLote(idLote: number, idAlmacen: number | null): Observable<unknown> {
+    return this.http.patch(`${environment.apiUrl}/lotes/${idLote}/almacen`, { almacen_id: idAlmacen });
   }
 }

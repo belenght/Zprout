@@ -1,6 +1,7 @@
 import { TipoSemilla } from '../../tipo-semilla/models/tipo-semilla.model';
 import { Campo } from '../../campo/models/campo.model';
 import { Proveedor } from '../../proveedor/models/proveedor.model';
+import { Almacen } from '../../almacen/models/almacen.model';
 import { NombreEstadoLote } from '../../estado/models/estado.model';
 
 // Coincide con lote.entity.ts del backend. origen_semilla va en minuscula
@@ -21,6 +22,7 @@ export interface Lote {
   tipo_semilla: TipoSemilla;
   campo?: Campo;
   proveedor?: Proveedor;
+  almacen?: Almacen; // silo o galpon donde esta guardado hoy (ver modulo Almacen, GUI-15)
 
   // Agregado a mano por el backend (no es una columna de Lote): ultimo Estado
   // abierto (fecha_hasta null) para este lote. Null si todavia no tiene ninguno.

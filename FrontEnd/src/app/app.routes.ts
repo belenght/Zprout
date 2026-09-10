@@ -35,7 +35,7 @@ export const routes: Routes = [
       // --- Catalogos de mantenimiento ---
       { path: 'tipo-semilla', loadChildren: () => import('./features/tipo-semilla/tipo-semilla.routes').then((m) => m.tipoSemillaRoutes) },
       // TODO: descomentar a medida que se arme cada catalogo (seguir el patron de tipo-semilla)
-      // { path: 'almacen', loadChildren: () => import('./features/almacen/almacen.routes').then((m) => m.almacenRoutes) },
+      { path: 'almacen', loadChildren: () => import('./features/almacen/almacen.routes').then((m) => m.almacenRoutes) },
       // { path: 'campana', loadChildren: () => import('./features/campana/campana.routes').then((m) => m.campanaRoutes) },
       // { path: 'campo', loadChildren: () => import('./features/campo/campo.routes').then((m) => m.campoRoutes) },
       // { path: 'insumo', loadChildren: () => import('./features/insumo/insumo.routes').then((m) => m.insumoRoutes) },
