@@ -21,9 +21,8 @@ export const routes: Routes = [
       // Ya tiene el formulario de CC inicial con range.validator.ts; falta la CC final sobre Partida.
       { path: 'calidad', loadChildren: () => import('./features/control-calidad/control-calidad.routes').then((m) => m.controlCalidadRoutes) },
 
-      // TODO: 'limpieza' mapea al feature 'limpieza-clasificacion'. Falta el formulario con
-      // el calculo de % de merma en tiempo real (seccion E del brief).
-      // { path: 'limpieza', loadChildren: () => import('./features/limpieza-clasificacion/limpieza-clasificacion.routes').then((m) => m.limpiezaClasificacionRoutes) },
+      // 'limpieza' mapea al feature 'limpieza-clasificacion'.
+      { path: 'limpieza', loadChildren: () => import('./features/limpieza-clasificacion/limpieza-clasificacion.routes').then((m) => m.limpiezaClasificacionRoutes) },
 
       // TODO: 'curado' mapea al feature 'partida' (tipo_curado, fecha_curado, fecha_envasado
       // son campos de Partida). Falta el formulario con calculo de bolsas e insumos (seccion F).

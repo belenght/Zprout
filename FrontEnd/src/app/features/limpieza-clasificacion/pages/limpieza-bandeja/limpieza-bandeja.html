@@ -1,0 +1,26 @@
+<h1 class="text-xl font-semibold text-stone-800 mb-1">Limpieza y clasificación</h1>
+<p class="text-sm text-stone-400 mb-6">Lotes en proceso de limpieza, pendientes de registrar el resultado.</p>
+
+@if (cargando()) {
+  <app-loading-spinner mensaje="Cargando lotes..." />
+} @else if (pendientes().length === 0) {
+  <p class="text-sm text-stone-400 text-center py-10">No hay lotes en limpieza en este momento.</p>
+} @else {
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    @for (lote of pendientes(); track lote.id_lote) {
+      <div class="bg-white rounded-xl border border-stone-200 p-4">
+        <p class="font-semibold text-stone-800">{{ lote.nro_lote }}</p>
+        <p class="text-sm text-stone-500 mb-3">{{ lote.tipo_semilla.nombre_semilla }} · {{ lote.tipo_semilla.variante_semilla }}</p>
+        <p class="text-xs text-stone-400 mb-1">Kg disponibles</p>
+        <p class="text-sm font-medium text-stone-700 mb-3">{{ lote.cantidad_semillas_en_tn }} tn</p>
+        <a
+          [routerLink]="['/limpieza/nuevo']"
+          [queryParams]="{ loteId: lote.id_lote }"
+          class="inline-block w-full text-center rounded-md bg-brand-700 text-white text-sm font-semibold px-4 py-2 hover:bg-brand-800 transition-colors"
+        >
+          Registrar limpieza
+        </a>
+      </div>
+    }
+  </div>
+}
