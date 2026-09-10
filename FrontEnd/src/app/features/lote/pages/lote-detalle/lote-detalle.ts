@@ -82,4 +82,10 @@ export class LoteDetalleComponent implements OnInit {
   resultadoPill(resultado: string): string {
     return resultado === 'Apto' ? 'bg-brand-100 text-brand-800' : 'bg-red-100 text-red-700';
   }
+
+  // Mismo criterio que control-calidad-bandeja: estos son los estados de
+  // Lote sobre los que todavia tiene sentido registrar un control de calidad.
+  necesitaCC(estado: string | null | undefined): boolean {
+    return estado === 'Pendiente CC' || estado === 'En limpieza' || estado === 'Para curar';
+  }
 }

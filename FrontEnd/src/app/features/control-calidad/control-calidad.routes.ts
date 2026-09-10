@@ -2,10 +2,15 @@ import { Routes } from '@angular/router';
 
 export const controlCalidadRoutes: Routes = [
   {
+    path: '',
+    loadComponent: () =>
+      import('./pages/control-calidad-bandeja/control-calidad-bandeja').then((m) => m.ControlCalidadBandejaComponent)
+  },
+  {
     path: 'nuevo',
     loadComponent: () =>
       import('./pages/control-calidad-form/control-calidad-form').then((m) => m.ControlCalidadFormComponent)
   }
-  // TODO: agregar 'listado' (historial de controles) y el formulario de CC Final
-  // sobre Partida (seccion D, segundo formulario del brief) cuando se necesite.
+  // TODO: el formulario de CC Final (sobre Partida) vive en el modulo de Partida (CUU06),
+  // no aca -- este modulo solo cubre CC inicial/intermedio sobre Lote.
 ];

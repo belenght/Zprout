@@ -1,0 +1,50 @@
+<h1 class="text-xl font-semibold text-stone-800 mb-1">Bandeja de calidad</h1>
+<p class="text-sm text-stone-400 mb-6">Lotes que todavía necesitan un control de calidad.</p>
+
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8 max-w-xl">
+  <div class="bg-white rounded-xl border border-stone-200 p-4">
+    <span class="inline-block text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">Pendientes CC inicial</span>
+    <p class="text-2xl font-semibold text-stone-800 mt-3">{{ totalInicial() }}</p>
+  </div>
+  <div class="bg-white rounded-xl border border-stone-200 p-4">
+    <span class="inline-block text-xs font-semibold px-2 py-0.5 rounded-full bg-brand-100 text-brand-800">Pendientes CC intermedio</span>
+    <p class="text-2xl font-semibold text-stone-800 mt-3">{{ totalIntermedio() }}</p>
+  </div>
+</div>
+
+@if (cargando()) {
+  <app-loading-spinner mensaje="Cargando lotes..." />
+} @else if (pendientes().length === 0) {
+  <p class="text-sm text-stone-400 text-center py-10">No hay lotes pendientes de control de calidad.</p>
+} @else {
+  <div class="bg-white rounded-xl border border-stone-200 overflow-hidden max-w-3xl">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-stone-500 border-b border-stone-200 bg-stone-50">
+          <th class="py-2.5 px-4 font-medium">Lote</th>
+          <th class="py-2.5 px-4 font-medium">Semilla / Variedad</th>
+          <th class="py-2.5 px-4 font-medium">Etapa</th>
+          <th class="py-2.5 px-4 font-medium"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of pendientes(); track item.lote.id_lote) {
+          <tr class="border-b border-stone-100 last:border-0">
+            <td class="py-2.5 px-4 font-medium">{{ item.lote.nro_lote }}</td>
+            <td class="py-2.5 px-4">{{ item.lote.tipo_semilla.nombre_semilla }} / {{ item.lote.tipo_semilla.variante_semilla }}</td>
+            <td class="py-2.5 px-4 capitalize">CC {{ item.etapa }}</td>
+            <td class="py-2.5 px-4 text-right">
+              <a
+                [routerLink]="['/calidad/nuevo']"
+                [queryParams]="{ loteId: item.lote.id_lote }"
+                class="text-brand-700 hover:underline font-medium"
+              >
+                Controlar
+              </a>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

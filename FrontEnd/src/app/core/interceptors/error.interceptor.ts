@@ -16,7 +16,8 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
-      const mensaje = error.error?.message ?? 'Ocurrio un error inesperado. Intenta nuevamente.';
+      // El backend devuelve { error: '...' } (ver cualquier controller), no { message: '...' }.
+      const mensaje = error.error?.error ?? error.error?.message ?? 'Ocurrio un error inesperado. Intenta nuevamente.';
 
       if (error.status === 401) {
         notification.error('Tu sesion expiro. Inicia sesion nuevamente.');

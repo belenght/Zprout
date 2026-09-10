@@ -13,6 +13,18 @@
     </span>
   </div>
 
+  @if (necesitaCC(l.estado_actual)) {
+    <div class="mb-8">
+      <a
+        [routerLink]="['/calidad/nuevo']"
+        [queryParams]="{ loteId: l.id_lote }"
+        class="inline-block rounded-md bg-brand-700 text-white text-sm font-semibold px-4 py-2 hover:bg-brand-800 transition-colors"
+      >
+        Registrar Control de Calidad →
+      </a>
+    </div>
+  }
+
   <!-- Historial de estados: lectura de mejor esfuerzo sobre Estado real,
        no es el stepper de 8 pasos de la GUI-06 (el backend no lo modela asi). -->
   @if (historialEstados().length > 0) {

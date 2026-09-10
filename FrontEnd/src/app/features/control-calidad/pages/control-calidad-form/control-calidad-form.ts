@@ -1,20 +1,22 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 
 import { ControlCalidadService } from '../../services/control-calidad.service';
-import { ControlCalidadPayload } from '../../models/control-calidad.model';
+import { ControlCalidadLotePayload, RangoRespuesta, TipoControlCalidad } from '../../models/control-calidad.model';
 import { LoteService } from '../../../lote/services/lote.service';
 import { Lote } from '../../../lote/models/lote.model';
-import { TipoSemillaService } from '../../../tipo-semilla/services/tipo-semilla.service';
-import { TipoSemilla } from '../../../tipo-semilla/models/tipo-semilla.model';
-import { EstadoService } from '../../../estado/services/estado.service';
 import { NotificationService } from '../../../../core/services/notification.service';
 import {
   ViolacionRango,
   etiquetaCampoCalidad,
   rangoCalidadValidator
 } from '../../../../shared/validators/range.validator';
+
+// Estados de Lote sobre los que ya no tiene sentido registrar un CC (ver
+// estado_nombres.ts del backend): son estados terminales para el lote.
+const ESTADOS_SIN_CC = ['No apto', 'Venta como grano', 'Descarte'];
 
 @Component({
   selector: 'app-control-calidad-form',
@@ -26,102 +28,127 @@ export class ControlCalidadFormComponent implements OnInit {
   private fb = inject(FormBuilder);
   private service = inject(ControlCalidadService);
   private loteService = inject(LoteService);
-  private tipoSemillaService = inject(TipoSemillaService);
-  private estadoService = inject(EstadoService);
   private notification = inject(NotificationService);
+  private route = inject(ActivatedRoute);
   private router = inject(Router);
 
   lotes = signal<Lote[]>([]);
-  tipoSemillaSeleccionada = signal<TipoSemilla | null>(null);
+  loteSeleccionado = signal<Lote | null>(null);
+  enviando = signal(false);
 
-  // Bandera separada del estado "invalid" del form: solo se muestra la tarjeta
-  // de alerta una vez que el usuario intento enviar, no mientras esta tipeando.
-  mostrarAlertaFueraDeRango = signal(false);
+  // Tarjeta de "parametros fuera de rango" (variante de GUI-07). Se llena
+  // recien cuando el backend responde 409 con fuera_de_rango: true.
+  rangosFueraDeRango = signal<RangoRespuesta['rangos'] | null>(null);
   etiquetaCampo = etiquetaCampoCalidad;
 
   form = this.fb.group(
     {
-      nro_lote: this.fb.control<number | null>(null, Validators.required),
+      lote_id: this.fb.control<number | null>(null, Validators.required),
+      tipo_control: this.fb.nonNullable.control<Extract<TipoControlCalidad, 'inicial' | 'intermedio'>>('inicial', Validators.required),
       humedad: this.fb.control<number | null>(null, Validators.required),
       poder_germinativo: this.fb.control<number | null>(null, Validators.required),
       nivel_de_pureza: this.fb.control<number | null>(null, Validators.required),
-      descripcion: this.fb.control('')
+      descripcion: this.fb.nonNullable.control('')
     },
-    { validators: rangoCalidadValidator(() => this.tipoSemillaSeleccionada()) }
+    { validators: rangoCalidadValidator(() => this.loteSeleccionado()?.tipo_semilla ?? null) }
   );
 
-  violaciones = computed<ViolacionRango[]>(() => (this.form.errors?.['rangoCalidad'] as ViolacionRango[]) ?? []);
+  // Alerta local (front) por rango, ANTES de mandar nada al backend.
+  // El backend igual vuelve a validar (409) — esto es solo para feedback inmediato.
+  violacionesLocales = computed<ViolacionRango[]>(() => (this.form.errors?.['rangoCalidad'] as ViolacionRango[]) ?? []);
+  mostrarAlertaLocal = signal(false);
 
   ngOnInit(): void {
     this.loteService.cargarLotes();
-    this.loteService.lotes$.subscribe((lotes) => this.lotes.set(lotes));
+    this.loteService.lotes$.subscribe((lotes) =>
+      this.lotes.set(lotes.filter((l) => !ESTADOS_SIN_CC.includes(l.estado_actual ?? '')))
+    );
 
-    this.form.controls.nro_lote.valueChanges.subscribe((nroLote) => {
-      this.mostrarAlertaFueraDeRango.set(false);
-      if (nroLote == null) {
-        this.tipoSemillaSeleccionada.set(null);
-        return;
-      }
-      this.loteService.getById(nroLote).subscribe((lote) => {
-        this.tipoSemillaSeleccionada.set(lote.tipo_semilla);
-        this.form.updateValueAndValidity();
-      });
+    this.form.controls.lote_id.valueChanges.subscribe((idLote) => {
+      this.mostrarAlertaLocal.set(false);
+      this.rangosFueraDeRango.set(null);
+      const lote = this.lotes().find((l) => l.id_lote === idLote) ?? null;
+      this.loteSeleccionado.set(lote);
+      // "Pendiente CC" -> todavia no tuvo ningun control -> inicial.
+      // Cualquier otro estado activo -> ya paso el inicial -> intermedio.
+      this.form.controls.tipo_control.setValue(lote?.estado_actual === 'Pendiente CC' ? 'inicial' : 'intermedio');
+      this.form.updateValueAndValidity();
     });
+
+    // Si se llega desde la Bandeja de Calidad (GUI-14) con el lote precargado.
+    const loteIdParam = this.route.snapshot.queryParamMap.get('loteId');
+    if (loteIdParam) {
+      this.form.controls.lote_id.setValue(Number(loteIdParam));
+    }
   }
 
   intentarGuardar(): void {
     this.form.markAllAsTouched();
-
-    if (this.form.getRawValue().nro_lote == null || this.form.controls.humedad.invalid) {
+    if (this.form.controls.lote_id.invalid || this.form.controls.humedad.invalid) {
       return;
     }
 
-    if (this.violaciones().length > 0) {
-      this.mostrarAlertaFueraDeRango.set(true);
+    if (this.violacionesLocales().length > 0) {
+      this.mostrarAlertaLocal.set(true);
       return;
     }
 
-    this.guardarControl('Apto');
+    this.registrar(false);
+  }
+
+  cancelar(): void {
+    this.router.navigate(['/lotes']);
+  }
+
+  tieneViolacion(campo: ViolacionRango['campo']): boolean {
+    return this.violacionesLocales().some((v) => v.campo === campo);
+  }
+
+  campoClase(campo: ViolacionRango['campo']): string {
+    return this.mostrarAlertaLocal() && this.tieneViolacion(campo)
+      ? 'border-red-400 focus:ring-red-400'
+      : 'border-stone-300 focus:ring-brand-600';
   }
 
   corregirDatos(): void {
-    this.mostrarAlertaFueraDeRango.set(false);
-    this.form.reset({ nro_lote: this.form.controls.nro_lote.value });
+    this.mostrarAlertaLocal.set(false);
+    this.rangosFueraDeRango.set(null);
   }
 
   confirmarNoApto(): void {
-    this.guardarControl('No Apto');
+    this.registrar(true);
   }
 
-  private guardarControl(resultado: 'Apto' | 'No Apto'): void {
+  private registrar(confirmarNoApto: boolean): void {
     const valores = this.form.getRawValue();
 
-    const payload: ControlCalidadPayload = {
-      nro_lote: valores.nro_lote,
-      nro_partida: null,
-      fecha: new Date().toISOString(),
+    const payload: ControlCalidadLotePayload = {
+      lote_id: valores.lote_id as number,
+      tipo_control: valores.tipo_control,
       humedad: valores.humedad as number,
       poder_germinativo: valores.poder_germinativo as number,
       nivel_de_pureza: valores.nivel_de_pureza as number,
-      tipo_control: 'Inicial',
-      descripcion: valores.descripcion || null
+      descripcion: valores.descripcion || undefined,
+      confirmar_no_apto: confirmarNoApto || undefined
     };
 
-    this.service.create(payload).subscribe(() => {
-      if (resultado === 'No Apto' && valores.nro_lote != null) {
-        // TODO(modulo Calidad, tarea aparte): esto todavia no pega contra el
-        // backend real. Estado no tiene endpoint de escritura (ver
-        // estado.controller.ts) -- el cambio de estado lo dispara el propio
-        // backend a traves de cambiarEstado() cuando se registra el CC en
-        // /api/controles-calidad/lote, no una llamada aparte desde el front.
-        this.notification.success('Control registrado. El lote quedo marcado como No Apto.');
-        // TODO: redirigir al flujo de "definir destino fisico" (Venta como grano / Descarte)
-        // cuando ese modulo exista.
-      } else {
-        this.notification.success('Control de calidad registrado. Lote apto.');
+    this.enviando.set(true);
+    this.service.registrarSobreLote(payload).subscribe({
+      next: () => {
+        this.enviando.set(false);
+        this.notification.success(
+          confirmarNoApto ? 'Control registrado. El lote quedó marcado como No Apto.' : 'Control de calidad registrado. Lote apto.'
+        );
+        this.router.navigate(['/lotes', 'detalle', payload.lote_id]);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.enviando.set(false);
+        // Variante de GUI-07: 409 con los rangos reales del TipoDeSemilla.
+        if (err.status === 409 && err.error?.fuera_de_rango) {
+          this.mostrarAlertaLocal.set(true);
+          this.rangosFueraDeRango.set((err.error as RangoRespuesta).rangos);
+        }
       }
-
-      this.router.navigate(['/lotes']);
     });
   }
 }
