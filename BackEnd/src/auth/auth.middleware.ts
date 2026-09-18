@@ -3,9 +3,11 @@ import jwt from 'jsonwebtoken';
 import { getJwtSecret, JwtPayload } from './auth.service.js';
 
 // Permite colgar el usuario autenticado en req.usuario sin castear en cada handler.
-declare module 'express-serve-static-core' {
-  interface Request {
-    usuario?: JwtPayload;
+declare global {
+  namespace Express {
+    interface Request {
+      usuario?: JwtPayload;
+    }
   }
 }
 
