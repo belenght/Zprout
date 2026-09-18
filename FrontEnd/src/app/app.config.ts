@@ -1,17 +1,18 @@
-import { ApplicationConfig, provideZonelessChangeDetection } from '@angular/core';
+import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
+import { provideAnimations } from '@angular/platform-browser/animations';
+import { provideToastr } from 'ngx-toastr';
 
 import { routes } from './app.routes';
-import { errorInterceptor } from './core/interceptors/error.interceptor';
-import { authInterceptor } from './core/interceptors/auth.interceptor';
+import { authInterceptor } from './interceptors/auth.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideZonelessChangeDetection(),
+    provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
-    provideAnimationsAsync(),
-    provideHttpClient(withInterceptors([authInterceptor, errorInterceptor]))
-  ]
+    provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
+    provideAnimations(),
+    provideToastr(),
+  ],
 };

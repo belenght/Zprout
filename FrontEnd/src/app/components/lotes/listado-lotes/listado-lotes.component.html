@@ -1,0 +1,56 @@
+<div class="container mt-4">
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h4 class="m-0">Gestion de Lotes</h4>
+      <a routerLink="/lotes/nuevo" class="btn btn-light btn-sm">
+        <i class="bi bi-plus-lg"></i> Nuevo Lote
+      </a>
+    </div>
+
+    <div *ngIf="errorMessage" class="alert alert-danger m-3">{{ errorMessage }}</div>
+
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead>
+            <tr>
+              <th>Nro Lote</th>
+              <th>Semilla / Variedad</th>
+              <th>Origen</th>
+              <th>Cantidad (tn)</th>
+              <th>Fecha ingreso</th>
+              <th>Estado</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let lote of lotes">
+              <td>{{ lote.nro_lote }}</td>
+              <td>
+                <ng-container *ngIf="lote.tipo_semilla && $any(lote.tipo_semilla).nombre_semilla">
+                  {{ $any(lote.tipo_semilla).nombre_semilla }} / {{ $any(lote.tipo_semilla).variante_semilla }}
+                </ng-container>
+              </td>
+              <td>
+                <span class="badge" [class.text-bg-success]="lote.origen_semilla === 'propio'" [class.text-bg-warning]="lote.origen_semilla === 'externo'">
+                  {{ lote.origen_semilla }}
+                </span>
+              </td>
+              <td>{{ lote.cantidad_semillas_en_tn }}</td>
+              <td>{{ lote.fecha_ingreso | date: 'dd/MM/yyyy' }}</td>
+              <td><span class="badge text-bg-info">{{ lote.estado_actual || 'Sin estado' }}</span></td>
+              <td>
+                <a [routerLink]="['/lotes', lote.id_lote]" class="btn btn-primary btn-sm">
+                  <i class="bi bi-eye"></i> Ver
+                </a>
+              </td>
+            </tr>
+            <tr *ngIf="!cargando && lotes.length === 0">
+              <td colspan="7" class="text-center text-muted py-4">No hay lotes registrados todavia.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

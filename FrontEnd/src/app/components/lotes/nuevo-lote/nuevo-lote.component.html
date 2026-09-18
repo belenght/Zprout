@@ -1,0 +1,82 @@
+<div class="container mt-4">
+  <div class="card">
+    <div class="card-header">
+      <h4 class="m-0">Registrar ingreso de lote</h4>
+    </div>
+
+    <div class="card-body">
+      <form [formGroup]="form" (ngSubmit)="registrarIngreso()">
+
+        <div class="mb-3">
+          <label class="form-label d-block">Origen del lote</label>
+          <div class="btn-group w-100" role="group">
+            <input type="radio" class="btn-check" id="origenPropio" value="propio" formControlName="origen_semilla">
+            <label class="btn btn-outline-success" for="origenPropio">Produccion propia</label>
+
+            <input type="radio" class="btn-check" id="origenExterno" value="externo" formControlName="origen_semilla">
+            <label class="btn btn-outline-warning" for="origenExterno">Externo</label>
+          </div>
+        </div>
+
+        <div class="alert alert-warning" *ngIf="esExterno">
+          <i class="bi bi-exclamation-triangle"></i>
+          El CC inicial se considera automaticamente aprobado. El lote saltea
+          limpieza y curado (solo pasa por el CC final de rutina).
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="tipo_semilla_id" class="form-label">Cultivo / Variedad</label>
+            <select id="tipo_semilla_id" class="form-select" formControlName="tipo_semilla_id">
+              <option [ngValue]="null" disabled>Seleccionar...</option>
+              <option *ngFor="let ts of tiposSemilla" [ngValue]="ts.id_semilla">
+                {{ ts.nombre_semilla }} / {{ ts.variante_semilla }}
+              </option>
+            </select>
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label for="cantidad_semillas_en_tn" class="form-label">Cantidad ingresada (tn)</label>
+            <input type="number" step="0.01" id="cantidad_semillas_en_tn" class="form-control" formControlName="cantidad_semillas_en_tn">
+          </div>
+        </div>
+
+        <div class="mb-3" *ngIf="!esExterno">
+          <label for="campo_id" class="form-label">Campo de procedencia</label>
+          <select id="campo_id" class="form-select" formControlName="campo_id">
+            <option [ngValue]="null" disabled>Seleccionar...</option>
+            <option *ngFor="let c of campos" [ngValue]="c.id_campo">{{ c.nro_campo }} - {{ c.ubicacion }}</option>
+          </select>
+        </div>
+
+        <ng-container *ngIf="esExterno">
+          <div class="mb-3">
+            <label for="proveedor_id" class="form-label">Proveedor externo</label>
+            <select id="proveedor_id" class="form-select" formControlName="proveedor_id">
+              <option [ngValue]="null" disabled>Seleccionar...</option>
+              <option *ngFor="let p of proveedores" [ngValue]="p.id_proveedor">{{ p.razon_social }}</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label for="informe_calidad_externo" class="form-label">Informe de calidad del proveedor (URL/referencia)</label>
+            <input type="text" id="informe_calidad_externo" class="form-control" formControlName="informe_calidad_externo" placeholder="Ej: link al PDF adjunto">
+          </div>
+        </ng-container>
+
+        <div class="mb-3">
+          <label for="observaciones" class="form-label">Observaciones</label>
+          <textarea id="observaciones" class="form-control" rows="2" formControlName="observaciones"></textarea>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary" [disabled]="guardando">
+            <span *ngIf="guardando" class="spinner-border spinner-border-sm me-2"></span>
+            <i class="bi bi-check-lg"></i> Registrar ingreso
+          </button>
+          <a routerLink="/lotes" class="btn btn-outline-secondary">Cancelar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

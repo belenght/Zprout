@@ -1,9 +1,19 @@
 import type { Request, Response } from 'express';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import { getEM } from '../shared/db/orm.js';
 import { Usuario } from './usuario.entity.js';
 import { Rol } from '../rol/rol.entity.js';
-// NOTA: falta agregar hashing real de password (ej. bcrypt) antes de produccion.
-// Se deja "password" en texto plano aca solo a nivel de estructura del controller.
+
+const SALT_ROUNDS = 10;
+
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET no esta configurado en las variables de entorno');
+  }
+  return secret;
+}
 
 export async function listarUsuarios(req: Request, res: Response) {
   const em = getEM();
@@ -38,12 +48,16 @@ export async function crearUsuario(req: Request, res: Response) {
     if (!rol) return res.status(404).json({ error: 'Rol no encontrado' });
   }
 
+  const passwordHasheada = await bcrypt.hash(password, SALT_ROUNDS);
+
   const usuario = em.create(Usuario, {
-    nombre, apellido, nombre_usuario, email, password, fecha_nacimiento, rol,
+    nombre, apellido, nombre_usuario, email, password: passwordHasheada, fecha_nacimiento, rol,
   });
   em.persist(usuario);
   await em.flush();
-  res.status(201).json(usuario);
+
+  const { password: _omit, ...usuarioSinPassword } = usuario;
+  res.status(201).json(usuarioSinPassword);
 }
 
 export async function actualizarUsuario(req: Request, res: Response) {
@@ -51,7 +65,12 @@ export async function actualizarUsuario(req: Request, res: Response) {
   const usuario = await em.findOne(Usuario, { id_usuario: Number(req.params.id), deleted_at: null });
   if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
 
-  em.assign(usuario, req.body);
+  const cambios = { ...req.body };
+  if (cambios.password) {
+    cambios.password = await bcrypt.hash(cambios.password, SALT_ROUNDS);
+  }
+
+  em.assign(usuario, cambios);
   await em.flush();
   res.json(usuario);
 }
@@ -66,7 +85,12 @@ export async function eliminarUsuario(req: Request, res: Response) {
   res.status(204).send();
 }
 
-// Login basico (GUI-01). Reemplazar comparacion de password por bcrypt.compare en produccion.
+/**
+ * Login (GUI-01). Verifica password con bcrypt y devuelve un JWT firmado con
+ * { id_usuario, nombre_usuario, rol } en el payload. El rol viaja como el
+ * desc_rol textual (ej. "administrador"), no el id, porque es lo que el
+ * RoleGuard del front compara contra route.data['roles'].
+ */
 export async function login(req: Request, res: Response) {
   const em = getEM();
   const { nombre_usuario, password } = req.body;
@@ -79,9 +103,25 @@ export async function login(req: Request, res: Response) {
     { nombre_usuario, activo: true, deleted_at: null },
     { populate: ['rol'] },
   );
-  if (!usuario || usuario.password !== password) {
+  if (!usuario) {
     return res.status(401).json({ error: 'Credenciales invalidas' });
   }
 
-  res.json({ id_usuario: usuario.id_usuario, nombre: usuario.nombre, rol: usuario.rol });
+  const passwordValida = await bcrypt.compare(password, usuario.password);
+  if (!passwordValida) {
+    return res.status(401).json({ error: 'Credenciales invalidas' });
+  }
+
+  const token = jwt.sign(
+    {
+      id_usuario: usuario.id_usuario,
+      nombre_usuario: usuario.nombre_usuario,
+      nombre: usuario.nombre,
+      rol: usuario.rol?.desc_rol ?? null,
+    },
+    getJwtSecret(),
+    { expiresIn: '8h' },
+  );
+
+  res.json({ token });
 }

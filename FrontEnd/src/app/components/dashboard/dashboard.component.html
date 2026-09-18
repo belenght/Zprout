@@ -1,0 +1,86 @@
+<div class="container mt-4">
+  <div class="alert alert-success d-flex align-items-center" role="alert">
+    <i class="bi bi-flower1 fs-4 me-2"></i>
+    <div>Buenos dias, {{ nombreUsuario }}</div>
+  </div>
+
+  <div *ngIf="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card text-bg-primary h-100">
+        <div class="card-body">
+          <div class="fw-bold">Lotes activos</div>
+          <div class="fs-2">{{ cargando ? '...' : cantidadLotesActivos }}</div>
+          <small>en proceso</small>
+        </div>
+      </div>
+    </div>
+
+    <!--
+      Los siguientes indicadores del CUU08 (pendientes CC, para curar, stock
+      curado) dependen de los modulos de Control de Calidad y Curado, que
+      todavia no estan implementados en el front. Se agregan placeholders
+      para que quede claro que faltan, no que se rompio algo.
+    -->
+    <div class="col-md-3">
+      <div class="card text-bg-secondary h-100">
+        <div class="card-body">
+          <div class="fw-bold">Pendientes CC</div>
+          <div class="fs-2">—</div>
+          <small>modulo Calidad pendiente</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-bg-secondary h-100">
+        <div class="card-body">
+          <div class="fw-bold">Para curar</div>
+          <div class="fs-2">—</div>
+          <small>modulo Curado pendiente</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-bg-secondary h-100">
+        <div class="card-body">
+          <div class="fw-bold">Stock curado</div>
+          <div class="fs-2">—</div>
+          <small>modulo Curado pendiente</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span>Ultimos lotes ingresados</span>
+      <a routerLink="/lotes" class="btn btn-sm btn-outline-light">Ver todos</a>
+    </div>
+    <div class="card-body p-0">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Nro Lote</th>
+            <th>Origen</th>
+            <th>Cantidad (tn)</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let lote of ultimosLotes" [routerLink]="['/lotes', lote.id_lote]" style="cursor: pointer;">
+            <td>{{ lote.nro_lote }}</td>
+            <td>{{ lote.origen_semilla }}</td>
+            <td>{{ lote.cantidad_semillas_en_tn }}</td>
+            <td>
+              <span class="badge text-bg-info">{{ lote.estado_actual || 'Sin estado' }}</span>
+            </td>
+          </tr>
+          <tr *ngIf="!cargando && ultimosLotes.length === 0">
+            <td colspan="4" class="text-center text-muted py-3">No hay lotes registrados todavia.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

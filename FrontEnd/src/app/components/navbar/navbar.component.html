@@ -1,0 +1,43 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark px-3" *ngIf="autenticado">
+  <a class="navbar-brand" routerLink="/">
+    <i class="bi bi-flower1"></i> Zprout
+  </a>
+
+  <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="navMenu">
+    <ul class="navbar-nav me-auto">
+      <li class="nav-item">
+        <a class="nav-link" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+          <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" routerLink="/lotes" routerLinkActive="active">
+          <i class="bi bi-boxes"></i> Lotes
+        </a>
+      </li>
+      <!--
+        Los siguientes modulos todavia no estan implementados en el front
+        (si o si dependen de sus propios services/componentes):
+        Calidad, Curado, Almacen, Pedidos, Reportes.
+        Se agregan ac cada uno se vaya construyendo.
+      -->
+    </ul>
+
+    <ul class="navbar-nav">
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+          <i class="bi bi-person-circle"></i> {{ nombre }} <small class="text-muted">({{ rol }})</small>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><a class="dropdown-item" href="#" (click)="logout()">
+            <i class="bi bi-box-arrow-right"></i> Cerrar sesion
+          </a></li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</nav>
