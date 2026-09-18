@@ -9,7 +9,9 @@ import { MikroORM } from '@mikro-orm/core';
 import { initORM, syncSchema } from './shared/db/orm.js';
 
 import { rolRouter } from './rol/rol.routes.js';
-import { usuarioRouter, authRouter } from './usuario/usuario.routes.js';
+import { usuarioRouter } from './usuario/usuario.routes.js';
+import { authRouter } from './auth/auth.routes.js';
+import { verificarToken } from './auth/auth.middleware.js';
 import { campoRouter } from './campo/campo.routes.js';
 import { proveedorRouter } from './proveedor/proveedor.routes.js';
 import { tipoSemillaRouter } from './tipo_semilla/tipo_semilla.routes.js';
@@ -76,7 +78,10 @@ app.get('/api/health', (req, res) => {
 });
 
 // --- Auth / Usuario ---
+// /api/auth es publico (login). A partir de aca, todo pide token valido.
 app.use('/api/auth', authRouter);
+app.use(verificarToken);
+
 app.use('/api/usuarios', usuarioRouter);
 
 // --- Catalogos ---
