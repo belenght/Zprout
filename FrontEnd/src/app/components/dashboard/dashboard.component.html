@@ -1,5 +1,5 @@
 <div class="mx-auto max-w-6xl px-4 py-6">
-  <div class="mb-4 flex items-center gap-2 rounded-md border border-brand-200 bg-brand-50 p-3 text-brand-900">
+  <div class="mb-6 flex items-center gap-2 rounded-lg border border-brand-200 bg-brand-50 p-4 text-brand-900">
     <i class="bi bi-flower1 text-xl text-brand-600"></i>
     <div>Buenos dias, {{ nombreUsuario }}</div>
   </div>
@@ -7,10 +7,13 @@
   <div *ngIf="errorMessage" class="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-red-700">{{ errorMessage }}</div>
 
   <div class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-    <div class="rounded-lg bg-brand-700 p-4 text-white">
-      <div class="font-semibold">Lotes activos</div>
-      <div class="text-3xl">{{ cargando ? '...' : cantidadLotesActivos }}</div>
-      <small class="text-brand-100">en proceso</small>
+    <div class="rounded-xl border border-brand-100 bg-white p-5">
+      <div class="mb-2 flex items-center gap-2">
+        <span class="h-2.5 w-2.5 rounded-sm bg-brand-700"></span>
+        <span class="text-sm font-semibold text-brand-900">Lotes Activos</span>
+      </div>
+      <div class="text-3xl font-bold text-brand-800">{{ cargando ? '...' : cantidadLotesActivos }}</div>
+      <div class="text-xs text-gray-400">en proceso</div>
     </div>
 
     <!--
@@ -19,26 +22,35 @@
       todavia no estan implementados en el front. Se agregan placeholders
       para que quede claro que faltan, no que se rompio algo.
     -->
-    <div class="rounded-lg bg-brand-100 p-4 text-brand-900">
-      <div class="font-semibold">Pendientes CC</div>
-      <div class="text-3xl">—</div>
-      <small class="text-brand-600">modulo Calidad pendiente</small>
+    <div class="rounded-xl border border-brand-100 bg-white p-5">
+      <div class="mb-2 flex items-center gap-2">
+        <span class="h-2.5 w-2.5 rounded-sm bg-gold-500"></span>
+        <span class="text-sm font-semibold text-brand-900">Pendientes CC</span>
+      </div>
+      <div class="text-3xl font-bold text-gray-400">—</div>
+      <div class="text-xs text-gray-400">modulo Calidad pendiente</div>
     </div>
-    <div class="rounded-lg bg-brand-100 p-4 text-brand-900">
-      <div class="font-semibold">Para curar</div>
-      <div class="text-3xl">—</div>
-      <small class="text-brand-600">modulo Curado pendiente</small>
+    <div class="rounded-xl border border-brand-100 bg-white p-5">
+      <div class="mb-2 flex items-center gap-2">
+        <span class="h-2.5 w-2.5 rounded-sm bg-brand-400"></span>
+        <span class="text-sm font-semibold text-brand-900">Para curar</span>
+      </div>
+      <div class="text-3xl font-bold text-gray-400">—</div>
+      <div class="text-xs text-gray-400">modulo Curado pendiente</div>
     </div>
-    <div class="rounded-lg bg-brand-100 p-4 text-brand-900">
-      <div class="font-semibold">Stock curado</div>
-      <div class="text-3xl">—</div>
-      <small class="text-brand-600">modulo Curado pendiente</small>
+    <div class="rounded-xl border border-brand-100 bg-white p-5">
+      <div class="mb-2 flex items-center gap-2">
+        <span class="h-2.5 w-2.5 rounded-sm bg-brand-900"></span>
+        <span class="text-sm font-semibold text-brand-900">Stock curado</span>
+      </div>
+      <div class="text-3xl font-bold text-gray-400">—</div>
+      <div class="text-xs text-gray-400">modulo Curado pendiente</div>
     </div>
   </div>
 
-  <div class="overflow-hidden rounded-lg border border-brand-100">
+  <div class="overflow-hidden rounded-xl border border-brand-100">
     <div class="flex items-center justify-between bg-brand-900 px-4 py-3 text-white">
-      <span>Ultimos lotes ingresados</span>
+      <span class="font-medium">Ultimos lotes ingresados</span>
       <a routerLink="/lotes" class="rounded-md border border-white/40 px-3 py-1 text-sm hover:bg-white/10">Ver todos</a>
     </div>
     <table class="w-full text-sm">
@@ -56,7 +68,9 @@
           <td class="px-4 py-2">{{ lote.origen_semilla }}</td>
           <td class="px-4 py-2">{{ lote.cantidad_semillas_en_tn }}</td>
           <td class="px-4 py-2">
-            <span class="rounded-full bg-brand-100 px-2 py-0.5 text-xs text-brand-800">{{ lote.estado_actual || 'Sin estado' }}</span>
+            <span class="rounded-full px-2 py-0.5 text-xs" [ngClass]="claseBadgeEstado(lote.estado_actual)">
+              {{ lote.estado_actual || 'Sin estado' }}
+            </span>
           </td>
         </tr>
         <tr *ngIf="!cargando && ultimosLotes.length === 0">

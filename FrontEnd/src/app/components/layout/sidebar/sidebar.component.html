@@ -1,0 +1,25 @@
+<aside *ngIf="autenticado" class="hidden w-56 shrink-0 border-r border-brand-100 bg-white px-3 py-4 sm:block">
+  <nav class="space-y-1">
+    <ng-container *ngFor="let item of items">
+      <a
+        *ngIf="item.ruta"
+        [routerLink]="item.ruta"
+        routerLinkActive="bg-brand-700 text-white"
+        [routerLinkActiveOptions]="{ exact: item.ruta === '/' }"
+        class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-brand-900 hover:bg-brand-50"
+      >
+        <i class="bi {{ item.icono }}"></i>
+        {{ item.label }}
+      </a>
+
+      <span
+        *ngIf="!item.ruta"
+        title="Todavía no implementado"
+        class="flex cursor-not-allowed items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-gray-300"
+      >
+        <i class="bi {{ item.icono }}"></i>
+        {{ item.label }}
+      </span>
+    </ng-container>
+  </nav>
+</aside>

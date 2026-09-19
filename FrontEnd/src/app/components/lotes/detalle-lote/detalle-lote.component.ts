@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { LoteService } from '../../../services/lote.service';
 import { Lote } from '../../../interfaces/lote';
+import { claseBadgeEstado } from '../../../shared/estado-badge';
 
 @Component({
   selector: 'app-detalle-lote',
@@ -17,6 +18,8 @@ export class DetalleLoteComponent implements OnInit {
   errorMessage: string | null = null;
 
   constructor(private route: ActivatedRoute, private loteService: LoteService) {}
+
+  claseBadgeEstado = claseBadgeEstado;
 
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));

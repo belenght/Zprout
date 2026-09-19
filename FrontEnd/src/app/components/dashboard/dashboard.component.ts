@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { LoteService } from '../../services/lote.service';
 import { AuthService } from '../../services/auth.service';
 import { Lote } from '../../interfaces/lote';
+import { claseBadgeEstado } from '../../shared/estado-badge';
 
 @Component({
   selector: 'app-dashboard',
@@ -20,6 +21,8 @@ export class DashboardComponent implements OnInit {
   errorMessage: string | null = null;
 
   constructor(private loteService: LoteService, private authService: AuthService) {}
+
+  claseBadgeEstado = claseBadgeEstado;
 
   ngOnInit(): void {
     this.nombreUsuario = this.authService.getUserName() ?? '';

@@ -1,20 +1,20 @@
 <div class="mx-auto max-w-4xl px-4 py-6" *ngIf="lote">
-  <div class="rounded-lg border border-brand-100">
+  <div class="overflow-hidden rounded-xl border border-brand-100">
     <div class="flex items-center justify-between bg-brand-900 px-4 py-3 text-white">
       <h4 class="m-0 font-display text-lg">{{ lote.nro_lote }} — {{ nombreSemilla }}</h4>
-      <span class="rounded-full bg-white/10 px-3 py-1 text-sm">{{ lote.estado_actual || 'Sin estado' }}</span>
+      <span class="rounded-full px-3 py-1 text-sm" [ngClass]="claseBadgeEstado(lote.estado_actual)">
+        {{ lote.estado_actual || 'Sin estado' }}
+      </span>
     </div>
 
     <div class="p-4">
-      <div>
+      <div class="rounded-lg border border-brand-100 bg-white p-4">
         <h6 class="mb-2 font-semibold text-brand-900">Datos del lote</h6>
         <p class="mb-1 text-sm"><strong>Origen:</strong> {{ origenTexto }}</p>
         <p class="mb-1 text-sm"><strong>Cantidad ingresada:</strong> {{ lote.cantidad_semillas_en_tn }} tn</p>
         <p class="mb-1 text-sm"><strong>Fecha de ingreso:</strong> {{ lote.fecha_ingreso | date: 'dd/MM/yyyy' }}</p>
         <p class="mb-1 text-sm" *ngIf="lote.observaciones"><strong>Observaciones:</strong> {{ lote.observaciones }}</p>
       </div>
-
-      <hr class="my-4 border-brand-100">
 
       <!--
         Los botones de accion (Registrar Control de Calidad, Registrar
@@ -23,7 +23,7 @@
         construya cada uno (siguiendo la nota de GUI-06: el boton correcto
         depende del estado_actual del lote).
       -->
-      <div class="mb-4 flex items-start gap-2 rounded-md border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600">
+      <div class="my-4 flex items-start gap-2 rounded-md border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600">
         <i class="bi bi-info-circle mt-0.5"></i>
         <span>Las acciones de Control de Calidad, Limpieza y Curado se habilitan
         a medida que se implementen esos modulos en el front.</span>
