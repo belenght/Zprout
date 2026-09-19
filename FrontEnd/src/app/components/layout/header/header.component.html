@@ -1,4 +1,4 @@
-<header *ngIf="autenticado" class="sticky top-0 z-20 flex h-16 items-center justify-between bg-brand-900 px-6 text-white">
+<header *ngIf="autenticado$ | async" class="sticky top-0 z-20 flex h-16 items-center justify-between bg-brand-900 px-6 text-white">
   <a routerLink="/" class="font-display text-xl">
     <span class="text-gold-500">Z</span>prout
   </a>

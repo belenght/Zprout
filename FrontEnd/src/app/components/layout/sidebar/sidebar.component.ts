@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { Observable } from 'rxjs';
 import { AuthStateService } from '../../../services/auth-state.service';
 
 interface ItemNav {
@@ -16,8 +17,11 @@ interface ItemNav {
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.css'
 })
-export class SidebarComponent implements OnInit {
-  autenticado = false;
+export class SidebarComponent {
+  // Ver el comentario en header.component.ts: se expone el observable
+  // directo para usarlo con el pipe async en el template, en vez de una
+  // variable booleana actualizada a mano dentro de un subscribe manual.
+  autenticado$: Observable<boolean>;
 
   // Se listan todos los modulos del dominio (ver GUI, indice de pantallas)
   // aunque todavia no todos tengan componente propio en el front; los que
@@ -32,11 +36,7 @@ export class SidebarComponent implements OnInit {
     { label: 'Reportes', icono: 'bi-graph-up' },
   ];
 
-  constructor(private authStateService: AuthStateService) {}
-
-  ngOnInit(): void {
-    this.authStateService.authState$.subscribe((isAuthenticated) => {
-      this.autenticado = isAuthenticated;
-    });
+  constructor(private authStateService: AuthStateService) {
+    this.autenticado$ = this.authStateService.authState$;
   }
 }

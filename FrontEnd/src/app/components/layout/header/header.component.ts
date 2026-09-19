@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
+import { Observable } from 'rxjs';
 import { AuthService } from '../../../services/auth.service';
 import { AuthStateService } from '../../../services/auth-state.service';
 
@@ -12,7 +13,11 @@ import { AuthStateService } from '../../../services/auth-state.service';
   styleUrl: './header.component.css'
 })
 export class HeaderComponent implements OnInit {
-  autenticado = false;
+  // Se expone el observable directo (en vez de una variable booleana que se
+  // pisa a mano dentro del subscribe) para que el *ngIf del template use
+  // el pipe async: async se encarga de marcar el componente para chequeo en
+  // cada emision, sin depender de que la mutacion manual dispare CD sola.
+  autenticado$: Observable<boolean>;
   nombre = '';
   rol = '';
   menuAbierto = false;
@@ -21,11 +26,12 @@ export class HeaderComponent implements OnInit {
     private authService: AuthService,
     private authStateService: AuthStateService,
     private router: Router
-  ) {}
+  ) {
+    this.autenticado$ = this.authStateService.authState$;
+  }
 
   ngOnInit(): void {
     this.authStateService.authState$.subscribe((isAuthenticated) => {
-      this.autenticado = isAuthenticated;
       if (isAuthenticated) {
         this.nombre = this.authService.getUserName() ?? '';
         this.rol = this.authService.getRole() ?? '';
