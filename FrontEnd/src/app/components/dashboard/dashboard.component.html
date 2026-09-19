@@ -1,20 +1,16 @@
-<div class="container mt-4">
-  <div class="alert alert-success d-flex align-items-center" role="alert">
-    <i class="bi bi-flower1 fs-4 me-2"></i>
+<div class="mx-auto max-w-6xl px-4 py-6">
+  <div class="mb-4 flex items-center gap-2 rounded-md border border-brand-200 bg-brand-50 p-3 text-brand-900">
+    <i class="bi bi-flower1 text-xl text-brand-600"></i>
     <div>Buenos dias, {{ nombreUsuario }}</div>
   </div>
 
-  <div *ngIf="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
+  <div *ngIf="errorMessage" class="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-red-700">{{ errorMessage }}</div>
 
-  <div class="row g-3 mb-4">
-    <div class="col-md-3">
-      <div class="card text-bg-primary h-100">
-        <div class="card-body">
-          <div class="fw-bold">Lotes activos</div>
-          <div class="fs-2">{{ cargando ? '...' : cantidadLotesActivos }}</div>
-          <small>en proceso</small>
-        </div>
-      </div>
+  <div class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="rounded-lg bg-brand-700 p-4 text-white">
+      <div class="font-semibold">Lotes activos</div>
+      <div class="text-3xl">{{ cargando ? '...' : cantidadLotesActivos }}</div>
+      <small class="text-brand-100">en proceso</small>
     </div>
 
     <!--
@@ -23,64 +19,50 @@
       todavia no estan implementados en el front. Se agregan placeholders
       para que quede claro que faltan, no que se rompio algo.
     -->
-    <div class="col-md-3">
-      <div class="card text-bg-secondary h-100">
-        <div class="card-body">
-          <div class="fw-bold">Pendientes CC</div>
-          <div class="fs-2">—</div>
-          <small>modulo Calidad pendiente</small>
-        </div>
-      </div>
+    <div class="rounded-lg bg-brand-100 p-4 text-brand-900">
+      <div class="font-semibold">Pendientes CC</div>
+      <div class="text-3xl">—</div>
+      <small class="text-brand-600">modulo Calidad pendiente</small>
     </div>
-    <div class="col-md-3">
-      <div class="card text-bg-secondary h-100">
-        <div class="card-body">
-          <div class="fw-bold">Para curar</div>
-          <div class="fs-2">—</div>
-          <small>modulo Curado pendiente</small>
-        </div>
-      </div>
+    <div class="rounded-lg bg-brand-100 p-4 text-brand-900">
+      <div class="font-semibold">Para curar</div>
+      <div class="text-3xl">—</div>
+      <small class="text-brand-600">modulo Curado pendiente</small>
     </div>
-    <div class="col-md-3">
-      <div class="card text-bg-secondary h-100">
-        <div class="card-body">
-          <div class="fw-bold">Stock curado</div>
-          <div class="fs-2">—</div>
-          <small>modulo Curado pendiente</small>
-        </div>
-      </div>
+    <div class="rounded-lg bg-brand-100 p-4 text-brand-900">
+      <div class="font-semibold">Stock curado</div>
+      <div class="text-3xl">—</div>
+      <small class="text-brand-600">modulo Curado pendiente</small>
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
+  <div class="overflow-hidden rounded-lg border border-brand-100">
+    <div class="flex items-center justify-between bg-brand-900 px-4 py-3 text-white">
       <span>Ultimos lotes ingresados</span>
-      <a routerLink="/lotes" class="btn btn-sm btn-outline-light">Ver todos</a>
+      <a routerLink="/lotes" class="rounded-md border border-white/40 px-3 py-1 text-sm hover:bg-white/10">Ver todos</a>
     </div>
-    <div class="card-body p-0">
-      <table class="table table-hover mb-0">
-        <thead>
-          <tr>
-            <th>Nro Lote</th>
-            <th>Origen</th>
-            <th>Cantidad (tn)</th>
-            <th>Estado</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let lote of ultimosLotes" [routerLink]="['/lotes', lote.id_lote]" style="cursor: pointer;">
-            <td>{{ lote.nro_lote }}</td>
-            <td>{{ lote.origen_semilla }}</td>
-            <td>{{ lote.cantidad_semillas_en_tn }}</td>
-            <td>
-              <span class="badge text-bg-info">{{ lote.estado_actual || 'Sin estado' }}</span>
-            </td>
-          </tr>
-          <tr *ngIf="!cargando && ultimosLotes.length === 0">
-            <td colspan="4" class="text-center text-muted py-3">No hay lotes registrados todavia.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <table class="w-full text-sm">
+      <thead class="border-b border-brand-100 text-left text-brand-900">
+        <tr>
+          <th class="px-4 py-2">Nro Lote</th>
+          <th class="px-4 py-2">Origen</th>
+          <th class="px-4 py-2">Cantidad (tn)</th>
+          <th class="px-4 py-2">Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let lote of ultimosLotes" [routerLink]="['/lotes', lote.id_lote]" class="cursor-pointer border-b border-brand-50 hover:bg-brand-50">
+          <td class="px-4 py-2">{{ lote.nro_lote }}</td>
+          <td class="px-4 py-2">{{ lote.origen_semilla }}</td>
+          <td class="px-4 py-2">{{ lote.cantidad_semillas_en_tn }}</td>
+          <td class="px-4 py-2">
+            <span class="rounded-full bg-brand-100 px-2 py-0.5 text-xs text-brand-800">{{ lote.estado_actual || 'Sin estado' }}</span>
+          </td>
+        </tr>
+        <tr *ngIf="!cargando && ultimosLotes.length === 0">
+          <td colspan="4" class="px-4 py-6 text-center text-gray-400">No hay lotes registrados todavia.</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </div>
