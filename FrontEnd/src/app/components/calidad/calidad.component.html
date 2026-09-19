@@ -1,0 +1,58 @@
+<div class="mx-auto max-w-6xl px-4 py-6">
+  <h4 class="mb-1 font-display text-xl text-brand-900">Bandeja de calidad</h4>
+  <p class="mb-6 text-sm italic text-gray-400">
+    Datos de ejemplo — falta conectar el service real contra /api/lotes/:id/controles-calidad y /api/controles-calidad.
+  </p>
+
+  <div class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <div class="rounded-xl border border-brand-100 bg-white p-5">
+      <div class="text-3xl font-bold text-brand-800">{{ pendientesInicial }}</div>
+      <div class="text-sm text-gray-500">Pendientes CC inicial</div>
+    </div>
+    <div class="rounded-xl border border-brand-100 bg-white p-5">
+      <div class="text-3xl font-bold text-brand-800">{{ pendientesIntermedio }}</div>
+      <div class="text-sm text-gray-500">Pendientes CC intermedio</div>
+    </div>
+    <div class="rounded-xl border border-brand-100 bg-white p-5">
+      <div class="text-3xl font-bold text-brand-800">{{ pendientesFinal }}</div>
+      <div class="text-sm text-gray-500">Pendientes CC final</div>
+    </div>
+  </div>
+
+  <h5 class="mb-3 font-display text-lg text-brand-900">Lotes pendientes de control</h5>
+  <div class="overflow-hidden rounded-xl border border-brand-100">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-brand-900 text-left text-white">
+          <tr>
+            <th class="px-4 py-3">Lote</th>
+            <th class="px-4 py-3">Semilla / Variedad</th>
+            <th class="px-4 py-3">Etapa</th>
+            <th class="px-4 py-3">Fecha ingreso a cola</th>
+            <th class="px-4 py-3">Estado</th>
+            <th class="px-4 py-3"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let lote of lotesPendientes" class="border-b border-brand-50 hover:bg-brand-50">
+            <td class="px-4 py-3 font-medium text-brand-900">{{ lote.nro_lote }}</td>
+            <td class="px-4 py-3">{{ lote.semilla_variedad }}</td>
+            <td class="px-4 py-3">{{ lote.etapa }}</td>
+            <td class="px-4 py-3">{{ lote.fecha_ingreso_cola }}</td>
+            <td class="px-4 py-3">
+              <span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">Pendiente CC</span>
+            </td>
+            <td class="px-4 py-3">
+              <button type="button" class="rounded-md bg-brand-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-800">
+                Controlar
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="lotesPendientes.length === 0">
+            <td colspan="6" class="px-4 py-6 text-center text-gray-400">No hay lotes pendientes de control.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

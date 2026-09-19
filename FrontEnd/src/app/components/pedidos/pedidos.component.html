@@ -1,0 +1,49 @@
+<div class="mx-auto max-w-6xl px-4 py-6">
+  <div class="mb-4 flex items-center justify-between">
+    <div>
+      <h4 class="m-0 font-display text-xl text-brand-900">Pedidos</h4>
+      <p class="mt-1 text-sm italic text-gray-400">
+        Datos de ejemplo — falta conectar el service real contra /api/pedidos.
+      </p>
+    </div>
+    <button type="button" class="rounded-md bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-800">
+      + Nuevo pedido
+    </button>
+  </div>
+
+  <div class="overflow-hidden rounded-xl border border-brand-100">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-brand-900 text-left text-white">
+          <tr>
+            <th class="px-4 py-3">Nro Pedido</th>
+            <th class="px-4 py-3">Comprador</th>
+            <th class="px-4 py-3">Fecha</th>
+            <th class="px-4 py-3">Estado</th>
+            <th class="px-4 py-3"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of pedidos" class="border-b border-brand-50 hover:bg-brand-50">
+            <td class="px-4 py-3 font-medium text-brand-900">{{ p.nro_pedido }}</td>
+            <td class="px-4 py-3">{{ p.comprador }}</td>
+            <td class="px-4 py-3">{{ p.fecha_pedido }}</td>
+            <td class="px-4 py-3">
+              <span class="rounded-full px-2 py-0.5 text-xs" [ngClass]="claseEstado(p.estado_pedido)">
+                {{ p.estado_pedido }}
+              </span>
+            </td>
+            <td class="px-4 py-3">
+              <button type="button" class="rounded-md border border-gray-300 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50">
+                Ver
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="pedidos.length === 0">
+            <td colspan="5" class="px-4 py-6 text-center text-gray-400">No hay pedidos registrados todavia.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

@@ -29,11 +29,11 @@ export class SidebarComponent {
   items: ItemNav[] = [
     { label: 'Dashboard', icono: 'bi-grid-1x2', ruta: '/' },
     { label: 'Lotes', icono: 'bi-boxes', ruta: '/lotes' },
-    { label: 'Calidad', icono: 'bi-check2-square' },
-    { label: 'Curado', icono: 'bi-droplet' },
-    { label: 'Almacén', icono: 'bi-building' },
-    { label: 'Pedidos', icono: 'bi-bag' },
-    { label: 'Reportes', icono: 'bi-graph-up' },
+    { label: 'Calidad', icono: 'bi-check2-square', ruta: '/calidad' },
+    { label: 'Curado', icono: 'bi-droplet', ruta: '/curado' },
+    { label: 'Almacén', icono: 'bi-building', ruta: '/almacen' },
+    { label: 'Pedidos', icono: 'bi-bag', ruta: '/pedidos' },
+    { label: 'Reportes', icono: 'bi-graph-up', ruta: '/reportes' },
   ];
 
   constructor(private authStateService: AuthStateService) {
