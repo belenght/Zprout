@@ -7,4 +7,5 @@ limpiezaPorLoteRouter.get('/', limpiezaCtrl.listarLimpiezasPorLote);
 
 // CUU03 - "Registrar limpieza y clasificacion"
 export const limpiezaRouter = Router();
+limpiezaRouter.get('/', limpiezaCtrl.listarLimpiezas);
 limpiezaRouter.post('/', limpiezaCtrl.registrarLimpieza);

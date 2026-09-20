@@ -50,7 +50,20 @@ export async function actualizarTipoSemilla(req: Request, res: Response) {
   const tipo = await em.findOne(TipoDeSemilla, { id_semilla: Number(req.params.id), deleted_at: null });
   if (!tipo) return res.status(404).json({ error: 'TipoDeSemilla no encontrado' });
 
-  em.assign(tipo, req.body);
+  // Mismo problema que almacen.controller.ts::actualizarAlmacen: los 6
+  // campos de rango son decimales (mapeados a string), y un numero crudo
+  // del body hace que assign() sobre una entidad ya gestionada tire 500.
+  const camposDecimales = [
+    'humedad_min', 'humedad_max',
+    'poder_germinativo_min', 'poder_germinativo_max',
+    'nivel_pureza_min', 'nivel_pureza_max',
+  ] as const;
+  const cambios: Record<string, unknown> = { ...req.body };
+  for (const campo of camposDecimales) {
+    if (cambios[campo] != null) cambios[campo] = String(cambios[campo]);
+  }
+
+  em.assign(tipo, cambios);
   await em.flush();
   res.json(tipo);
 }

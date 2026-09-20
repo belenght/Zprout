@@ -7,4 +7,5 @@ controlCalidadPorLoteRouter.get('/', controlCalidadCtrl.listarControlesPorLote);
 
 // CUU02 - "Registrar Control de Calidad" (sobre Lote)
 export const controlCalidadRouter = Router();
+controlCalidadRouter.get('/', controlCalidadCtrl.listarControles);
 controlCalidadRouter.post('/lote', controlCalidadCtrl.registrarControlCalidadLote);

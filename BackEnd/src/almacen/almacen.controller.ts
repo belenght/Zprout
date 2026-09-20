@@ -58,7 +58,15 @@ export async function actualizarAlmacen(req: Request, res: Response) {
   const almacen = await em.findOne(Almacen, { id_almacen: Number(req.params.id), deleted_at: null });
   if (!almacen) return res.status(404).json({ error: 'Almacen no encontrado' });
 
-  em.assign(almacen, req.body);
+  // MikroORM valida el tipo en runtime al hacer assign() sobre una entidad ya
+  // gestionada (a diferencia de create(), que es mas laxo): capacidad es una
+  // columna decimal, mapeada a string, asi que un numero crudo del body
+  // (JSON no distingue "100" de 100) la rechaza con un 500. Se normaliza
+  // aca antes de asignar.
+  const cambios = { ...req.body };
+  if (cambios.capacidad != null) cambios.capacidad = String(cambios.capacidad);
+
+  em.assign(almacen, cambios);
   await em.flush();
   res.json(almacen);
 }

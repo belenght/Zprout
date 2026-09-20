@@ -1,14 +1,18 @@
 import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ToastrService } from 'ngx-toastr';
 import { LoteService } from '../../../services/lote.service';
 import { ControlCalidadService } from '../../../services/control-calidad.service';
 import { LimpiezaService } from '../../../services/limpieza.service';
 import { PartidaService } from '../../../services/partida.service';
+import { AlmacenService } from '../../../services/almacen.service';
 import { Lote } from '../../../interfaces/lote';
 import { ControlDeCalidad } from '../../../interfaces/control-calidad';
 import { LimpiezaClasificacion } from '../../../interfaces/limpieza';
 import { Partida } from '../../../interfaces/partida';
+import { Almacen } from '../../../interfaces/almacen';
 import { claseBadgeEstado } from '../../../shared/estado-badge';
 
 // Estados de Lote desde los que corresponde ofrecer "Registrar CC" (CUU02).
@@ -18,7 +22,7 @@ const ESTADOS_CON_CC_PENDIENTE = ['Pendiente CC', 'En limpieza'] as const;
 @Component({
   selector: 'app-detalle-lote',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './detalle-lote.component.html',
   styleUrl: './detalle-lote.component.css'
 })
@@ -27,6 +31,9 @@ export class DetalleLoteComponent implements OnInit {
   controles: ControlDeCalidad[] = [];
   limpiezas: LimpiezaClasificacion[] = [];
   partidas: Partida[] = [];
+  almacenes: Almacen[] = [];
+  almacenSeleccionado: number | null = null;
+  asignandoAlmacen = false;
   cargando = true;
   errorMessage: string | null = null;
 
@@ -39,7 +46,9 @@ export class DetalleLoteComponent implements OnInit {
     private loteService: LoteService,
     private controlCalidadService: ControlCalidadService,
     private limpiezaService: LimpiezaService,
-    private partidaService: PartidaService
+    private partidaService: PartidaService,
+    private almacenService: AlmacenService,
+    private toastr: ToastrService
   ) {}
 
   claseBadgeEstado = claseBadgeEstado;
@@ -49,6 +58,7 @@ export class DetalleLoteComponent implements OnInit {
     this.loteService.getLote(id).subscribe({
       next: (data) => {
         this.lote = data;
+        this.almacenSeleccionado = (data.almacen as any)?.id_almacen ?? null;
         this.cargando = false;
         this.cd.detectChanges();
       },
@@ -88,6 +98,34 @@ export class DetalleLoteComponent implements OnInit {
       },
       error: () => {
         // Historial informativo: si falla no bloquea la vista de detalle.
+      }
+    });
+
+    this.almacenService.getAlmacenes().subscribe({
+      next: (data) => {
+        this.almacenes = data;
+        this.cd.detectChanges();
+      },
+      error: () => {
+        // El selector de almacen es un extra; si falla no bloquea el resto.
+      }
+    });
+  }
+
+  asignarAlmacen(): void {
+    if (!this.lote?.id_lote || this.almacenSeleccionado == null) return;
+    this.asignandoAlmacen = true;
+    this.loteService.asignarAlmacen(this.lote.id_lote, this.almacenSeleccionado).subscribe({
+      next: (actualizado) => {
+        this.lote = actualizado;
+        this.asignandoAlmacen = false;
+        this.toastr.success('Almacen asignado', 'Listo');
+        this.cd.detectChanges();
+      },
+      error: (err) => {
+        this.asignandoAlmacen = false;
+        this.toastr.error(err.message, 'Error al asignar el almacen');
+        this.cd.detectChanges();
       }
     });
   }

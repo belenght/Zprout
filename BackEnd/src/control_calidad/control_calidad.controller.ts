@@ -15,6 +15,21 @@ export async function listarControlesPorLote(req: Request, res: Response) {
 }
 
 /**
+ * Listado global (sin filtrar por lote/partida). No lo pide ningun CUU
+ * puntual; existe para que Reportes pueda calcular agregados (ej. poder
+ * germinativo promedio) sin recorrer lote por lote.
+ */
+export async function listarControles(req: Request, res: Response) {
+  const em = getEM();
+  const controles = await em.find(
+    ControlDeCalidad,
+    { deleted_at: null },
+    { populate: ['lote', 'lote.tipo_semilla', 'partida'], orderBy: { fecha: 'DESC' } },
+  );
+  res.json(controles);
+}
+
+/**
  * CUU02 - "Registrar Control de Calidad" (aplicado sobre Lote: inicial o intermedio).
  * El control final de Partida se maneja en partida_controller (CUU06), porque
  * ahi tambien se genera el Informe de Partida.

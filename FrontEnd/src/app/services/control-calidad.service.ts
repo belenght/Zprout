@@ -18,6 +18,11 @@ export class ControlCalidadService {
       .pipe(catchError(handleHttpError));
   }
 
+  // Listado global (todos los lotes/partidas), usado por Reportes.
+  getControles(): Observable<ControlDeCalidad[]> {
+    return this.http.get<ControlDeCalidad[]>(`${this.apiUrl}/controles-calidad`).pipe(catchError(handleHttpError));
+  }
+
   /**
    * CUU02 - Registrar Control de Calidad (sobre Lote, inicial o intermedio).
    * OJO: a proposito NO usa handleHttpError aca. El backend responde 409 con

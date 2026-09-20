@@ -16,6 +16,25 @@
         <p class="mb-1 text-sm" *ngIf="lote.observaciones"><strong>Observaciones:</strong> {{ lote.observaciones }}</p>
       </div>
 
+      <!-- Asignar almacen: el backend ya tenia PATCH /lotes/:id/almacen, no habia forma de usarlo desde el front -->
+      <div class="mt-4 flex flex-wrap items-end gap-2 rounded-lg border border-brand-100 bg-white p-4">
+        <div class="flex-1">
+          <label class="mb-1 block text-sm font-medium text-brand-900">Almacén</label>
+          <select [(ngModel)]="almacenSeleccionado" class="w-full max-w-xs rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+            <option [ngValue]="null">Sin asignar</option>
+            <option *ngFor="let a of almacenes" [ngValue]="a.id_almacen">{{ a.tipo }} #{{ a.id_almacen }} ({{ a.ocupado_tn ?? 0 }}/{{ a.capacidad }} tn)</option>
+          </select>
+        </div>
+        <button
+          type="button"
+          [disabled]="asignandoAlmacen"
+          (click)="asignarAlmacen()"
+          class="rounded-md border border-brand-300 px-4 py-2 text-sm font-medium text-brand-800 hover:bg-brand-50 disabled:opacity-60"
+        >
+          Asignar
+        </button>
+      </div>
+
       <!-- CUU02: se habilita cuando el lote esta "Pendiente CC" o "En limpieza" -->
       <!-- CUU03: se habilita cuando el lote esta "En limpieza" -->
       <!-- CUU05: se habilita cuando el lote esta "Para curar" -->

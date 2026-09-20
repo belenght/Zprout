@@ -38,7 +38,12 @@ export async function actualizarEstimacionVenta(req: Request, res: Response) {
   const estimacion = await em.findOne(EstimacionVenta, { id_estimacion: Number(req.params.id), deleted_at: null });
   if (!estimacion) return res.status(404).json({ error: 'EstimacionVenta no encontrada' });
 
-  em.assign(estimacion, req.body);
+  // Mismo problema que almacen.controller.ts::actualizarAlmacen: campo
+  // decimal, un numero crudo del body hace que assign() tire 500.
+  const cambios = { ...req.body };
+  if (cambios.volumen_estimado_tn != null) cambios.volumen_estimado_tn = String(cambios.volumen_estimado_tn);
+
+  em.assign(estimacion, cambios);
   await em.flush();
   res.json(estimacion);
 }

@@ -18,6 +18,11 @@ export class LimpiezaService {
       .pipe(catchError(handleHttpError));
   }
 
+  // Listado global (todos los lotes), usado por Reportes.
+  getLimpiezas(): Observable<LimpiezaClasificacion[]> {
+    return this.http.get<LimpiezaClasificacion[]>(`${this.apiUrl}/limpiezas`).pipe(catchError(handleHttpError));
+  }
+
   /**
    * CUU03 - Registrar limpieza y clasificacion. Se mantiene igual criterio
    * que ControlCalidadService.registrarControlLote: sin handleHttpError,

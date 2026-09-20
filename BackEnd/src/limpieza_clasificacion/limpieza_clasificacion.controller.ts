@@ -17,6 +17,21 @@ export async function listarLimpiezasPorLote(req: Request, res: Response) {
 }
 
 /**
+ * Listado global (sin filtrar por lote). No lo pide ningun CUU puntual;
+ * existe para que Reportes pueda calcular agregados (ej. merma promedio)
+ * sin tener que pedir /api/lotes/:id/limpiezas lote por lote.
+ */
+export async function listarLimpiezas(req: Request, res: Response) {
+  const em = getEM();
+  const registros = await em.find(
+    LimpiezaClasificacion,
+    { deleted_at: null },
+    { populate: ['lote', 'lote.tipo_semilla'], orderBy: { fecha: 'DESC' } },
+  );
+  res.json(registros);
+}
+
+/**
  * CUU03 - "Registrar limpieza y clasificación"
  * Precondicion (1.a): el lote debe estar en estado "En limpieza".
  * Paso 4: valida que volumen_restante + merma sea consistente con el volumen

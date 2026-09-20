@@ -1,4 +1,5 @@
 import { Campo, Proveedor, TipoDeSemilla } from './catalogos';
+import { Almacen } from './almacen';
 
 export type OrigenSemilla = 'propio' | 'externo';
 
@@ -16,6 +17,7 @@ export interface Lote {
   tipo_semilla: TipoDeSemilla | number;
   campo?: Campo | number;
   proveedor?: Proveedor | number;
+  almacen?: Almacen | number | null;
   estado_actual?: string | null;
 }
 
