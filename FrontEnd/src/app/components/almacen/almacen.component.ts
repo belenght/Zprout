@@ -17,17 +17,8 @@ interface StockVariedad {
   estado: 'Disponible' | 'Stock bajo' | 'Sin stock';
 }
 
-// Estados de Lote que representan grano todavia sin procesar/empaquetar
-// (ver BackEnd/src/estado/estado_nombres.ts). Los terminales (No apto,
-// Venta como grano, Descarte) ya salieron del circuito y no cuentan como
-// stock disponible.
 const ESTADOS_LOTE_A_GRANEL = ['Pendiente CC', 'En limpieza', 'Para curar'];
 
-/**
- * GUI-15 - "Almacén": vista de solo lectura sobre el stock que ya gestionan
- * Lotes/Curado/CC final, mas el ABM de las unidades fisicas (silos, galpones,
- * depositos). No tiene CUU propio en la documentacion.
- */
 @Component({
   selector: 'app-almacen',
   standalone: true,
@@ -75,7 +66,6 @@ export class AlmacenComponent implements OnInit {
       next: ({ almacenes, lotes, partidas }) => {
         this.almacenes = almacenes;
 
-        // "A granel": Lotes que todavia no se envasaron, agrupados por tipo de semilla.
         const aGranel = new Map<number, { semilla: string; variedad: string; tn: number }>();
         for (const l of lotes) {
           if (!ESTADOS_LOTE_A_GRANEL.includes(l.estado_actual ?? '')) continue;
@@ -86,7 +76,6 @@ export class AlmacenComponent implements OnInit {
           aGranel.set(ts.id_semilla, acc);
         }
 
-        // "Envasado": Partidas aptas para comercializar, agrupadas por tipo de semilla.
         const envasado = new Map<number, { semilla: string; variedad: string; bolsas: number }>();
         for (const p of partidas) {
           if (p.estado_actual !== 'Apto para comercializacion') continue;

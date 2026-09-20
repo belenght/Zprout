@@ -75,9 +75,10 @@ export class RegistrarCuradoComponent implements OnInit {
     });
     this.insumoForm = this.fb.group({
       insumo_id: [null],
+      cantidad_existente: [null, Validators.min(0.01)],
       nombre_nuevo: [''],
       unidad_nuevo: [''],
-      cantidad: [null, Validators.min(0.01)],
+      cantidad_nuevo: [null, Validators.min(0.01)],
     });
   }
 
@@ -155,26 +156,26 @@ export class RegistrarCuradoComponent implements OnInit {
 
   agregarInsumoExistente(): void {
     const insumoId = this.insumoForm.value.insumo_id;
-    const cantidad = Number(this.insumoForm.value.cantidad);
+    const cantidad = Number(this.insumoForm.value.cantidad_existente);
     if (!insumoId || !cantidad) return;
 
     const insumo = this.insumosCatalogo.find((i) => i.id_insumo === Number(insumoId));
     if (!insumo) return;
 
     this.insumosSeleccionados.push({ insumo_id: insumo.id_insumo!, nombre_insumo: insumo.nombre_insumo, cantidad });
-    this.insumoForm.patchValue({ insumo_id: null, cantidad: null });
+    this.insumoForm.patchValue({ insumo_id: null, cantidad_existente: null });
   }
 
   crearYAgregarInsumo(): void {
     const nombre = this.insumoForm.value.nombre_nuevo?.trim();
-    const cantidad = Number(this.insumoForm.value.cantidad);
+    const cantidad = Number(this.insumoForm.value.cantidad_nuevo);
     if (!nombre || !cantidad) return;
 
     this.insumoService.crearInsumo(nombre, this.insumoForm.value.unidad_nuevo || undefined).subscribe({
       next: (insumo) => {
         this.insumosCatalogo.push(insumo);
         this.insumosSeleccionados.push({ insumo_id: insumo.id_insumo!, nombre_insumo: insumo.nombre_insumo, cantidad });
-        this.insumoForm.patchValue({ nombre_nuevo: '', unidad_nuevo: '', cantidad: null });
+        this.insumoForm.patchValue({ nombre_nuevo: '', unidad_nuevo: '', cantidad_nuevo: null });
         this.cd.detectChanges();
       },
       error: (err) => this.toastr.error(err.message, 'No se pudo crear el insumo')

@@ -11,13 +11,6 @@ interface BarraPorEspecie {
   porcentaje: number;
 }
 
-/**
- * Reportes: agregaciones sobre datos de otros modulos (Curado, Limpieza,
- * Calidad). No tiene CUU ni entidad propia en la documentacion; todo se
- * calcula en el cliente a partir de los listados globales que ya expone
- * el backend (algunos de ellos -- controles-calidad, limpiezas -- se
- * agregaron ahora mismo, antes solo existian anidados por lote).
- */
 @Component({
   selector: 'app-reportes',
   standalone: true,
@@ -58,10 +51,8 @@ export class ReportesComponent implements OnInit {
       controles: this.controlCalidadService.getControles(),
     }).subscribe({
       next: ({ partidas, limpiezas, controles }) => {
-        // Volumen procesado: toda tn que paso por curado (CUU05), sea cual sea su estado final.
         this.volumenProcesadoTn = partidas.reduce((acc, p) => acc + Number(p.volumen_en_tn), 0);
 
-        // Merma promedio (%): de cada registro de Limpieza (CUU03).
         if (limpiezas.length > 0) {
           const porcentajes = limpiezas.map((l) => {
             const merma = Number(l.merma_tn);
@@ -72,16 +63,13 @@ export class ReportesComponent implements OnInit {
           this.mermaPromedioPct = porcentajes.reduce((a, b) => a + b, 0) / porcentajes.length;
         }
 
-        // Poder germinativo promedio: de todos los controles de calidad registrados (CUU02/CUU06).
         if (controles.length > 0) {
           const suma = controles.reduce((acc, c) => acc + Number(c.poder_germinativo), 0);
           this.poderGerminativoPromedio = suma / controles.length;
         }
 
-        // Informes generados: una Partida "Apto para comercializacion" = un Informe de Partida (CUU06).
         this.informesGenerados = partidas.filter((p) => p.estado_actual === 'Apto para comercializacion').length;
 
-        // Volumen procesado por especie (% del total), para el grafico de barras.
         const porEspecie = new Map<string, number>();
         for (const p of partidas) {
           const nombre = (p.lote as any)?.tipo_semilla?.nombre_semilla ?? 'Sin especie';

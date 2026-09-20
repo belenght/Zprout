@@ -14,11 +14,6 @@ export async function listarControlesPorLote(req: Request, res: Response) {
   res.json(controles);
 }
 
-/**
- * Listado global (sin filtrar por lote/partida). No lo pide ningun CUU
- * puntual; existe para que Reportes pueda calcular agregados (ej. poder
- * germinativo promedio) sin recorrer lote por lote.
- */
 export async function listarControles(req: Request, res: Response) {
   const em = getEM();
   const controles = await em.find(

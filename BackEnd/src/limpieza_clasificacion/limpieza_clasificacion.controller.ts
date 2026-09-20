@@ -16,11 +16,6 @@ export async function listarLimpiezasPorLote(req: Request, res: Response) {
   res.json(registros);
 }
 
-/**
- * Listado global (sin filtrar por lote). No lo pide ningun CUU puntual;
- * existe para que Reportes pueda calcular agregados (ej. merma promedio)
- * sin tener que pedir /api/lotes/:id/limpiezas lote por lote.
- */
 export async function listarLimpiezas(req: Request, res: Response) {
   const em = getEM();
   const registros = await em.find(
