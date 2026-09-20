@@ -33,8 +33,29 @@ export let orm: MikroORM<MySqlDriver>;
 const app = express();
 app.set('trust proxy', 1);
 
+// Express genera un ETag "weak" por defecto para toda respuesta JSON (ver
+// app.set('etag', ...) en su documentacion). Sin un Cache-Control que lo
+// acompañe, el browser guarda esa respuesta y en el siguiente pedido
+// identico manda If-None-Match; el servidor responde 304 con el BODY
+// VACIO. Para endpoints publicos/estaticos esto es deseable, pero toda
+// esta API es dinamica y va detras de Authorization (ver mas abajo,
+// verificarToken es global) - cachear una respuesta autenticada por URL,
+// sin variar por el header Authorization, puede hasta devolverle a un
+// usuario datos de la sesion de otro. Se desactiva aca, antes de definir
+// cualquier ruta.
+app.disable('etag');
+
 // 1. SEGURIDAD BASE
 app.use(helmet());
+
+// Refuerza lo de arriba a nivel de header explicito: sin esto, un proxy o
+// el propio browser podrian igual decidir cachear por heuristica al no ver
+// ningun Cache-Control. no-store = nunca guardar esta respuesta, ni
+// siquiera para revalidar despues.
+app.use('/api', (req, res, next) => {
+    res.set('Cache-Control', 'no-store');
+    next();
+});
 
 // CORS Dinámico: Toma el origen permitido del .env (ej: FRONTEND_URL=http://localhost:4200)
 // Si no hay variable, permite todo
