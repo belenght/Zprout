@@ -4,8 +4,12 @@ import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { ListadoLotesComponent } from './components/lotes/listado-lotes/listado-lotes.component';
 import { NuevoLoteComponent } from './components/lotes/nuevo-lote/nuevo-lote.component';
 import { DetalleLoteComponent } from './components/lotes/detalle-lote/detalle-lote.component';
+import { RegistrarLimpiezaComponent } from './components/lotes/registrar-limpieza/registrar-limpieza.component';
 import { CalidadComponent } from './components/calidad/calidad.component';
+import { RegistrarControlComponent } from './components/calidad/registrar-control/registrar-control.component';
 import { CuradoComponent } from './components/curado/curado.component';
+import { RegistrarCuradoComponent } from './components/curado/registrar-curado/registrar-curado.component';
+import { RegistrarControlFinalComponent } from './components/curado/registrar-control-final/registrar-control-final.component';
 import { AlmacenComponent } from './components/almacen/almacen.component';
 import { PedidosComponent } from './components/pedidos/pedidos.component';
 import { ReportesComponent } from './components/reportes/reportes.component';
@@ -24,11 +28,20 @@ export const routes: Routes = [
       { path: 'lotes', component: ListadoLotesComponent },
       { path: 'lotes/nuevo', component: NuevoLoteComponent },
       { path: 'lotes/:id', component: DetalleLoteComponent },
+      // CUU03 - Registrar limpieza y clasificacion (GUI-08)
+      { path: 'lotes/:loteId/limpieza', component: RegistrarLimpiezaComponent },
+
+      // Modulo Calidad (CUU02) - bandeja real + registro de CC sobre Lote
+      { path: 'calidad', component: CalidadComponent },
+      { path: 'calidad/registrar/:loteId', component: RegistrarControlComponent },
+
+      // Modulo Curado/Partidas (CUU05 + CUU06)
+      { path: 'curado', component: CuradoComponent },
+      { path: 'curado/registrar/:loteId', component: RegistrarCuradoComponent },
+      { path: 'curado/control-final/:partidaId', component: RegistrarControlFinalComponent },
 
       // Pantallas principales del resto de los modulos (ver GUI). Con datos
       // de ejemplo por ahora - falta conectar cada una a su service real.
-      { path: 'calidad', component: CalidadComponent },
-      { path: 'curado', component: CuradoComponent },
       { path: 'almacen', component: AlmacenComponent },
       { path: 'pedidos', component: PedidosComponent },
       { path: 'reportes', component: ReportesComponent },

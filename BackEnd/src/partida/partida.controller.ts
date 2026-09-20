@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import { wrap } from '@mikro-orm/core';
 import { getEM } from '../shared/db/orm.js';
 import { Partida, TipoCurado } from './partida.entity.js';
 import { Lote } from '../lote/lote.entity.js';
@@ -10,14 +11,28 @@ import { cambiarEstado } from '../estado/estado_helper.js';
 
 const KG_POR_BOLSA = 20;
 
+/**
+ * Mismo criterio que lote.controller.ts::conEstadoActual: el front (bandeja
+ * de calidad, listado de curado) necesita saber si la partida esta
+ * "Envasado" (pendiente de CC final) o ya "Apto para comercializacion" /
+ * "Rechazado", y Estado vive en su propia tabla de historial.
+ */
+async function conEstadoActual(em: ReturnType<typeof getEM>, partidas: Partida[]) {
+  if (partidas.length === 0) return [];
+  const ids = partidas.map((p) => p.id_partida);
+  const abiertos = await em.find(Estado, { partida: { id_partida: { $in: ids } }, fecha_hasta: null, deleted_at: null });
+  const mapa = new Map(abiertos.map((e) => [e.partida?.id_partida, e.nombre]));
+  return partidas.map((p) => ({ ...wrap(p).toJSON(), estado_actual: mapa.get(p.id_partida) ?? null }));
+}
+
 export async function listarPartidas(req: Request, res: Response) {
   const em = getEM();
   const partidas = await em.find(
     Partida,
     { deleted_at: null },
-    { populate: ['lote'], orderBy: { created_at: 'DESC' } },
+    { populate: ['lote', 'lote.tipo_semilla'], orderBy: { created_at: 'DESC' } },
   );
-  res.json(partidas);
+  res.json(await conEstadoActual(em, partidas));
 }
 
 export async function obtenerPartida(req: Request, res: Response) {
@@ -25,10 +40,11 @@ export async function obtenerPartida(req: Request, res: Response) {
   const partida = await em.findOne(
     Partida,
     { id_partida: Number(req.params.id), deleted_at: null },
-    { populate: ['lote'] },
+    { populate: ['lote', 'lote.tipo_semilla'] },
   );
   if (!partida) return res.status(404).json({ error: 'Partida no encontrada' });
-  res.json(partida);
+  const [dto] = await conEstadoActual(em, [partida]);
+  res.json(dto);
 }
 
 /**

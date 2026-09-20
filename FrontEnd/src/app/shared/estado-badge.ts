@@ -9,6 +9,10 @@ const CLASES_POR_ESTADO: Record<string, string> = {
   'No apto': 'bg-red-100 text-red-700',
   'Venta como grano': 'bg-brand-100 text-brand-800',
   Descarte: 'bg-red-200 text-red-900',
+  // Estados de Partida (ver BackEnd/src/estado/estado_nombres.ts, ESTADOS_PARTIDA)
+  Envasado: 'bg-gold-500/15 text-amber-800',
+  'Apto para comercializacion': 'bg-brand-100 text-brand-800',
+  Rechazado: 'bg-red-100 text-red-700',
 };
 
 const CLASE_DEFAULT = 'bg-gray-100 text-gray-600';

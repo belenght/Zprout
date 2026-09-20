@@ -16,20 +16,82 @@
         <p class="mb-1 text-sm" *ngIf="lote.observaciones"><strong>Observaciones:</strong> {{ lote.observaciones }}</p>
       </div>
 
-      <!--
-        Los botones de accion (Registrar Control de Calidad, Registrar
-        Limpieza, Registrar Curado) dependen de los modulos correspondientes,
-        que todavia no estan implementados en el front. Se agregan cuando se
-        construya cada uno (siguiendo la nota de GUI-06: el boton correcto
-        depende del estado_actual del lote).
-      -->
-      <div class="my-4 flex items-start gap-2 rounded-md border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600">
-        <i class="bi bi-info-circle mt-0.5"></i>
-        <span>Las acciones de Control de Calidad, Limpieza y Curado se habilitan
-        a medida que se implementen esos modulos en el front.</span>
+      <!-- CUU02: se habilita cuando el lote esta "Pendiente CC" o "En limpieza" -->
+      <!-- CUU03: se habilita cuando el lote esta "En limpieza" -->
+      <!-- CUU05: se habilita cuando el lote esta "Para curar" -->
+      <div class="my-4 flex flex-wrap items-center gap-2" *ngIf="puedeRegistrarAlgunaAccion">
+        <a
+          *ngIf="puedeRegistrarCC"
+          [routerLink]="['/calidad/registrar', lote.id_lote]"
+          [queryParams]="{ tipo: tipoControlSugerido }"
+          class="inline-flex items-center gap-1 rounded-md bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-800"
+        >
+          <i class="bi bi-clipboard-check"></i> Registrar control de calidad ({{ tipoControlSugerido }})
+        </a>
+        <a
+          *ngIf="puedeRegistrarLimpieza"
+          [routerLink]="['/lotes', lote.id_lote, 'limpieza']"
+          class="inline-flex items-center gap-1 rounded-md bg-gold-500 px-4 py-2 text-sm font-medium text-white hover:bg-gold-500/85"
+        >
+          <i class="bi bi-droplet"></i> Registrar limpieza y clasificación
+        </a>
+        <a
+          *ngIf="puedeRegistrarCurado"
+          [routerLink]="['/curado/registrar', lote.id_lote]"
+          class="inline-flex items-center gap-1 rounded-md bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-800"
+        >
+          <i class="bi bi-fire"></i> Registrar curado →
+        </a>
       </div>
 
-      <a routerLink="/lotes" class="inline-flex items-center gap-1 rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+      <div class="my-4 flex items-start gap-2 rounded-md border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600" *ngIf="!puedeRegistrarAlgunaAccion">
+        <i class="bi bi-info-circle mt-0.5"></i>
+        <span>No hay acciones disponibles para el estado actual del lote.</span>
+      </div>
+
+      <!-- Historial de controles de calidad del lote (CUU02) -->
+      <div class="mt-4 rounded-lg border border-brand-100 bg-white p-4" *ngIf="controles.length > 0">
+        <h6 class="mb-2 font-semibold text-brand-900">Historial de controles de calidad</h6>
+        <ul class="space-y-2 text-sm">
+          <li *ngFor="let c of controles" class="border-b border-brand-50 pb-2 last:border-0">
+            <span class="font-medium capitalize">{{ c.tipo_control }}</span> — {{ c.resultado }}
+            · H: {{ c.humedad }} · PG: {{ c.poder_germinativo }} · Pureza: {{ c.nivel_de_pureza }}
+            <span class="text-gray-400">({{ c.fecha | date: 'dd/MM/yyyy' }})</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Historial de limpieza y clasificacion del lote (CUU03) -->
+      <div class="mt-4 rounded-lg border border-brand-100 bg-white p-4" *ngIf="limpiezas.length > 0">
+        <h6 class="mb-2 font-semibold text-brand-900">Historial de limpieza y clasificación</h6>
+        <ul class="space-y-2 text-sm">
+          <li *ngFor="let l of limpiezas" class="border-b border-brand-50 pb-2 last:border-0">
+            Vol. restante: <strong>{{ l.volumen_restante_tn }} tn</strong> · Merma: <strong>{{ l.merma_tn }} tn</strong>
+            <span class="text-gray-400">({{ l.fecha | date: 'dd/MM/yyyy' }})</span>
+            <div *ngIf="l.observaciones" class="text-gray-500">{{ l.observaciones }}</div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Partidas generadas a partir de este lote (CUU05/CUU06) -->
+      <div class="mt-4 rounded-lg border border-brand-100 bg-white p-4" *ngIf="partidas.length > 0">
+        <h6 class="mb-2 font-semibold text-brand-900">Partidas generadas</h6>
+        <ul class="space-y-2 text-sm">
+          <li *ngFor="let p of partidas" class="flex flex-wrap items-center justify-between gap-2 border-b border-brand-50 pb-2 last:border-0">
+            <span>
+              <strong>{{ p.nro_partida }}</strong> — {{ p.volumen_en_tn }} tn · {{ p.cantidad_bolsas_20kg }} bolsas (20 kg)
+            </span>
+            <span class="flex items-center gap-2">
+              <span class="rounded-full px-2 py-0.5 text-xs" [ngClass]="claseBadgeEstado(p.estado_actual)">{{ p.estado_actual }}</span>
+              <a *ngIf="p.estado_actual === 'Envasado'" [routerLink]="['/curado/control-final', p.id_partida]" class="text-xs font-medium text-brand-700 hover:underline">
+                Registrar CC final →
+              </a>
+            </span>
+          </li>
+        </ul>
+      </div>
+
+      <a routerLink="/lotes" class="mt-4 inline-flex items-center gap-1 rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
         <i class="bi bi-arrow-left"></i> Volver al listado
       </a>
     </div>
