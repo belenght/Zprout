@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { LoteService } from '../../../services/lote.service';
@@ -30,6 +30,10 @@ export class DetalleLoteComponent implements OnInit {
   cargando = true;
   errorMessage: string | null = null;
 
+  // Fuerza el redibujado justo despues de cada subscribe: ver el mismo
+  // comentario en listado-lotes.component.ts.
+  private cd = inject(ChangeDetectorRef);
+
   constructor(
     private route: ActivatedRoute,
     private loteService: LoteService,
@@ -46,22 +50,30 @@ export class DetalleLoteComponent implements OnInit {
       next: (data) => {
         this.lote = data;
         this.cargando = false;
+        this.cd.detectChanges();
       },
       error: (err) => {
         this.errorMessage = `Error al cargar el lote: ${err.message}`;
         this.cargando = false;
+        this.cd.detectChanges();
       }
     });
 
     this.controlCalidadService.getControlesPorLote(id).subscribe({
-      next: (data) => (this.controles = data),
+      next: (data) => {
+        this.controles = data;
+        this.cd.detectChanges();
+      },
       error: () => {
         // Historial informativo: si falla no bloquea la vista de detalle.
       }
     });
 
     this.limpiezaService.getLimpiezasPorLote(id).subscribe({
-      next: (data) => (this.limpiezas = data),
+      next: (data) => {
+        this.limpiezas = data;
+        this.cd.detectChanges();
+      },
       error: () => {
         // Historial informativo: si falla no bloquea la vista de detalle.
       }
@@ -70,7 +82,10 @@ export class DetalleLoteComponent implements OnInit {
     // CUU05/CUU06: partidas generadas a partir de este lote (no hay
     // endpoint filtrado por lote todavia, asi que se filtra en el cliente).
     this.partidaService.getPartidas().subscribe({
-      next: (data) => (this.partidas = data.filter((p) => (p.lote as any)?.id_lote === id)),
+      next: (data) => {
+        this.partidas = data.filter((p) => (p.lote as any)?.id_lote === id);
+        this.cd.detectChanges();
+      },
       error: () => {
         // Historial informativo: si falla no bloquea la vista de detalle.
       }

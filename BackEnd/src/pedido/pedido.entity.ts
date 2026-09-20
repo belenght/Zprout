@@ -10,6 +10,8 @@ export enum TipoPedido {
 export enum EstadoPedido {
   APROBADO_PARA_DESPACHO = 'Aprobado para despacho',
   PENDIENTE_DE_STOCK = 'Pendiente de stock',
+  DESPACHADO = 'Despachado',
+  CANCELADO = 'Cancelado',
 }
 
 @Entity()

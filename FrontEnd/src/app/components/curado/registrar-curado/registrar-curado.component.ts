@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -54,6 +54,10 @@ export class RegistrarCuradoComponent implements OnInit {
   // combina con lote.cantidad_semillas_en_tn en cuanto ambos esten listos.
   private yaCuradoAcumulado: number | null = null;
 
+  // Fuerza el redibujado justo despues de cada subscribe: ver el mismo
+  // comentario en listado-lotes.component.ts.
+  private cd = inject(ChangeDetectorRef);
+
   constructor(
     private fb: FormBuilder,
     private route: ActivatedRoute,
@@ -85,10 +89,12 @@ export class RegistrarCuradoComponent implements OnInit {
         this.lote = lote;
         this.cargando = false;
         this.recalcularDisponible();
+        this.cd.detectChanges();
       },
       error: (err) => {
         this.errorMessage = `Error al cargar el lote: ${err.message}`;
         this.cargando = false;
+        this.cd.detectChanges();
       }
     });
 
@@ -100,6 +106,7 @@ export class RegistrarCuradoComponent implements OnInit {
           .filter((p) => (p.lote as any)?.id_lote === loteId)
           .reduce((acc, p) => acc + Number(p.volumen_en_tn), 0);
         this.recalcularDisponible();
+        this.cd.detectChanges();
       }
     });
 
@@ -110,6 +117,7 @@ export class RegistrarCuradoComponent implements OnInit {
         if (this.estimacionTn != null && !this.form.value.volumen_a_curar_tn) {
           this.form.patchValue({ volumen_a_curar_tn: Math.min(this.estimacionTn, this.disponibleTn || this.estimacionTn) });
         }
+        this.cd.detectChanges();
       },
       error: () => {
         // Sin estimacion cargada: el operario ingresa el volumen manualmente.
@@ -117,7 +125,10 @@ export class RegistrarCuradoComponent implements OnInit {
     });
 
     this.insumoService.getInsumos().subscribe({
-      next: (data) => (this.insumosCatalogo = data),
+      next: (data) => {
+        this.insumosCatalogo = data;
+        this.cd.detectChanges();
+      },
       error: () => {}
     });
   }
@@ -164,6 +175,7 @@ export class RegistrarCuradoComponent implements OnInit {
         this.insumosCatalogo.push(insumo);
         this.insumosSeleccionados.push({ insumo_id: insumo.id_insumo!, nombre_insumo: insumo.nombre_insumo, cantidad });
         this.insumoForm.patchValue({ nombre_nuevo: '', unidad_nuevo: '', cantidad: null });
+        this.cd.detectChanges();
       },
       error: (err) => this.toastr.error(err.message, 'No se pudo crear el insumo')
     });
@@ -194,10 +206,12 @@ export class RegistrarCuradoComponent implements OnInit {
         this.guardando = false;
         this.resultadoCurado = partida;
         this.toastr.success('Curado y envasado registrado con exito', 'Registrado');
+        this.cd.detectChanges();
       },
       error: (err: HttpErrorResponse) => {
         this.guardando = false;
         this.toastr.error(err.error?.error || err.message, 'Error al registrar el curado');
+        this.cd.detectChanges();
       }
     });
   }

@@ -7,3 +7,6 @@ export const pedidoRouter = Router();
 pedidoRouter.get('/', pedidoCtrl.listarPedidos);
 pedidoRouter.get('/:id', pedidoCtrl.obtenerPedido);
 pedidoRouter.post('/', pedidoCtrl.gestionarPedido);
+pedidoRouter.post('/:id/despachar', pedidoCtrl.despacharPedido);
+pedidoRouter.post('/:id/cancelar', pedidoCtrl.cancelarPedido);
+pedidoRouter.post('/:id/reintentar', pedidoCtrl.reintentarAsignacion);

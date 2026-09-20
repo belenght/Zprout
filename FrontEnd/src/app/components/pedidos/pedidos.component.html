@@ -1,13 +1,59 @@
 <div class="mx-auto max-w-6xl px-4 py-6">
   <div class="mb-4 flex items-center justify-between">
-    <div>
-      <h4 class="m-0 font-display text-xl text-brand-900">Pedidos</h4>
-      <p class="mt-1 text-sm italic text-gray-400">
-        Datos de ejemplo — falta conectar el service real contra /api/pedidos.
-      </p>
-    </div>
-    <button type="button" class="rounded-md bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-800">
+    <h4 class="m-0 font-display text-xl text-brand-900">Pedidos</h4>
+    <button
+      type="button"
+      (click)="nuevoPedido()"
+      class="rounded-md bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-800"
+    >
       + Nuevo pedido
+    </button>
+  </div>
+
+  <div *ngIf="errorMessage" class="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-red-700">{{ errorMessage }}</div>
+
+  <div class="mb-4 flex flex-wrap items-center gap-2">
+    <input
+      type="text"
+      [(ngModel)]="busqueda"
+      placeholder="Buscar por cliente..."
+      class="w-64 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+    />
+    <button
+      type="button"
+      (click)="setFiltro('Todos')"
+      class="rounded-full px-3 py-1.5 text-sm"
+      [class.bg-brand-700]="filtro === 'Todos'"
+      [class.text-white]="filtro === 'Todos'"
+      [class.border]="filtro !== 'Todos'"
+      [class.border-gray-300]="filtro !== 'Todos'"
+      [class.text-gray-600]="filtro !== 'Todos'"
+    >
+      Todos
+    </button>
+    <button
+      type="button"
+      (click)="setFiltro('Aprobado')"
+      class="rounded-full px-3 py-1.5 text-sm"
+      [class.bg-brand-700]="filtro === 'Aprobado'"
+      [class.text-white]="filtro === 'Aprobado'"
+      [class.border]="filtro !== 'Aprobado'"
+      [class.border-gray-300]="filtro !== 'Aprobado'"
+      [class.text-gray-600]="filtro !== 'Aprobado'"
+    >
+      Aprobado
+    </button>
+    <button
+      type="button"
+      (click)="setFiltro('Pendiente de stock')"
+      class="rounded-full px-3 py-1.5 text-sm"
+      [class.bg-brand-700]="filtro === 'Pendiente de stock'"
+      [class.text-white]="filtro === 'Pendiente de stock'"
+      [class.border]="filtro !== 'Pendiente de stock'"
+      [class.border-gray-300]="filtro !== 'Pendiente de stock'"
+      [class.text-gray-600]="filtro !== 'Pendiente de stock'"
+    >
+      Pendiente de stock
     </button>
   </div>
 
@@ -16,31 +62,60 @@
       <table class="w-full text-sm">
         <thead class="bg-brand-900 text-left text-white">
           <tr>
-            <th class="px-4 py-3">Nro Pedido</th>
-            <th class="px-4 py-3">Comprador</th>
-            <th class="px-4 py-3">Fecha</th>
+            <th class="px-4 py-3">Nro pedido</th>
+            <th class="px-4 py-3">Cliente</th>
+            <th class="px-4 py-3">Fecha requerida</th>
             <th class="px-4 py-3">Estado</th>
             <th class="px-4 py-3"></th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let p of pedidos" class="border-b border-brand-50 hover:bg-brand-50">
+          <tr *ngFor="let p of pedidosFiltrados" class="border-b border-brand-50 hover:bg-brand-50">
             <td class="px-4 py-3 font-medium text-brand-900">{{ p.nro_pedido }}</td>
             <td class="px-4 py-3">{{ p.comprador }}</td>
-            <td class="px-4 py-3">{{ p.fecha_pedido }}</td>
+            <td class="px-4 py-3">{{ p.fecha_requerida | date: 'dd/MM/yyyy' }}</td>
             <td class="px-4 py-3">
-              <span class="rounded-full px-2 py-0.5 text-xs" [ngClass]="claseEstado(p.estado_pedido)">
+              <span class="rounded-full px-2 py-0.5 text-xs" [ngClass]="claseBadgeEstado(p.estado_pedido)">
                 {{ p.estado_pedido }}
               </span>
             </td>
             <td class="px-4 py-3">
-              <button type="button" class="rounded-md border border-gray-300 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50">
-                Ver
-              </button>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  *ngIf="p.estado_pedido === 'Aprobado para despacho'"
+                  type="button"
+                  [disabled]="procesando === p.id_pedido"
+                  (click)="despachar(p)"
+                  class="rounded-md bg-brand-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-800 disabled:opacity-60"
+                >
+                  Despachar
+                </button>
+                <button
+                  *ngIf="p.estado_pedido === 'Pendiente de stock'"
+                  type="button"
+                  [disabled]="procesando === p.id_pedido"
+                  (click)="reintentar(p)"
+                  class="rounded-md border border-brand-300 px-3 py-1.5 text-xs font-medium text-brand-800 hover:bg-brand-50 disabled:opacity-60"
+                >
+                  Reintentar
+                </button>
+                <button
+                  *ngIf="p.estado_pedido === 'Pendiente de stock'"
+                  type="button"
+                  [disabled]="procesando === p.id_pedido"
+                  (click)="cancelar(p)"
+                  class="rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-60"
+                >
+                  Cancelar
+                </button>
+              </div>
             </td>
           </tr>
-          <tr *ngIf="pedidos.length === 0">
-            <td colspan="5" class="px-4 py-6 text-center text-gray-400">No hay pedidos registrados todavia.</td>
+          <tr *ngIf="!cargando && pedidosFiltrados.length === 0">
+            <td colspan="5" class="px-4 py-6 text-center text-gray-400">No hay pedidos que coincidan.</td>
+          </tr>
+          <tr *ngIf="cargando">
+            <td colspan="5" class="px-4 py-6 text-center text-gray-400">Cargando...</td>
           </tr>
         </tbody>
       </table>

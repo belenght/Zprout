@@ -13,6 +13,11 @@ const CLASES_POR_ESTADO: Record<string, string> = {
   Envasado: 'bg-gold-500/15 text-amber-800',
   'Apto para comercializacion': 'bg-brand-100 text-brand-800',
   Rechazado: 'bg-red-100 text-red-700',
+  // Estados de Pedido (ver BackEnd/src/pedido/pedido.entity.ts, EstadoPedido)
+  'Aprobado para despacho': 'bg-brand-100 text-brand-800',
+  'Pendiente de stock': 'bg-amber-100 text-amber-800',
+  Despachado: 'bg-blue-100 text-blue-700',
+  Cancelado: 'bg-red-100 text-red-700',
 };
 
 const CLASE_DEFAULT = 'bg-gray-100 text-gray-600';

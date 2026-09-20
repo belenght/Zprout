@@ -12,6 +12,7 @@ import { RegistrarCuradoComponent } from './components/curado/registrar-curado/r
 import { RegistrarControlFinalComponent } from './components/curado/registrar-control-final/registrar-control-final.component';
 import { AlmacenComponent } from './components/almacen/almacen.component';
 import { PedidosComponent } from './components/pedidos/pedidos.component';
+import { GestionarPedidoComponent } from './components/pedidos/gestionar-pedido/gestionar-pedido.component';
 import { ReportesComponent } from './components/reportes/reportes.component';
 import { CatalogosComponent } from './components/catalogos/catalogos.component';
 import { RoleGuard } from './guards/auth.guard';
@@ -44,7 +45,11 @@ export const routes: Routes = [
       // Pantallas principales del resto de los modulos (ver GUI). Con datos
       // de ejemplo por ahora - falta conectar cada una a su service real.
       { path: 'almacen', component: AlmacenComponent },
+
+      // Modulo Pedidos (CUU07)
       { path: 'pedidos', component: PedidosComponent },
+      { path: 'pedidos/nuevo', component: GestionarPedidoComponent },
+
       { path: 'reportes', component: ReportesComponent },
 
       // ABM de catalogos maestros (TipoDeSemilla, Campo, Proveedor)

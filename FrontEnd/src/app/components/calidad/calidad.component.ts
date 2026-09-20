@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
@@ -27,6 +27,10 @@ export class CalidadComponent implements OnInit {
   items: ItemBandejaCalidad[] = [];
   cargando = true;
   errorMessage: string | null = null;
+
+  // Fuerza el redibujado justo despues de cada subscribe: ver el mismo
+  // comentario en listado-lotes.component.ts.
+  private cd = inject(ChangeDetectorRef);
 
   constructor(
     private loteService: LoteService,
@@ -74,10 +78,12 @@ export class CalidadComponent implements OnInit {
 
         this.items = [...itemsLotes, ...itemsPartidas];
         this.cargando = false;
+        this.cd.detectChanges();
       },
       error: (err) => {
         this.errorMessage = `Error al cargar la bandeja de calidad: ${err.message}`;
         this.cargando = false;
+        this.cd.detectChanges();
       }
     });
   }

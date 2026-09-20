@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -29,6 +29,10 @@ export class RegistrarLimpiezaComponent implements OnInit {
   guardando = false;
   errorMessage: string | null = null;
 
+  // Fuerza el redibujado justo despues de cada subscribe: ver el mismo
+  // comentario en listado-lotes.component.ts.
+  private cd = inject(ChangeDetectorRef);
+
   constructor(
     private fb: FormBuilder,
     private route: ActivatedRoute,
@@ -51,10 +55,12 @@ export class RegistrarLimpiezaComponent implements OnInit {
       next: (lote) => {
         this.lote = lote;
         this.cargando = false;
+        this.cd.detectChanges();
       },
       error: (err) => {
         this.errorMessage = `Error al cargar el lote: ${err.message}`;
         this.cargando = false;
+        this.cd.detectChanges();
       }
     });
   }
@@ -108,6 +114,7 @@ export class RegistrarLimpiezaComponent implements OnInit {
       next: () => {
         this.guardando = false;
         this.toastr.success('Limpieza y clasificacion registrada con exito', 'Registrado');
+        this.cd.detectChanges();
         this.router.navigate(['/lotes', this.lote!.id_lote]);
       },
       error: (err: HttpErrorResponse) => {
@@ -115,6 +122,7 @@ export class RegistrarLimpiezaComponent implements OnInit {
         // 409: el lote no esta en "En limpieza" (alternativo 1.a).
         // 400: volumen inconsistente (alternativo 3.a).
         this.toastr.error(err.error?.error || err.message, 'Error al registrar la limpieza');
+        this.cd.detectChanges();
       }
     });
   }

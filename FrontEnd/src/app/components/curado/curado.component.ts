@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
@@ -30,6 +30,10 @@ export class CuradoComponent implements OnInit {
   partidasEnProcesoDeEnvasado = 0;
   cargando = true;
   errorMessage: string | null = null;
+
+  // Fuerza el redibujado justo despues de cada subscribe: ver el mismo
+  // comentario en listado-lotes.component.ts.
+  private cd = inject(ChangeDetectorRef);
 
   constructor(
     private loteService: LoteService,
@@ -81,10 +85,12 @@ export class CuradoComponent implements OnInit {
           .filter((f) => f.disponible_tn > 0);
 
         this.cargando = false;
+        this.cd.detectChanges();
       },
       error: (err) => {
         this.errorMessage = `Error al cargar el listado de curado: ${err.message}`;
         this.cargando = false;
+        this.cd.detectChanges();
       }
     });
   }

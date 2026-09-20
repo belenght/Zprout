@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -28,6 +28,10 @@ export class RegistrarControlFinalComponent implements OnInit {
   fueraDeRango: RangosFueraDeRango | null = null;
   resultado: ResultadoControlFinal | null = null;
 
+  // Fuerza el redibujado justo despues de cada subscribe: ver el mismo
+  // comentario en listado-lotes.component.ts.
+  private cd = inject(ChangeDetectorRef);
+
   constructor(
     private fb: FormBuilder,
     private route: ActivatedRoute,
@@ -51,10 +55,12 @@ export class RegistrarControlFinalComponent implements OnInit {
         this.partida = partida;
         this.form.patchValue({ cantidad_bolsas_20kg: partida.cantidad_bolsas_20kg ?? null });
         this.cargando = false;
+        this.cd.detectChanges();
       },
       error: (err) => {
         this.errorMessage = `Error al cargar la partida: ${err.message}`;
         this.cargando = false;
+        this.cd.detectChanges();
       }
     });
   }
@@ -101,6 +107,7 @@ export class RegistrarControlFinalComponent implements OnInit {
         } else {
           this.toastr.warning('La partida quedo registrada como No Apto', 'Rechazada');
         }
+        this.cd.detectChanges();
       },
       error: (err: HttpErrorResponse) => {
         this.guardando = false;
@@ -113,6 +120,7 @@ export class RegistrarControlFinalComponent implements OnInit {
         } else {
           this.toastr.error(err.error?.error || err.message, 'Error al registrar el control final');
         }
+        this.cd.detectChanges();
       }
     });
   }

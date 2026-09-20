@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { LoteService } from '../../services/lote.service';
@@ -20,6 +20,10 @@ export class DashboardComponent implements OnInit {
   cargando = true;
   errorMessage: string | null = null;
 
+  // Fuerza el redibujado justo despues de cada subscribe: ver el mismo
+  // comentario en listado-lotes.component.ts.
+  private cd = inject(ChangeDetectorRef);
+
   constructor(private loteService: LoteService, private authService: AuthService) {}
 
   claseBadgeEstado = claseBadgeEstado;
@@ -37,10 +41,12 @@ export class DashboardComponent implements OnInit {
         this.ultimosLotes = lotes.slice(0, 5);
         this.cargando = false;
         this.errorMessage = null;
+        this.cd.detectChanges();
       },
       error: (err) => {
         this.errorMessage = `Error al cargar el dashboard: ${err.message}`;
         this.cargando = false;
+        this.cd.detectChanges();
       }
     });
   }

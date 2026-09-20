@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -36,6 +36,10 @@ export class RegistrarControlComponent implements OnInit {
 
   claseBadgeEstado = claseBadgeEstado;
 
+  // Fuerza el redibujado justo despues de cada subscribe: ver el mismo
+  // comentario en listado-lotes.component.ts.
+  private cd = inject(ChangeDetectorRef);
+
   constructor(
     private fb: FormBuilder,
     private route: ActivatedRoute,
@@ -68,15 +72,20 @@ export class RegistrarControlComponent implements OnInit {
           this.form.patchValue({ tipo_control: lote.estado_actual === 'En limpieza' ? 'intermedio' : 'inicial' });
         }
         this.cargando = false;
+        this.cd.detectChanges();
       },
       error: (err) => {
         this.errorMessage = `Error al cargar el lote: ${err.message}`;
         this.cargando = false;
+        this.cd.detectChanges();
       }
     });
 
     this.controlCalidadService.getControlesPorLote(loteId).subscribe({
-      next: (data) => (this.historial = data),
+      next: (data) => {
+        this.historial = data;
+        this.cd.detectChanges();
+      },
       error: () => {
         // El historial es informativo (aside): si falla no bloquea el flujo principal.
       }
@@ -112,6 +121,7 @@ export class RegistrarControlComponent implements OnInit {
         this.guardando = false;
         this.fueraDeRango = null;
         this.toastr.success('Control de calidad registrado con exito', 'Registrado');
+        this.cd.detectChanges();
         this.router.navigate(['/lotes', this.lote!.id_lote]);
       },
       error: (err: HttpErrorResponse) => {
@@ -126,6 +136,7 @@ export class RegistrarControlComponent implements OnInit {
         } else {
           this.toastr.error(err.error?.error || err.message, 'Error al registrar el control');
         }
+        this.cd.detectChanges();
       }
     });
   }

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -27,6 +27,15 @@ export class ListadoLotesComponent implements OnInit {
   readonly estadosDisponibles = ESTADOS_LOTE;
   claseBadgeEstado = claseBadgeEstado;
 
+  // Fuerza el redibujado justo despues de que el subscribe actualiza el
+  // estado del componente. En algunos entornos (ciertas extensiones de
+  // browser que interfieren con el parcheo de zone.js sobre XHR/fetch) la
+  // respuesta HTTP puede resolver fuera de la deteccion de cambios
+  // automatica de Angular, y la vista se queda vieja hasta que otra
+  // interaccion la refresca "de arrastre". detectChanges() no depende de
+  // zonas, redibuja este componente ahi mismo.
+  private cd = inject(ChangeDetectorRef);
+
   constructor(private loteService: LoteService) {}
 
   ngOnInit(): void {
@@ -40,10 +49,12 @@ export class ListadoLotesComponent implements OnInit {
         this.lotes = data;
         this.cargando = false;
         this.errorMessage = null;
+        this.cd.detectChanges();
       },
       error: (err) => {
         this.errorMessage = `Error al cargar los lotes: ${err.message}`;
         this.cargando = false;
+        this.cd.detectChanges();
       }
     });
   }

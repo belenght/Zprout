@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -24,6 +24,12 @@ export class NuevoLoteComponent implements OnInit {
   tiposSemilla: TipoDeSemilla[] = [];
   guardando = false;
 
+  // Fuerza el redibujado justo despues de cada subscribe: ver el mismo
+  // comentario en listado-lotes.component.ts. Este componente es el de
+  // la captura donde "Cultivo/Variedad" se veia vacio: los 3 catalogos
+  // se cargan en paralelo en ngOnInit exactamente con este patron.
+  private cd = inject(ChangeDetectorRef);
+
   constructor(
     private fb: FormBuilder,
     private loteService: LoteService,
@@ -46,16 +52,34 @@ export class NuevoLoteComponent implements OnInit {
 
   ngOnInit(): void {
     this.tipoSemillaService.getTiposSemilla().subscribe({
-      next: (data) => (this.tiposSemilla = data),
-      error: (err) => this.toastr.error('No se pudieron cargar los tipos de semilla', 'Error')
+      next: (data) => {
+        this.tiposSemilla = data;
+        this.cd.detectChanges();
+      },
+      error: (err) => {
+        this.toastr.error('No se pudieron cargar los tipos de semilla', 'Error');
+        this.cd.detectChanges();
+      }
     });
     this.campoService.getCampos().subscribe({
-      next: (data) => (this.campos = data),
-      error: (err) => this.toastr.error('No se pudieron cargar los campos', 'Error')
+      next: (data) => {
+        this.campos = data;
+        this.cd.detectChanges();
+      },
+      error: (err) => {
+        this.toastr.error('No se pudieron cargar los campos', 'Error');
+        this.cd.detectChanges();
+      }
     });
     this.proveedorService.getProveedores().subscribe({
-      next: (data) => (this.proveedores = data),
-      error: (err) => this.toastr.error('No se pudieron cargar los proveedores', 'Error')
+      next: (data) => {
+        this.proveedores = data;
+        this.cd.detectChanges();
+      },
+      error: (err) => {
+        this.toastr.error('No se pudieron cargar los proveedores', 'Error');
+        this.cd.detectChanges();
+      }
     });
 
     this.aplicarValidacionesPorOrigen(this.form.value.origen_semilla);
@@ -111,11 +135,13 @@ export class NuevoLoteComponent implements OnInit {
       next: (lote) => {
         this.guardando = false;
         this.toastr.success(`Lote ${lote.nro_lote} registrado con exito`, 'Ingreso registrado');
+        this.cd.detectChanges();
         this.router.navigate(['/lotes']);
       },
       error: (err) => {
         this.guardando = false;
         this.toastr.error(err.message, 'Error al registrar el ingreso');
+        this.cd.detectChanges();
       }
     });
   }

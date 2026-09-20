@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
@@ -43,6 +43,10 @@ export class CatalogosComponent implements OnInit {
   proveedores: Proveedor[] = [];
   formProveedor: FormGroup;
   editandoProveedorId: number | null = null;
+
+  // Fuerza el redibujado justo despues de cada subscribe: ver el mismo
+  // comentario en listado-lotes.component.ts.
+  private cd = inject(ChangeDetectorRef);
 
   constructor(
     private fb: FormBuilder,
@@ -103,10 +107,12 @@ export class CatalogosComponent implements OnInit {
         this.campos = campos;
         this.proveedores = proveedores;
         this.cargando = false;
+        this.cd.detectChanges();
       },
       error: (err) => {
         this.errorMessage = `Error al cargar los catalogos: ${err.message}`;
         this.cargando = false;
+        this.cd.detectChanges();
       }
     });
   }
@@ -147,6 +153,7 @@ export class CatalogosComponent implements OnInit {
         }
         this.toastr.success('Tipo de semilla guardado', 'Listo');
         this.cancelarEdicionSemilla();
+        this.cd.detectChanges();
       },
       error: (err) => this.toastr.error(err.message, 'Error al guardar')
     });
@@ -158,6 +165,7 @@ export class CatalogosComponent implements OnInit {
       next: () => {
         this.tiposSemilla = this.tiposSemilla.filter((x) => x.id_semilla !== t.id_semilla);
         this.toastr.success('Tipo de semilla eliminado', 'Listo');
+        this.cd.detectChanges();
       },
       error: (err) => this.toastr.error(err.message, 'Error al eliminar')
     });
@@ -196,6 +204,7 @@ export class CatalogosComponent implements OnInit {
         }
         this.toastr.success('Campo guardado', 'Listo');
         this.cancelarEdicionCampo();
+        this.cd.detectChanges();
       },
       error: (err) => this.toastr.error(err.message, 'Error al guardar')
     });
@@ -207,6 +216,7 @@ export class CatalogosComponent implements OnInit {
       next: () => {
         this.campos = this.campos.filter((x) => x.id_campo !== c.id_campo);
         this.toastr.success('Campo eliminado', 'Listo');
+        this.cd.detectChanges();
       },
       error: (err) => this.toastr.error(err.message, 'Error al eliminar')
     });
@@ -245,6 +255,7 @@ export class CatalogosComponent implements OnInit {
         }
         this.toastr.success('Proveedor guardado', 'Listo');
         this.cancelarEdicionProveedor();
+        this.cd.detectChanges();
       },
       error: (err) => this.toastr.error(err.message, 'Error al guardar')
     });
@@ -256,6 +267,7 @@ export class CatalogosComponent implements OnInit {
       next: () => {
         this.proveedores = this.proveedores.filter((x) => x.id_proveedor !== p.id_proveedor);
         this.toastr.success('Proveedor eliminado', 'Listo');
+        this.cd.detectChanges();
       },
       error: (err) => this.toastr.error(err.message, 'Error al eliminar')
     });
