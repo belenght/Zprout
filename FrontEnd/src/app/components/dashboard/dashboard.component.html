@@ -76,6 +76,9 @@
         <tr *ngIf="!cargando && ultimosLotes.length === 0">
           <td colspan="4" class="px-4 py-6 text-center text-gray-400">No hay lotes registrados todavia.</td>
         </tr>
+        <tr *ngIf="cargando">
+          <td colspan="4" class="px-4 py-6 text-center text-gray-400">Cargando...</td>
+        </tr>
       </tbody>
     </table>
   </div>

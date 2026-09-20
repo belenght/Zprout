@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
+import { forkJoin } from 'rxjs';
 import { TipoSemillaService } from '../../services/tipo-semilla.service';
 import { CampoService } from '../../services/campo.service';
 import { ProveedorService } from '../../services/proveedor.service';
@@ -86,21 +87,25 @@ export class CatalogosComponent implements OnInit {
     this.cargando = true;
     this.errorMessage = null;
 
-    this.tipoSemillaService.getTiposSemilla().subscribe({
-      next: (data) => (this.tiposSemilla = data),
-      error: (err) => (this.errorMessage = `Error al cargar tipos de semilla: ${err.message}`)
-    });
-    this.campoService.getCampos().subscribe({
-      next: (data) => (this.campos = data),
-      error: (err) => (this.errorMessage = `Error al cargar campos: ${err.message}`)
-    });
-    this.proveedorService.getProveedores().subscribe({
-      next: (data) => {
-        this.proveedores = data;
+    // forkJoin: dispara los 3 GET en paralelo pero solo baja "cargando"
+    // cuando los TRES terminaron. Antes cada uno actualizaba su propio
+    // array por separado y "cargando" se apagaba apenas terminaba
+    // Proveedores (el ultimo en el codigo) - si Proveedores respondia mas
+    // rapido que TipoDeSemilla o Campo, esos tabs se veian "vacios" un
+    // instante hasta que el usuario salia y volvia a entrar.
+    forkJoin({
+      tiposSemilla: this.tipoSemillaService.getTiposSemilla(),
+      campos: this.campoService.getCampos(),
+      proveedores: this.proveedorService.getProveedores(),
+    }).subscribe({
+      next: ({ tiposSemilla, campos, proveedores }) => {
+        this.tiposSemilla = tiposSemilla;
+        this.campos = campos;
+        this.proveedores = proveedores;
         this.cargando = false;
       },
       error: (err) => {
-        this.errorMessage = `Error al cargar proveedores: ${err.message}`;
+        this.errorMessage = `Error al cargar los catalogos: ${err.message}`;
         this.cargando = false;
       }
     });

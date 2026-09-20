@@ -124,7 +124,7 @@ export async function registrarCurado(req: Request, res: Response) {
   await cambiarEstado(em, { partida }, 'Envasado');
 
   await em.flush();
-  res.status(201).json(partida);
+  res.status(201).json({ ...wrap(partida).toJSON(), estado_actual: 'Envasado' });
 }
 
 /**
