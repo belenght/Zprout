@@ -19,4 +19,12 @@ export class ProveedorService {
   crearProveedor(proveedor: Proveedor): Observable<Proveedor> {
     return this.http.post<Proveedor>(this.apiUrl, proveedor).pipe(catchError(handleHttpError));
   }
+
+  actualizarProveedor(id: number, proveedor: Partial<Proveedor>): Observable<Proveedor> {
+    return this.http.put<Proveedor>(`${this.apiUrl}/${id}`, proveedor).pipe(catchError(handleHttpError));
+  }
+
+  eliminarProveedor(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(catchError(handleHttpError));
+  }
 }

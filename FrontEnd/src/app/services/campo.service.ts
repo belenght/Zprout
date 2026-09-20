@@ -19,4 +19,12 @@ export class CampoService {
   crearCampo(campo: Campo): Observable<Campo> {
     return this.http.post<Campo>(this.apiUrl, campo).pipe(catchError(handleHttpError));
   }
+
+  actualizarCampo(id: number, campo: Partial<Campo>): Observable<Campo> {
+    return this.http.put<Campo>(`${this.apiUrl}/${id}`, campo).pipe(catchError(handleHttpError));
+  }
+
+  eliminarCampo(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(catchError(handleHttpError));
+  }
 }

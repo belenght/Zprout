@@ -34,6 +34,7 @@ export class SidebarComponent {
     { label: 'Almacén', icono: 'bi-building', ruta: '/almacen' },
     { label: 'Pedidos', icono: 'bi-bag', ruta: '/pedidos' },
     { label: 'Reportes', icono: 'bi-graph-up', ruta: '/reportes' },
+    { label: 'Catálogos', icono: 'bi-collection', ruta: '/catalogos' },
   ];
 
   constructor(private authStateService: AuthStateService) {

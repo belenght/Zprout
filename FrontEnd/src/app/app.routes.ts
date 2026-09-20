@@ -13,6 +13,7 @@ import { RegistrarControlFinalComponent } from './components/curado/registrar-co
 import { AlmacenComponent } from './components/almacen/almacen.component';
 import { PedidosComponent } from './components/pedidos/pedidos.component';
 import { ReportesComponent } from './components/reportes/reportes.component';
+import { CatalogosComponent } from './components/catalogos/catalogos.component';
 import { RoleGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -45,6 +46,9 @@ export const routes: Routes = [
       { path: 'almacen', component: AlmacenComponent },
       { path: 'pedidos', component: PedidosComponent },
       { path: 'reportes', component: ReportesComponent },
+
+      // ABM de catalogos maestros (TipoDeSemilla, Campo, Proveedor)
+      { path: 'catalogos', component: CatalogosComponent },
     ],
   },
 

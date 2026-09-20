@@ -1,0 +1,229 @@
+<div class="mx-auto max-w-6xl px-4 py-6">
+  <h4 class="mb-1 font-display text-xl text-brand-900">Catálogos</h4>
+  <p class="mb-6 text-sm text-gray-500">Datos maestros usados en el resto del sistema (tipos de semilla, campos, proveedores).</p>
+
+  <div *ngIf="errorMessage" class="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-red-700">{{ errorMessage }}</div>
+
+  <div class="mb-6 flex w-fit overflow-hidden rounded-md border border-brand-200">
+    <button
+      type="button"
+      (click)="cambiarTab('semillas')"
+      class="px-4 py-2 text-sm font-medium"
+      [class.bg-brand-700]="tabActiva === 'semillas'"
+      [class.text-white]="tabActiva === 'semillas'"
+      [class.text-brand-800]="tabActiva !== 'semillas'"
+    >
+      Tipos de semilla
+    </button>
+    <button
+      type="button"
+      (click)="cambiarTab('campos')"
+      class="border-l border-brand-200 px-4 py-2 text-sm font-medium"
+      [class.bg-brand-700]="tabActiva === 'campos'"
+      [class.text-white]="tabActiva === 'campos'"
+      [class.text-brand-800]="tabActiva !== 'campos'"
+    >
+      Campos
+    </button>
+    <button
+      type="button"
+      (click)="cambiarTab('proveedores')"
+      class="border-l border-brand-200 px-4 py-2 text-sm font-medium"
+      [class.bg-brand-700]="tabActiva === 'proveedores'"
+      [class.text-white]="tabActiva === 'proveedores'"
+      [class.text-brand-800]="tabActiva !== 'proveedores'"
+    >
+      Proveedores
+    </button>
+  </div>
+
+  <!-- ==================== TIPOS DE SEMILLA ==================== -->
+  <div *ngIf="tabActiva === 'semillas'" class="grid gap-6 lg:grid-cols-[1fr_360px]">
+    <div class="overflow-hidden rounded-xl border border-brand-100">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-brand-900 text-left text-white">
+            <tr>
+              <th class="px-4 py-3">Semilla / Variedad</th>
+              <th class="px-4 py-3">Humedad</th>
+              <th class="px-4 py-3">PG</th>
+              <th class="px-4 py-3">Pureza</th>
+              <th class="px-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let t of tiposSemilla" class="border-b border-brand-50 hover:bg-brand-50">
+              <td class="px-4 py-3 font-medium text-brand-900">{{ t.nombre_semilla }} / {{ t.variante_semilla }}</td>
+              <td class="px-4 py-3">{{ t.humedad_min ?? '—' }} – {{ t.humedad_max ?? '—' }} %</td>
+              <td class="px-4 py-3">{{ t.poder_germinativo_min ?? '—' }} – {{ t.poder_germinativo_max ?? '—' }} %</td>
+              <td class="px-4 py-3">{{ t.nivel_pureza_min ?? '—' }} – {{ t.nivel_pureza_max ?? '—' }} %</td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <button type="button" (click)="editarSemilla(t)" class="mr-2 text-brand-700 hover:underline"><i class="bi bi-pencil"></i></button>
+                <button type="button" (click)="eliminarSemilla(t)" class="text-red-600 hover:underline"><i class="bi bi-trash"></i></button>
+              </td>
+            </tr>
+            <tr *ngIf="!cargando && tiposSemilla.length === 0">
+              <td colspan="5" class="px-4 py-6 text-center text-gray-400">No hay tipos de semilla cargados.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <form [formGroup]="formSemilla" (ngSubmit)="guardarSemilla()" class="h-fit space-y-3 rounded-xl border border-brand-100 bg-white p-5">
+      <h6 class="font-semibold text-brand-900">{{ editandoSemillaId ? 'Editar' : 'Nuevo' }} tipo de semilla</h6>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="col-span-2">
+          <label class="mb-1 block text-xs font-medium text-brand-900">Semilla</label>
+          <input type="text" formControlName="nombre_semilla" placeholder="Ej: Soja" class="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+        </div>
+        <div class="col-span-2">
+          <label class="mb-1 block text-xs font-medium text-brand-900">Variedad</label>
+          <input type="text" formControlName="variante_semilla" placeholder="Ej: DM 4670" class="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-brand-900">Humedad min (%)</label>
+          <input type="number" step="0.01" formControlName="humedad_min" class="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-brand-900">Humedad max (%)</label>
+          <input type="number" step="0.01" formControlName="humedad_max" class="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-brand-900">PG min (%)</label>
+          <input type="number" step="0.01" formControlName="poder_germinativo_min" class="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-brand-900">PG max (%)</label>
+          <input type="number" step="0.01" formControlName="poder_germinativo_max" class="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-brand-900">Pureza min (%)</label>
+          <input type="number" step="0.01" formControlName="nivel_pureza_min" class="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-brand-900">Pureza max (%)</label>
+          <input type="number" step="0.01" formControlName="nivel_pureza_max" class="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+        </div>
+        <div class="col-span-2">
+          <label class="mb-1 block text-xs font-medium text-brand-900">Duración</label>
+          <input type="text" formControlName="duracion" placeholder="Ej: 120 dias" class="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+        </div>
+      </div>
+      <div class="flex gap-2 pt-1">
+        <button type="submit" class="rounded-md bg-brand-700 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-800">
+          {{ editandoSemillaId ? 'Guardar cambios' : '+ Crear' }}
+        </button>
+        <button *ngIf="editandoSemillaId" type="button" (click)="cancelarEdicionSemilla()" class="rounded-md border border-gray-300 px-4 py-1.5 text-sm text-gray-700 hover:bg-gray-50">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ==================== CAMPOS ==================== -->
+  <div *ngIf="tabActiva === 'campos'" class="grid gap-6 lg:grid-cols-[1fr_320px]">
+    <div class="overflow-hidden rounded-xl border border-brand-100">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-brand-900 text-left text-white">
+            <tr>
+              <th class="px-4 py-3">Nro. campo</th>
+              <th class="px-4 py-3">Ubicación</th>
+              <th class="px-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let c of campos" class="border-b border-brand-50 hover:bg-brand-50">
+              <td class="px-4 py-3 font-medium text-brand-900">{{ c.nro_campo }}</td>
+              <td class="px-4 py-3">{{ c.ubicacion }}</td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <button type="button" (click)="editarCampo(c)" class="mr-2 text-brand-700 hover:underline"><i class="bi bi-pencil"></i></button>
+                <button type="button" (click)="eliminarCampo(c)" class="text-red-600 hover:underline"><i class="bi bi-trash"></i></button>
+              </td>
+            </tr>
+            <tr *ngIf="!cargando && campos.length === 0">
+              <td colspan="3" class="px-4 py-6 text-center text-gray-400">No hay campos cargados.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <form [formGroup]="formCampo" (ngSubmit)="guardarCampo()" class="h-fit space-y-3 rounded-xl border border-brand-100 bg-white p-5">
+      <h6 class="font-semibold text-brand-900">{{ editandoCampoId ? 'Editar' : 'Nuevo' }} campo</h6>
+      <div>
+        <label class="mb-1 block text-xs font-medium text-brand-900">Nro. campo</label>
+        <input type="text" formControlName="nro_campo" placeholder="Ej: Campo Norte" class="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+      </div>
+      <div>
+        <label class="mb-1 block text-xs font-medium text-brand-900">Ubicación</label>
+        <input type="text" formControlName="ubicacion" placeholder="Ej: Ruta 34 km 12" class="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+      </div>
+      <div class="flex gap-2 pt-1">
+        <button type="submit" class="rounded-md bg-brand-700 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-800">
+          {{ editandoCampoId ? 'Guardar cambios' : '+ Crear' }}
+        </button>
+        <button *ngIf="editandoCampoId" type="button" (click)="cancelarEdicionCampo()" class="rounded-md border border-gray-300 px-4 py-1.5 text-sm text-gray-700 hover:bg-gray-50">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ==================== PROVEEDORES ==================== -->
+  <div *ngIf="tabActiva === 'proveedores'" class="grid gap-6 lg:grid-cols-[1fr_320px]">
+    <div class="overflow-hidden rounded-xl border border-brand-100">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-brand-900 text-left text-white">
+            <tr>
+              <th class="px-4 py-3">Razón social</th>
+              <th class="px-4 py-3">CUIT</th>
+              <th class="px-4 py-3">Contacto</th>
+              <th class="px-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of proveedores" class="border-b border-brand-50 hover:bg-brand-50">
+              <td class="px-4 py-3 font-medium text-brand-900">{{ p.razon_social }}</td>
+              <td class="px-4 py-3">{{ p.cuit ?? '—' }}</td>
+              <td class="px-4 py-3">{{ p.contacto ?? '—' }}</td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <button type="button" (click)="editarProveedor(p)" class="mr-2 text-brand-700 hover:underline"><i class="bi bi-pencil"></i></button>
+                <button type="button" (click)="eliminarProveedor(p)" class="text-red-600 hover:underline"><i class="bi bi-trash"></i></button>
+              </td>
+            </tr>
+            <tr *ngIf="!cargando && proveedores.length === 0">
+              <td colspan="4" class="px-4 py-6 text-center text-gray-400">No hay proveedores cargados.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <form [formGroup]="formProveedor" (ngSubmit)="guardarProveedor()" class="h-fit space-y-3 rounded-xl border border-brand-100 bg-white p-5">
+      <h6 class="font-semibold text-brand-900">{{ editandoProveedorId ? 'Editar' : 'Nuevo' }} proveedor</h6>
+      <div>
+        <label class="mb-1 block text-xs font-medium text-brand-900">Razón social</label>
+        <input type="text" formControlName="razon_social" placeholder="Ej: Semillera del Litoral S.A." class="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+      </div>
+      <div>
+        <label class="mb-1 block text-xs font-medium text-brand-900">CUIT</label>
+        <input type="text" formControlName="cuit" placeholder="Ej: 30-71234567-8" class="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+      </div>
+      <div>
+        <label class="mb-1 block text-xs font-medium text-brand-900">Contacto</label>
+        <input type="text" formControlName="contacto" placeholder="Ej: ventas@proveedor.com" class="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+      </div>
+      <div class="flex gap-2 pt-1">
+        <button type="submit" class="rounded-md bg-brand-700 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-800">
+          {{ editandoProveedorId ? 'Guardar cambios' : '+ Crear' }}
+        </button>
+        <button *ngIf="editandoProveedorId" type="button" (click)="cancelarEdicionProveedor()" class="rounded-md border border-gray-300 px-4 py-1.5 text-sm text-gray-700 hover:bg-gray-50">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

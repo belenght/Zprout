@@ -15,4 +15,16 @@ export class TipoSemillaService {
   getTiposSemilla(): Observable<TipoDeSemilla[]> {
     return this.http.get<TipoDeSemilla[]>(this.apiUrl).pipe(catchError(handleHttpError));
   }
+
+  crearTipoSemilla(tipo: TipoDeSemilla): Observable<TipoDeSemilla> {
+    return this.http.post<TipoDeSemilla>(this.apiUrl, tipo).pipe(catchError(handleHttpError));
+  }
+
+  actualizarTipoSemilla(id: number, tipo: Partial<TipoDeSemilla>): Observable<TipoDeSemilla> {
+    return this.http.put<TipoDeSemilla>(`${this.apiUrl}/${id}`, tipo).pipe(catchError(handleHttpError));
+  }
+
+  eliminarTipoSemilla(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(catchError(handleHttpError));
+  }
 }
