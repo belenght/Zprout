@@ -1,3 +1,6 @@
+import { Lote } from './lote';
+import { Partida } from './partida';
+
 export type TipoControl = 'inicial' | 'intermedio' | 'final';
 export type ResultadoControl = 'Apto' | 'No Apto';
 
@@ -11,6 +14,9 @@ export interface ControlDeCalidad {
   tipo_control: TipoControl;
   resultado?: ResultadoControl;
   descripcion?: string;
+  // listarControles popula lote (+ tipo_semilla) o partida segun el tipo de control
+  lote?: Lote | number | null;
+  partida?: Partida | number | null;
 }
 
 // Body que espera POST /api/controles-calidad/lote (CUU02, sobre Lote:
