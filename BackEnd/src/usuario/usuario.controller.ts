@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { getEM } from '../shared/db/orm.js';
-import { Usuario } from './usuario.entity.js';
+import { Usuario, type EstadoUsuario } from './usuario.entity.js';
 import { Rol } from '../rol/rol.entity.js';
 import { hashPassword } from '../auth/auth.service.js';
 
@@ -72,4 +72,55 @@ export async function eliminarUsuario(req: Request, res: Response) {
   usuario.deleted_at = new Date();
   await em.flush();
   res.status(204).send();
+}
+
+
+/** Solo admin: lista usuarios por estado (default 'pendiente'). */
+export async function listarSolicitudes(req: Request, res: Response) {
+  const em = getEM();
+  const estado = String(req.query.estado ?? 'pendiente');
+  if (!['pendiente', 'activo', 'rechazado'].includes(estado)) {
+    return res.status(400).json({ error: 'estado invalido' });
+  }
+  const usuarios = await em.find(
+    Usuario,
+    { estado: estado as EstadoUsuario, deleted_at: null },
+    { populate: ['rol', 'rol_solicitado'], orderBy: { created_at: 'ASC' } },
+  );
+  res.json(usuarios);
+}
+
+/**
+ * Solo admin: mueve un usuario entre pendiente / activo / rechazado.
+ * Al pasar a 'activo' se asigna el rol: el de body.id_rol si viene, si no el
+ * que la persona pidio al registrarse.
+ */
+export async function cambiarEstado(req: Request, res: Response) {
+  const em = getEM();
+  const { estado, id_rol } = req.body;
+  if (!['pendiente', 'activo', 'rechazado'].includes(estado)) {
+    return res.status(400).json({ error: 'estado invalido' });
+  }
+
+  const usuario = await em.findOne(
+    Usuario,
+    { id_usuario: Number(req.params.id), deleted_at: null },
+    { populate: ['rol', 'rol_solicitado'] },
+  );
+  if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
+  if (usuario.id_usuario === req.usuario?.id_usuario) {
+    return res.status(400).json({ error: 'No podes cambiar tu propio estado' });
+  }
+
+  if (estado === 'activo') {
+    const rol = id_rol
+      ? await em.findOne(Rol, { id_rol: Number(id_rol), deleted_at: null })
+      : (usuario.rol_solicitado ?? usuario.rol);
+    if (!rol) return res.status(400).json({ error: 'Hay que asignar un rol para aprobar' });
+    usuario.rol = rol;
+  }
+
+  usuario.estado = estado as EstadoUsuario;
+  await em.flush();
+  res.json(usuario);
 }

@@ -4,7 +4,7 @@ import { Observable, tap } from 'rxjs';
 import { JwtHelperService } from '@auth0/angular-jwt';
 import { environment } from '../environments/environment';
 import { AuthStateService } from './auth-state.service';
-import { LoginRequest, LoginResponse, TokenPayload } from '../interfaces/login';
+import { LoginRequest, LoginResponse, RegistroRequest, RolRegistro, TokenPayload } from '../interfaces/login';
 
 @Injectable({
   providedIn: 'root'
@@ -22,6 +22,16 @@ export class AuthService {
         this.authStateService.setAuthState(true);
       })
     );
+  }
+
+  // Registro publico (GUI-02): no devuelve token, la cuenta queda pendiente.
+  registro(datos: RegistroRequest): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.apiUrl}/auth/registro`, datos);
+  }
+
+  // Roles que se pueden pedir al registrarse (el backend excluye administrador).
+  getRolesRegistro(): Observable<RolRegistro[]> {
+    return this.http.get<RolRegistro[]>(`${this.apiUrl}/auth/roles-registro`);
   }
 
   logout(): void {

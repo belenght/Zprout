@@ -15,6 +15,7 @@ import { PedidosComponent } from './components/pedidos/pedidos.component';
 import { GestionarPedidoComponent } from './components/pedidos/gestionar-pedido/gestionar-pedido.component';
 import { ReportesComponent } from './components/reportes/reportes.component';
 import { CatalogosComponent } from './components/catalogos/catalogos.component';
+import { SolicitudesComponent } from './components/solicitudes/solicitudes.component';
 import { RoleGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -54,6 +55,9 @@ export const routes: Routes = [
 
       // ABM de catalogos maestros (TipoDeSemilla, Campo, Proveedor)
       { path: 'catalogos', component: CatalogosComponent },
+
+      // Solicitudes de cuenta (registro GUI-02): solo administrador
+      { path: 'solicitudes', component: SolicitudesComponent, canActivate: [RoleGuard], data: { roles: ['administrador'] } },
     ],
   },
 

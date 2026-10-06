@@ -1,0 +1,104 @@
+<div class="mx-auto max-w-6xl px-4 py-6">
+  <h4 class="mb-1 font-display text-xl text-brand-900">Solicitudes de cuenta</h4>
+  <p class="mb-6 text-sm text-gray-500">Personas que pidieron acceso al sistema. Al aprobar, se asigna el rol elegido en cada fila.</p>
+
+  <div *ngIf="errorMessage" class="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-red-700">{{ errorMessage }}</div>
+
+  <div class="mb-6 flex w-fit overflow-hidden rounded-md border border-brand-200">
+    <button
+      type="button"
+      (click)="cambiarTab('pendiente')"
+      class="px-4 py-2 text-sm font-medium"
+      [class.bg-brand-700]="tabActiva === 'pendiente'"
+      [class.text-white]="tabActiva === 'pendiente'"
+      [class.text-brand-800]="tabActiva !== 'pendiente'"
+    >
+      Pendientes
+    </button>
+    <button
+      type="button"
+      (click)="cambiarTab('rechazado')"
+      class="border-l border-brand-200 px-4 py-2 text-sm font-medium"
+      [class.bg-brand-700]="tabActiva === 'rechazado'"
+      [class.text-white]="tabActiva === 'rechazado'"
+      [class.text-brand-800]="tabActiva !== 'rechazado'"
+    >
+      Rechazadas
+    </button>
+  </div>
+
+  <div class="overflow-hidden rounded-xl border border-brand-100">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="border-b border-brand-100 bg-brand-900 text-left text-white">
+          <tr>
+            <th class="px-4 py-3">Nombre</th>
+            <th class="px-4 py-3">Usuario</th>
+            <th class="px-4 py-3">Email</th>
+            <th class="px-4 py-3">Fecha</th>
+            <th class="px-4 py-3">Rol a asignar</th>
+            <th class="px-4 py-3"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let s of solicitudes" class="border-b border-brand-50 hover:bg-brand-50">
+            <td class="px-4 py-3 font-medium text-brand-900">{{ s.nombre }} {{ s.apellido }}</td>
+            <td class="px-4 py-3">{{ s.nombre_usuario }}</td>
+            <td class="px-4 py-3">{{ s.email }}</td>
+            <td class="px-4 py-3">{{ s.created_at | date: 'dd/MM/yyyy' }}</td>
+            <td class="px-4 py-3">
+              <select
+                [(ngModel)]="rolElegido[s.id_usuario]"
+                class="w-full min-w-48 rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              >
+                <option [ngValue]="null" disabled>Seleccioná un rol</option>
+                <option *ngFor="let rol of roles" [ngValue]="rol.id_rol">{{ etiquetaRol(rol.desc_rol) }}</option>
+              </select>
+              <div *ngIf="s.rol_solicitado" class="mt-1 text-xs text-gray-400">
+                Pidió: {{ etiquetaRol(s.rol_solicitado.desc_rol) }}
+              </div>
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  (click)="aprobar(s)"
+                  [disabled]="procesandoId === s.id_usuario"
+                  class="inline-flex items-center gap-1 rounded-md bg-brand-700 px-3 py-1 text-xs text-white hover:bg-brand-800 disabled:opacity-60"
+                >
+                  <i class="bi bi-check-lg"></i> Aceptar
+                </button>
+                <button
+                  *ngIf="tabActiva === 'pendiente'"
+                  type="button"
+                  (click)="rechazar(s)"
+                  [disabled]="procesandoId === s.id_usuario"
+                  class="inline-flex items-center gap-1 rounded-md border border-red-300 px-3 py-1 text-xs text-red-700 hover:bg-red-50 disabled:opacity-60"
+                >
+                  <i class="bi bi-x-lg"></i> Rechazar
+                </button>
+                <button
+                  *ngIf="tabActiva === 'rechazado'"
+                  type="button"
+                  (click)="volverAPendiente(s)"
+                  [disabled]="procesandoId === s.id_usuario"
+                  class="inline-flex items-center gap-1 rounded-md border border-gray-300 px-3 py-1 text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+                >
+                  <i class="bi bi-arrow-counterclockwise"></i> Volver a pendiente
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="!cargando && solicitudes.length === 0">
+            <td colspan="6" class="px-4 py-6 text-center text-gray-400">
+              {{ tabActiva === 'pendiente' ? 'No hay solicitudes pendientes.' : 'No hay solicitudes rechazadas.' }}
+            </td>
+          </tr>
+          <tr *ngIf="cargando">
+            <td colspan="6" class="px-4 py-6 text-center text-gray-400">Cargando...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
