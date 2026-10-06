@@ -16,10 +16,17 @@
   --color-gold-500: #c99a3f;
   --color-gold-400: #d8ae5c;
 
-  --font-display: "Playfair Display", "Georgia", serif;
+  --font-sans: "Carlito", "Calibri", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Caladea", "Cambria", "Georgia", serif;
 }
 
 /* Titulos de marca (logo "Zprout", encabezados de tarjeta tipo "Iniciar Sesion"). */
 .font-display {
   font-family: var(--font-display);
+}
+
+/* Fuente general de la app. Va al final y sin @layer para pisar el
+   `font:` que material-theme.scss deja en el body. */
+body {
+  font-family: var(--font-sans);
 }
