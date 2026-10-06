@@ -1,6 +1,10 @@
+import { Lote } from './lote';
+
 // DTO que llega del backend (limpieza_clasificacion.controller.ts)
 export interface LimpiezaClasificacion {
   id_limpieza?: number;
+  // listarLimpiezas popula lote y lote.tipo_semilla (se usa en Reportes)
+  lote?: Lote | number;
   volumen_restante_tn: string;
   merma_tn: string;
   observaciones?: string;
