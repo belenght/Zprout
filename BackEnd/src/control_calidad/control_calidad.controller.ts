@@ -3,6 +3,7 @@ import { getEM } from '../shared/db/orm.js';
 import { ControlDeCalidad, TipoControl, ResultadoControl } from './control_calidad.entity.js';
 import { Lote } from '../lote/lote.entity.js';
 import { cambiarEstado } from '../estado/estado_helper.js';
+import { Usuario } from '../usuario/usuario.entity.js';
 
 export async function listarControlesPorLote(req: Request, res: Response) {
   const em = getEM();
@@ -34,6 +35,10 @@ export async function listarControles(req: Request, res: Response) {
  */
 export async function registrarControlCalidadLote(req: Request, res: Response) {
   const em = getEM();
+  const usuarioId = req.usuario?.id_usuario;
+  if (!usuarioId) return res.status(401).json({ error: 'Usuario autenticado no disponible' });
+  const usuario = await em.findOne(Usuario, { id_usuario: usuarioId });
+  if (!usuario) return res.status(401).json({ error: 'Usuario autenticado no disponible' });
   const {
     lote_id,
     tipo_control, // 'inicial' | 'intermedio'
@@ -90,9 +95,9 @@ export async function registrarControlCalidadLote(req: Request, res: Response) {
 
   // Paso 4 / 3.a.1.b.1: actualiza el estado del lote segun el resultado
   if (resultado === ResultadoControl.NO_APTO) {
-    await cambiarEstado(em, { lote }, 'No apto');
+    await cambiarEstado(em, { lote }, 'No apto', usuario);
   } else if (tipo_control === TipoControl.INICIAL) {
-    await cambiarEstado(em, { lote }, 'En limpieza');
+    await cambiarEstado(em, { lote }, 'En limpieza', usuario);
   }
   // Nota: el paso a "Para curar" ocurre en CUU03 (limpieza_clasificacion_controller),
   // no aca, incluso cuando el control intermedio da Apto.

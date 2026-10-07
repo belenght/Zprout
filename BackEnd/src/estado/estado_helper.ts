@@ -2,6 +2,7 @@ import type { EntityManager } from '@mikro-orm/core';
 import { Estado } from './estado.entity.js';
 import { Lote } from '../lote/lote.entity.js';
 import { Partida } from '../partida/partida.entity.js';
+import { Usuario } from '../usuario/usuario.entity.js';
 
 /**
  * Cierra el estado abierto actual (si existe) de un Lote o Partida y abre
@@ -13,6 +14,7 @@ export async function cambiarEstado(
   em: EntityManager,
   target: { lote?: Lote; partida?: Partida },
   nombreNuevoEstado: string,
+  usuario: Usuario,
 ): Promise<Estado> {
   const filtro: any = { fecha_hasta: null, deleted_at: null };
   if (target.lote) filtro.lote = target.lote.id_lote;
@@ -28,6 +30,7 @@ export async function cambiarEstado(
     fecha_desde: new Date(),
     lote: target.lote,
     partida: target.partida,
+    usuario,
   });
   em.persist(nuevo);
   return nuevo;

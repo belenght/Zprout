@@ -35,6 +35,10 @@ export async function listarLimpiezas(req: Request, res: Response) {
  */
 export async function registrarLimpieza(req: Request, res: Response) {
   const em = getEM();
+  const usuarioId = req.usuario?.id_usuario;
+  if (!usuarioId) return res.status(401).json({ error: 'Usuario autenticado no disponible' });
+  const usuarioAutenticado = await em.findOne(Usuario, { id_usuario: usuarioId });
+  if (!usuarioAutenticado) return res.status(401).json({ error: 'Usuario autenticado no disponible' });
   const { lote_id, volumen_restante_tn, merma_tn, observaciones, operario_id } = req.body;
 
   if (!lote_id || volumen_restante_tn == null || merma_tn == null) {
@@ -76,7 +80,7 @@ export async function registrarLimpieza(req: Request, res: Response) {
   em.persist(limpieza);
 
   // Paso 6: nuevo estado del lote
-  await cambiarEstado(em, { lote }, 'Para curar');
+  await cambiarEstado(em, { lote }, 'Para curar', usuarioAutenticado);
 
   await em.flush();
   res.status(201).json(limpieza);

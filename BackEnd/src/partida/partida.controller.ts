@@ -8,6 +8,7 @@ import { PartidaInsumo } from '../partida_insumo/partida_insumo.entity.js';
 import { ControlDeCalidad, TipoControl, ResultadoControl } from '../control_calidad/control_calidad.entity.js';
 import { Estado } from '../estado/estado.entity.js';
 import { cambiarEstado } from '../estado/estado_helper.js';
+import { Usuario } from '../usuario/usuario.entity.js';
 
 const KG_POR_BOLSA = 20;
 
@@ -56,6 +57,10 @@ export async function obtenerPartida(req: Request, res: Response) {
  */
 export async function registrarCurado(req: Request, res: Response) {
   const em = getEM();
+  const usuarioId = req.usuario?.id_usuario;
+  if (!usuarioId) return res.status(401).json({ error: 'Usuario autenticado no disponible' });
+  const usuario = await em.findOne(Usuario, { id_usuario: usuarioId });
+  if (!usuario) return res.status(401).json({ error: 'Usuario autenticado no disponible' });
   const {
     lote_id,
     volumen_a_curar_tn,
@@ -121,7 +126,7 @@ export async function registrarCurado(req: Request, res: Response) {
   }
 
   // Estado inicial de la Partida: "Envasado"
-  await cambiarEstado(em, { partida }, 'Envasado');
+  await cambiarEstado(em, { partida }, 'Envasado', usuario);
 
   await em.flush();
   res.status(201).json({ ...wrap(partida).toJSON(), estado_actual: 'Envasado' });
@@ -135,6 +140,10 @@ export async function registrarCurado(req: Request, res: Response) {
  */
 export async function registrarControlFinalYGenerarInforme(req: Request, res: Response) {
   const em = getEM();
+  const usuarioId = req.usuario?.id_usuario;
+  if (!usuarioId) return res.status(401).json({ error: 'Usuario autenticado no disponible' });
+  const usuario = await em.findOne(Usuario, { id_usuario: usuarioId });
+  if (!usuario) return res.status(401).json({ error: 'Usuario autenticado no disponible' });
   const {
     partida_id,
     humedad,
@@ -194,7 +203,7 @@ export async function registrarControlFinalYGenerarInforme(req: Request, res: Re
 
   if (!dentroDeRango) {
     // 3.b.3: Partida "Rechazado", sin informe de partida
-    await cambiarEstado(em, { partida }, 'Rechazado');
+    await cambiarEstado(em, { partida }, 'Rechazado', usuario);
     await em.flush();
     return res.status(200).json({ partida, control, informe_generado: false });
   }
@@ -203,7 +212,7 @@ export async function registrarControlFinalYGenerarInforme(req: Request, res: Re
   partida.cantidad_bolsas_20kg = cantidad_bolsas_20kg ?? partida.cantidad_bolsas_20kg;
   partida.fecha_envasado = fecha_envasado ? new Date(fecha_envasado) : new Date();
 
-  await cambiarEstado(em, { partida }, 'Apto para comercializacion');
+  await cambiarEstado(em, { partida }, 'Apto para comercializacion', usuario);
   await em.flush();
 
   const informeDePartida = {

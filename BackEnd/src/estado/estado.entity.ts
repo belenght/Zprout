@@ -3,6 +3,7 @@ import { Entity, PrimaryKey, Property, ManyToOne } from '@mikro-orm/decorators/l
 import { OptionalProps } from '@mikro-orm/core';
 import { Lote } from '../lote/lote.entity.js';
 import { Partida } from '../partida/partida.entity.js';
+import { Usuario } from '../usuario/usuario.entity.js';
 
 /**
  * Estado es polimorfica: cada fila es un "evento" del historial de estados
@@ -31,6 +32,9 @@ export class Estado {
 
   @ManyToOne(() => Partida, { nullable: true })
   partida?: Partida;
+
+  @ManyToOne(() => Usuario, { nullable: true })
+  usuario!: Usuario | null;
 
   @Property({ type: 'datetime' })
   created_at: Date = new Date();

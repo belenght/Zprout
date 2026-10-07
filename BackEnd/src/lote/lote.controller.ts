@@ -10,6 +10,7 @@ import { ControlDeCalidad, TipoControl, ResultadoControl } from '../control_cali
 import { Estado } from '../estado/estado.entity.js';
 import { cambiarEstado } from '../estado/estado_helper.js';
 import { ESTADOS_LOTE } from '../estado/estado_nombres.js';
+import { Usuario } from '../usuario/usuario.entity.js';
 
 /**
  * El front (listado y detalle de lote) necesita el estado vigente de cada
@@ -54,6 +55,10 @@ export async function obtenerLote(req: Request, res: Response) {
  */
 export async function registrarIngresoLote(req: Request, res: Response) {
   const em = getEM();
+  const usuarioId = req.usuario?.id_usuario;
+  if (!usuarioId) return res.status(401).json({ error: 'Usuario autenticado no disponible' });
+  const usuario = await em.findOne(Usuario, { id_usuario: usuarioId });
+  if (!usuario) return res.status(401).json({ error: 'Usuario autenticado no disponible' });
   const {
     tipo_semilla_id,
     cantidad_semillas_en_tn,
@@ -114,7 +119,7 @@ export async function registrarIngresoLote(req: Request, res: Response) {
 
   if (origen_semilla === OrigenSemilla.PROPIO) {
     // Paso 7-8: queda pendiente de CC inicial
-    await cambiarEstado(em, { lote }, 'Pendiente CC' satisfies typeof ESTADOS_LOTE[number]);
+    await cambiarEstado(em, { lote }, 'Pendiente CC' satisfies typeof ESTADOS_LOTE[number], usuario);
   } else {
     // 4.a.2 - 4.a.4: CC inicial se considera superado automaticamente
     const ccAutomatico = em.create(ControlDeCalidad, {
@@ -130,7 +135,7 @@ export async function registrarIngresoLote(req: Request, res: Response) {
     // 4.a.3: saltea clasificacion y curado -> directo a la cola de CC final,
     // se modela reutilizando "Para curar" como bandera de "listo para el siguiente paso"
     // ya que el vocabulario oficial de Lote no define un estado propio para este caso.
-    await cambiarEstado(em, { lote }, 'Para curar' satisfies typeof ESTADOS_LOTE[number]);
+    await cambiarEstado(em, { lote }, 'Para curar' satisfies typeof ESTADOS_LOTE[number], usuario);
   }
 
   await em.flush();

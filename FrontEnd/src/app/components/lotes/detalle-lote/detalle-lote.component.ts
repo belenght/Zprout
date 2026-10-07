@@ -8,10 +8,12 @@ import { ControlCalidadService } from '../../../services/control-calidad.service
 import { LimpiezaService } from '../../../services/limpieza.service';
 import { PartidaService } from '../../../services/partida.service';
 import { AlmacenService } from '../../../services/almacen.service';
+import { EstadoService } from '../../../services/estado.service';
 import { Lote } from '../../../interfaces/lote';
 import { ControlDeCalidad } from '../../../interfaces/control-calidad';
 import { LimpiezaClasificacion } from '../../../interfaces/limpieza';
 import { Partida } from '../../../interfaces/partida';
+import { EstadoHistorial } from '../../../interfaces/estado';
 import { Almacen } from '../../../interfaces/almacen';
 import { claseBadgeEstado } from '../../../shared/estado-badge';
 
@@ -30,6 +32,7 @@ export class DetalleLoteComponent implements OnInit {
   lote: Lote | null = null;
   controles: ControlDeCalidad[] = [];
   limpiezas: LimpiezaClasificacion[] = [];
+  estados: EstadoHistorial[] = [];
   partidas: Partida[] = [];
   almacenes: Almacen[] = [];
   almacenSeleccionado: number | null = null;
@@ -48,6 +51,7 @@ export class DetalleLoteComponent implements OnInit {
     private limpiezaService: LimpiezaService,
     private partidaService: PartidaService,
     private almacenService: AlmacenService,
+    private estadoService: EstadoService,
     private toastr: ToastrService
   ) {}
 
@@ -82,6 +86,16 @@ export class DetalleLoteComponent implements OnInit {
     this.limpiezaService.getLimpiezasPorLote(id).subscribe({
       next: (data) => {
         this.limpiezas = data;
+        this.cd.detectChanges();
+      },
+      error: () => {
+        // Historial informativo: si falla no bloquea la vista de detalle.
+      }
+    });
+
+    this.estadoService.getHistorialPorLote(id).subscribe({
+      next: (data) => {
+        this.estados = data;
         this.cd.detectChanges();
       },
       error: () => {

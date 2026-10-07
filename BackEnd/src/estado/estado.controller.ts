@@ -11,7 +11,7 @@ export async function historialPorLote(req: Request, res: Response) {
   const estados = await em.find(
     Estado,
     { lote: { id_lote: Number(req.params.loteId) }, deleted_at: null },
-    { orderBy: { fecha_desde: 'ASC' } },
+    { populate: ['usuario'], orderBy: { fecha_desde: 'ASC' } },
   );
   res.json(estados);
 }
@@ -21,7 +21,7 @@ export async function historialPorPartida(req: Request, res: Response) {
   const estados = await em.find(
     Estado,
     { partida: { id_partida: Number(req.params.partidaId) }, deleted_at: null },
-    { orderBy: { fecha_desde: 'ASC' } },
+    { populate: ['usuario'], orderBy: { fecha_desde: 'ASC' } },
   );
   res.json(estados);
 }

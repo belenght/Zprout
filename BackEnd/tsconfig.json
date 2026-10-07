@@ -2,6 +2,7 @@
   "compilerOptions": {
     /* Optimización de Desarrollo */
     "incremental": true,
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
     "sourceMap": true,
     
 
