@@ -76,7 +76,7 @@
               </span>
             </td>
             <td class="px-4 py-3">{{ lote.cantidad_semillas_en_tn }}</td>
-            <td class="px-4 py-3">{{ lote.fecha_ingreso | date: 'dd/MM/yyyy' }}</td>
+            <td class="px-4 py-3">{{ lote.fecha_ingreso | date: 'dd/MM/yyyy':'UTC' }}</td>
             <td class="px-4 py-3">
               <span class="rounded-full px-2 py-0.5 text-xs" [ngClass]="claseBadgeEstado(lote.estado_actual)">
                 {{ lote.estado_actual || 'Sin estado' }}

@@ -11,8 +11,8 @@
       <div class="rounded-lg border border-brand-100 bg-white p-4">
         <h6 class="mb-2 font-semibold text-brand-900">Datos del lote</h6>
         <p class="mb-1 text-sm"><strong>Origen:</strong> {{ origenTexto }}</p>
-        <p class="mb-1 text-sm"><strong>Cantidad ingresada:</strong> {{ lote.cantidad_semillas_en_tn }} tn</p>
-        <p class="mb-1 text-sm"><strong>Fecha de ingreso:</strong> {{ lote.fecha_ingreso | date: 'dd/MM/yyyy' }}</p>
+        <p class="mb-1 text-sm"><strong>Cantidad operativa:</strong> {{ lote.cantidad_semillas_en_tn }} tn</p>
+        <p class="mb-1 text-sm"><strong>Fecha de ingreso:</strong> {{ lote.fecha_ingreso | date: 'dd/MM/yyyy':'UTC' }}</p>
         <p class="mb-1 text-sm" *ngIf="lote.observaciones"><strong>Observaciones:</strong> {{ lote.observaciones }}</p>
       </div>
 
@@ -101,7 +101,7 @@
         <ul class="space-y-2 text-sm">
           <li *ngFor="let l of limpiezas" class="border-b border-brand-50 pb-2 last:border-0">
             Vol. restante: <strong>{{ l.volumen_restante_tn }} tn</strong> · Merma: <strong>{{ l.merma_tn }} tn</strong>
-            <span class="text-gray-400">({{ l.fecha | date: 'dd/MM/yyyy' }})</span>
+            <span class="text-gray-400">({{ l.fecha | date: 'dd/MM/yyyy':'UTC' }})</span>
             <div *ngIf="l.observaciones" class="text-gray-500">{{ l.observaciones }}</div>
           </li>
         </ul>

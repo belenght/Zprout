@@ -21,7 +21,7 @@
       </div>
 
       <p class="flex items-center gap-1 text-xs text-gray-500">
-        <i class="bi bi-info-circle"></i> El sistema calcula automaticamente la merma %{{ mermaPorcentaje !== null ? (': ' + (mermaPorcentaje | number: '1.1-1') + ' %') : '' }}.
+        <i class="bi bi-info-circle"></i> El sistema calcula automaticamente la merma (%){{ mermaPorcentaje !== null ? (': ' + (mermaPorcentaje | number: '1.1-1') + ' %') : '' }}.
       </p>
 
       <div *ngIf="excedeVolumenDisponible" class="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
