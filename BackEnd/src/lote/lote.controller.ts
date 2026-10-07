@@ -22,6 +22,23 @@ async function conEstadoActual(em: ReturnType<typeof getEM>, lotes: Lote[]) {
   const ids = lotes.map((l) => l.id_lote);
   const abiertos = await em.find(Estado, { lote: { id_lote: { $in: ids } }, fecha_hasta: null, deleted_at: null });
   const mapa = new Map(abiertos.map((e) => [e.lote?.id_lote, e.nombre]));
+
+  // Busca lotes antiguos cuyo último evento quedó cerrado por
+  // una transición anterior: el último estado conocido es más útil que
+  // mostrar "Sin estado" y conserva la trazabilidad real del lote.
+  const sinEstadoAbierto = ids.filter((id) => !mapa.has(id));
+  if (sinEstadoAbierto.length > 0) {
+    const historial = await em.find(
+      Estado,
+      { lote: { id_lote: { $in: sinEstadoAbierto } }, deleted_at: null },
+      { orderBy: { fecha_desde: 'DESC' } },
+    );
+    for (const estado of historial) {
+      const idLote = estado.lote?.id_lote;
+      if (idLote != null && !mapa.has(idLote)) mapa.set(idLote, estado.nombre);
+    }
+  }
+
   return lotes.map((l) => ({ ...wrap(l).toJSON(), estado_actual: mapa.get(l.id_lote) ?? null }));
 }
 
