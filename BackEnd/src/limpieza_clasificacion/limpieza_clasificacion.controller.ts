@@ -79,6 +79,11 @@ export async function registrarLimpieza(req: Request, res: Response) {
   });
   em.persist(limpieza);
 
+  // Desde este punto el lote conserva como volumen operativo solamente el
+  // material que sobrevivio a la limpieza; la merma ya no entra en el
+  // calculo de disponibilidad para curado y envasado.
+  lote.cantidad_semillas_en_tn = Number(volumen_restante_tn).toFixed(2);
+
   // Paso 6: nuevo estado del lote
   await cambiarEstado(em, { lote }, 'Para curar', usuarioAutenticado);
 
