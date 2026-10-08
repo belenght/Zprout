@@ -3,6 +3,8 @@ import { getEM } from '../shared/db/orm.js';
 import { Almacen, TipoAlmacen } from './almacen.entity.js';
 import { Lote } from '../lote/lote.entity.js';
 
+const CAPACIDAD_MIN = 0.01;
+
 /**
  * "Ocupado" no es una columna propia de Almacen: se calcula sumando lo que
  * hay hoy asignado ahi (ver Lote.almacen, seteado via PATCH /lotes/:id/almacen).
@@ -15,24 +17,19 @@ import { Lote } from '../lote/lote.entity.js';
 async function conOcupacion(em: ReturnType<typeof getEM>, almacenes: Almacen[]) {
   if (almacenes.length === 0) return [];
   const ids = almacenes.map((a) => a.id_almacen);
-
   const lotes = await em.find(Lote, { almacen: { id_almacen: { $in: ids } }, deleted_at: null }, { populate: ['almacen'] });
-
   const tnPorAlmacen = new Map<number, number>();
   for (const lote of lotes) {
     const id = lote.almacen!.id_almacen;
     tnPorAlmacen.set(id, (tnPorAlmacen.get(id) ?? 0) + Number(lote.cantidad_semillas_en_tn));
   }
-
   return almacenes.map((a) => ({ ...a, ocupado_tn: tnPorAlmacen.get(a.id_almacen) ?? 0 }));
 }
-
 export async function listarAlmacenes(req: Request, res: Response) {
   const em = getEM();
   const almacenes = await em.find(Almacen, { deleted_at: null });
   res.json(await conOcupacion(em, almacenes));
 }
-
 export async function obtenerAlmacen(req: Request, res: Response) {
   const em = getEM();
   const almacen = await em.findOne(Almacen, { id_almacen: Number(req.params.id), deleted_at: null });
@@ -40,37 +37,49 @@ export async function obtenerAlmacen(req: Request, res: Response) {
   const [dto] = await conOcupacion(em, [almacen]);
   res.json(dto);
 }
-
 export async function crearAlmacen(req: Request, res: Response) {
   const em = getEM();
   const { tipo, capacidad } = req.body;
   if (!tipo || !Object.values(TipoAlmacen).includes(tipo)) {
     return res.status(400).json({ error: `tipo debe ser uno de: ${Object.values(TipoAlmacen).join(', ')}` });
   }
-  const almacen = em.create(Almacen, { tipo, capacidad });
+  // Antes "capacidad" no se validaba en absoluto: ni que viniera, ni que
+  // fuera positiva. Se podia crear un almacen sin capacidad o con capacidad
+  // negativa.
+  const capacidadNum = Number(capacidad);
+  if (!Number.isFinite(capacidadNum) || capacidadNum < CAPACIDAD_MIN) {
+    return res.status(400).json({ error: `capacidad debe ser un numero mayor o igual a ${CAPACIDAD_MIN}` });
+  }
+  const almacen = em.create(Almacen, { tipo, capacidad: String(capacidadNum) });
   em.persist(almacen);
   await em.flush();
   res.status(201).json(almacen);
 }
-
 export async function actualizarAlmacen(req: Request, res: Response) {
   const em = getEM();
   const almacen = await em.findOne(Almacen, { id_almacen: Number(req.params.id), deleted_at: null });
   if (!almacen) return res.status(404).json({ error: 'Almacen no encontrado' });
-
-  const cambios = { ...req.body };
-  if (cambios.capacidad != null) cambios.capacidad = String(cambios.capacidad);
-
-  em.assign(almacen, cambios);
+  const { tipo, capacidad } = req.body;
+  if (tipo !== undefined) {
+    if (!Object.values(TipoAlmacen).includes(tipo)) {
+      return res.status(400).json({ error: `tipo debe ser uno de: ${Object.values(TipoAlmacen).join(', ')}` });
+    }
+    almacen.tipo = tipo;
+  }
+  if (capacidad !== undefined) {
+    const capacidadNum = Number(capacidad);
+    if (!Number.isFinite(capacidadNum) || capacidadNum < CAPACIDAD_MIN) {
+      return res.status(400).json({ error: `capacidad debe ser un numero mayor o igual a ${CAPACIDAD_MIN}` });
+    }
+    almacen.capacidad = String(capacidadNum);
+  }
   await em.flush();
   res.json(almacen);
 }
-
 export async function eliminarAlmacen(req: Request, res: Response) {
   const em = getEM();
   const almacen = await em.findOne(Almacen, { id_almacen: Number(req.params.id), deleted_at: null });
   if (!almacen) return res.status(404).json({ error: 'Almacen no encontrado' });
-
   almacen.deleted_at = new Date();
   await em.flush();
   res.status(204).send();

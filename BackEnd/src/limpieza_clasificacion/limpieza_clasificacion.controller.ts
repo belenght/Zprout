@@ -6,6 +6,8 @@ import { Usuario } from '../usuario/usuario.entity.js';
 import { Estado } from '../estado/estado.entity.js';
 import { cambiarEstado } from '../estado/estado_helper.js';
 
+const OBSERVACIONES_MAX = 500;
+
 export async function listarLimpiezasPorLote(req: Request, res: Response) {
   const em = getEM();
   const registros = await em.find(
@@ -44,6 +46,18 @@ export async function registrarLimpieza(req: Request, res: Response) {
   if (!lote_id || volumen_restante_tn == null || merma_tn == null) {
     return res.status(400).json({ error: 'lote_id, volumen_restante_tn y merma_tn son requeridos' });
   }
+  // Antes solo se chequeaba "== null": -5 no es null, asi que un volumen
+  // negativo pasaba. Y como la validacion de mas abajo solo compara
+  // "restante + merma > volumenIngresado", un valor negativo en uno de los
+  // dos podia compensar al otro y esconder una suma invalida.
+  const restanteNum = Number(volumen_restante_tn);
+  const mermaNum = Number(merma_tn);
+  if (!Number.isFinite(restanteNum) || restanteNum < 0 || !Number.isFinite(mermaNum) || mermaNum < 0) {
+    return res.status(400).json({ error: 'volumen_restante_tn y merma_tn deben ser numeros mayores o iguales a 0' });
+  }
+  if (typeof observaciones === 'string' && observaciones.length > OBSERVACIONES_MAX) {
+    return res.status(400).json({ error: `observaciones no puede superar los ${OBSERVACIONES_MAX} caracteres` });
+  }
 
   const lote = await em.findOne(Lote, { id_lote: lote_id, deleted_at: null });
   if (!lote) return res.status(404).json({ error: 'Lote no encontrado' });
@@ -58,7 +72,7 @@ export async function registrarLimpieza(req: Request, res: Response) {
 
   // Alternativo 3.a: consistencia de volumen
   const volumenIngresado = Number(lote.cantidad_semillas_en_tn);
-  const sumaProcesada = Number(volumen_restante_tn) + Number(merma_tn);
+  const sumaProcesada = restanteNum + mermaNum;
   if (sumaProcesada > volumenIngresado) {
     return res.status(400).json({
       error: `El volumen restante + merma (${sumaProcesada} tn) supera el volumen disponible del lote (${volumenIngresado} tn)`,
@@ -72,8 +86,8 @@ export async function registrarLimpieza(req: Request, res: Response) {
 
   const limpieza = em.create(LimpiezaClasificacion, {
     lote,
-    volumen_restante_tn,
-    merma_tn,
+    volumen_restante_tn: String(restanteNum),
+    merma_tn: String(mermaNum),
     observaciones,
     operario,
   });
@@ -82,7 +96,7 @@ export async function registrarLimpieza(req: Request, res: Response) {
   // Desde este punto el lote conserva como volumen operativo solamente el
   // material que sobrevivio a la limpieza; la merma ya no entra en el
   // calculo de disponibilidad para curado y envasado.
-  lote.cantidad_semillas_en_tn = Number(volumen_restante_tn).toFixed(2);
+  lote.cantidad_semillas_en_tn = restanteNum.toFixed(2);
 
   // Paso 6: nuevo estado del lote
   await cambiarEstado(em, { lote }, 'Para curar', usuarioAutenticado);

@@ -71,8 +71,39 @@ export async function registrarCurado(req: Request, res: Response) {
   if (!lote_id || volumen_a_curar_tn == null || !tipo_curado) {
     return res.status(400).json({ error: 'lote_id, volumen_a_curar_tn y tipo_curado son requeridos' });
   }
+  // Antes "volumen_a_curar_tn == null" dejaba pasar cualquier negativo (-5
+  // no es null). Con un volumen negativo, "-5 > disponible" daba false, asi
+  // que el chequeo de stock de mas abajo nunca lo bloqueaba, y se generaba
+  // una Partida con volumen_en_tn y cantidad_bolsas_20kg negativos.
+  const volumenNum = Number(volumen_a_curar_tn);
+  if (!Number.isFinite(volumenNum) || volumenNum <= 0) {
+    return res.status(400).json({ error: 'volumen_a_curar_tn debe ser un numero mayor a 0' });
+  }
   if (!Object.values(TipoCurado).includes(tipo_curado)) {
     return res.status(400).json({ error: `tipo_curado debe ser uno de: ${Object.values(TipoCurado).join(', ')}` });
+  }
+  // Antes cada item del array "insumos" se persistia con item.cantidad tal
+  // cual vino, sin chequear que fuera un numero positivo, que insumo_id
+  // fuera un numero valido, ni que no se repitiera el mismo insumo.
+  if (insumos !== undefined) {
+    if (!Array.isArray(insumos)) {
+      return res.status(400).json({ error: 'insumos debe ser un array' });
+    }
+    const idsVistos = new Set<number>();
+    for (const item of insumos) {
+      const insumoId = Number(item?.insumo_id);
+      const cantidad = Number(item?.cantidad);
+      if (!Number.isFinite(insumoId) || insumoId <= 0) {
+        return res.status(400).json({ error: 'Cada insumo debe tener un insumo_id valido' });
+      }
+      if (!Number.isFinite(cantidad) || cantidad <= 0) {
+        return res.status(400).json({ error: `La cantidad del insumo ${insumoId} debe ser un numero mayor a 0` });
+      }
+      if (idsVistos.has(insumoId)) {
+        return res.status(400).json({ error: `El insumo ${insumoId} esta repetido en la lista` });
+      }
+      idsVistos.add(insumoId);
+    }
   }
 
   const lote = await em.findOne(Lote, { id_lote: lote_id, deleted_at: null });
@@ -90,19 +121,19 @@ export async function registrarCurado(req: Request, res: Response) {
   const yaCurado = partidasPrevias.reduce((acc, p) => acc + Number(p.volumen_en_tn), 0);
   const disponible = Number(lote.cantidad_semillas_en_tn) - yaCurado;
 
-  if (Number(volumen_a_curar_tn) > disponible) {
+  if (volumenNum > disponible) {
     return res.status(400).json({
-      error: `Volumen a curar (${volumen_a_curar_tn} tn) supera el stock disponible del lote (${disponible} tn)`,
+      error: `Volumen a curar (${volumenNum} tn) supera el stock disponible del lote (${disponible} tn)`,
     });
   }
 
   // Paso 5-6: genera la Partida
   const nroPartida = `P-${lote.nro_lote}-${Date.now().toString().slice(-5)}`;
-  const cantidadBolsas = Math.floor((Number(volumen_a_curar_tn) * 1000) / KG_POR_BOLSA);
+  const cantidadBolsas = Math.floor((volumenNum * 1000) / KG_POR_BOLSA);
 
   const partida = em.create(Partida, {
     nro_partida: nroPartida,
-    volumen_en_tn: volumen_a_curar_tn,
+    volumen_en_tn: String(volumenNum),
     tipo_curado,
     fecha_curado: new Date(),
     cantidad_bolsas_20kg: cantidadBolsas,
@@ -113,13 +144,13 @@ export async function registrarCurado(req: Request, res: Response) {
   // Insumos utilizados (PartidaInsumo, N:M con Cantidad)
   if (Array.isArray(insumos)) {
     for (const item of insumos) {
-      const insumo = await em.findOne(Insumo, { id_insumo: item.insumo_id, deleted_at: null });
+      const insumo = await em.findOne(Insumo, { id_insumo: Number(item.insumo_id), deleted_at: null });
       if (!insumo) return res.status(404).json({ error: `Insumo ${item.insumo_id} no encontrado` });
 
       const partidaInsumo = em.create(PartidaInsumo, {
         partida,
         insumo,
-        cantidad: item.cantidad,
+        cantidad: String(Number(item.cantidad)),
       });
       em.persist(partidaInsumo);
     }
@@ -157,6 +188,22 @@ export async function registrarControlFinalYGenerarInforme(req: Request, res: Re
   if (!partida_id || humedad == null || poder_germinativo == null || nivel_de_pureza == null) {
     return res.status(400).json({ error: 'partida_id, humedad, poder_germinativo y nivel_de_pureza son requeridos' });
   }
+  const humedadNum = Number(humedad);
+  const pgNum = Number(poder_germinativo);
+  const purezaNum = Number(nivel_de_pureza);
+  if (
+    !Number.isFinite(humedadNum) || humedadNum < 0 ||
+    !Number.isFinite(pgNum) || pgNum < 0 ||
+    !Number.isFinite(purezaNum) || purezaNum < 0
+  ) {
+    return res.status(400).json({ error: 'humedad, poder_germinativo y nivel_de_pureza deben ser numeros mayores o iguales a 0' });
+  }
+  if (cantidad_bolsas_20kg != null) {
+    const bolsasNum = Number(cantidad_bolsas_20kg);
+    if (!Number.isFinite(bolsasNum) || bolsasNum < 0) {
+      return res.status(400).json({ error: 'cantidad_bolsas_20kg debe ser un numero mayor o igual a 0' });
+    }
+  }
 
   const partida = await em.findOne(
     Partida,
@@ -174,12 +221,12 @@ export async function registrarControlFinalYGenerarInforme(req: Request, res: Re
 
   const ts = partida.lote.tipo_semilla;
   const dentroDeRango =
-    (ts.humedad_min == null || Number(humedad) >= Number(ts.humedad_min)) &&
-    (ts.humedad_max == null || Number(humedad) <= Number(ts.humedad_max)) &&
-    (ts.poder_germinativo_min == null || Number(poder_germinativo) >= Number(ts.poder_germinativo_min)) &&
-    (ts.poder_germinativo_max == null || Number(poder_germinativo) <= Number(ts.poder_germinativo_max)) &&
-    (ts.nivel_pureza_min == null || Number(nivel_de_pureza) >= Number(ts.nivel_pureza_min)) &&
-    (ts.nivel_pureza_max == null || Number(nivel_de_pureza) <= Number(ts.nivel_pureza_max));
+    (ts.humedad_min == null || humedadNum >= Number(ts.humedad_min)) &&
+    (ts.humedad_max == null || humedadNum <= Number(ts.humedad_max)) &&
+    (ts.poder_germinativo_min == null || pgNum >= Number(ts.poder_germinativo_min)) &&
+    (ts.poder_germinativo_max == null || pgNum <= Number(ts.poder_germinativo_max)) &&
+    (ts.nivel_pureza_min == null || purezaNum >= Number(ts.nivel_pureza_min)) &&
+    (ts.nivel_pureza_max == null || purezaNum <= Number(ts.nivel_pureza_max));
 
   if (!dentroDeRango && !confirmar_no_apto) {
     return res.status(409).json({
@@ -196,7 +243,7 @@ export async function registrarControlFinalYGenerarInforme(req: Request, res: Re
   const control = em.create(ControlDeCalidad, {
     tipo_control: TipoControl.FINAL,
     resultado: dentroDeRango ? ResultadoControl.APTO : ResultadoControl.NO_APTO,
-    humedad, poder_germinativo, nivel_de_pureza,
+    humedad: String(humedadNum), poder_germinativo: String(pgNum), nivel_de_pureza: String(purezaNum),
     partida,
   });
   em.persist(control);
@@ -220,7 +267,7 @@ export async function registrarControlFinalYGenerarInforme(req: Request, res: Re
     nro_lote_origen: partida.lote.nro_lote,
     fecha_envasado: partida.fecha_envasado,
     cantidad_bolsas_20kg: partida.cantidad_bolsas_20kg,
-    resultados_calidad: { humedad, poder_germinativo, nivel_de_pureza },
+    resultados_calidad: { humedad: humedadNum, poder_germinativo: pgNum, nivel_de_pureza: purezaNum },
     estado: 'Apto para comercializacion',
   };
 

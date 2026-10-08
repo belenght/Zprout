@@ -4,10 +4,19 @@ import { Usuario, type EstadoUsuario } from './usuario.entity.js';
 import { Rol } from '../rol/rol.entity.js';
 import { hashPassword } from '../auth/auth.service.js';
 
+const PASSWORD_MIN = 8;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const ESTADOS_VALIDOS = ['pendiente', 'activo', 'rechazado'] as const;
+
+function sinPassword(usuario: Usuario) {
+  const { password: _omit, ...resto } = usuario as any;
+  return resto;
+}
+
 export async function listarUsuarios(req: Request, res: Response) {
   const em = getEM();
   const usuarios = await em.find(Usuario, { deleted_at: null }, { populate: ['rol'] });
-  res.json(usuarios);
+  res.json(usuarios.map(sinPassword));
 }
 
 export async function obtenerUsuario(req: Request, res: Response) {
@@ -18,7 +27,7 @@ export async function obtenerUsuario(req: Request, res: Response) {
     { populate: ['rol'] },
   );
   if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
-  res.json(usuario);
+  res.json(sinPassword(usuario));
 }
 
 export async function crearUsuario(req: Request, res: Response) {
@@ -26,6 +35,12 @@ export async function crearUsuario(req: Request, res: Response) {
   const { nombre, apellido, nombre_usuario, email, password, fecha_nacimiento, rol_id } = req.body;
   if (!nombre || !apellido || !nombre_usuario || !email || !password) {
     return res.status(400).json({ error: 'nombre, apellido, nombre_usuario, email y password son requeridos' });
+  }
+  if (!EMAIL_PATTERN.test(email)) {
+    return res.status(400).json({ error: 'email invalido' });
+  }
+  if (String(password).length < PASSWORD_MIN) {
+    return res.status(400).json({ error: `password debe tener al menos ${PASSWORD_MIN} caracteres` });
   }
 
   const existente = await em.findOne(Usuario, { nombre_usuario, deleted_at: null });
@@ -45,8 +60,7 @@ export async function crearUsuario(req: Request, res: Response) {
   em.persist(usuario);
   await em.flush();
 
-  const { password: _omit, ...usuarioSinPassword } = usuario;
-  res.status(201).json(usuarioSinPassword);
+  res.status(201).json(sinPassword(usuario));
 }
 
 export async function actualizarUsuario(req: Request, res: Response) {
@@ -54,14 +68,33 @@ export async function actualizarUsuario(req: Request, res: Response) {
   const usuario = await em.findOne(Usuario, { id_usuario: Number(req.params.id), deleted_at: null });
   if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
 
-  const cambios = { ...req.body };
-  if (cambios.password) {
-    cambios.password = await hashPassword(cambios.password);
+  // Whitelist explicito en vez de em.assign(usuario, { ...req.body }).
+  // OJO: "estado" y "rol_solicitado" quedan afuera a proposito: el cambio de
+  // estado (aprobar/rechazar) tiene su propio endpoint (cambiarEstado) con
+  // la regla de "no podes cambiar tu propio estado"; si este PUT generico
+  // tambien pudiera tocar "estado", alguien podria esquivar esa regla.
+  const { nombre, apellido, email, password, fecha_nacimiento, rol_id } = req.body;
+  if (email !== undefined) {
+    if (!EMAIL_PATTERN.test(email)) return res.status(400).json({ error: 'email invalido' });
+    usuario.email = email;
+  }
+  if (password !== undefined) {
+    if (String(password).length < PASSWORD_MIN) {
+      return res.status(400).json({ error: `password debe tener al menos ${PASSWORD_MIN} caracteres` });
+    }
+    usuario.password = await hashPassword(password);
+  }
+  if (nombre !== undefined) usuario.nombre = nombre;
+  if (apellido !== undefined) usuario.apellido = apellido;
+  if (fecha_nacimiento !== undefined) usuario.fecha_nacimiento = fecha_nacimiento;
+  if (rol_id !== undefined) {
+    const rol = await em.findOne(Rol, { id_rol: rol_id }) ?? undefined;
+    if (!rol) return res.status(404).json({ error: 'Rol no encontrado' });
+    usuario.rol = rol;
   }
 
-  em.assign(usuario, cambios);
   await em.flush();
-  res.json(usuario);
+  res.json(sinPassword(usuario));
 }
 
 export async function eliminarUsuario(req: Request, res: Response) {
@@ -79,7 +112,7 @@ export async function eliminarUsuario(req: Request, res: Response) {
 export async function listarSolicitudes(req: Request, res: Response) {
   const em = getEM();
   const estado = String(req.query.estado ?? 'pendiente');
-  if (!['pendiente', 'activo', 'rechazado'].includes(estado)) {
+  if (!ESTADOS_VALIDOS.includes(estado as EstadoUsuario)) {
     return res.status(400).json({ error: 'estado invalido' });
   }
   const usuarios = await em.find(
@@ -87,7 +120,7 @@ export async function listarSolicitudes(req: Request, res: Response) {
     { estado: estado as EstadoUsuario, deleted_at: null },
     { populate: ['rol', 'rol_solicitado'], orderBy: { created_at: 'ASC' } },
   );
-  res.json(usuarios);
+  res.json(usuarios.map(sinPassword));
 }
 
 /**
@@ -98,7 +131,7 @@ export async function listarSolicitudes(req: Request, res: Response) {
 export async function cambiarEstado(req: Request, res: Response) {
   const em = getEM();
   const { estado, id_rol } = req.body;
-  if (!['pendiente', 'activo', 'rechazado'].includes(estado)) {
+  if (!ESTADOS_VALIDOS.includes(estado as EstadoUsuario)) {
     return res.status(400).json({ error: 'estado invalido' });
   }
 
@@ -122,5 +155,7 @@ export async function cambiarEstado(req: Request, res: Response) {
 
   usuario.estado = estado as EstadoUsuario;
   await em.flush();
-  res.json(usuario);
+  // Antes devolvia res.json(usuario) directo en todos estos endpoints: el
+  // hash de la contrasena quedaba expuesto igual que en actualizarUsuario.
+  res.json(sinPassword(usuario));
 }

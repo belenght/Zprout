@@ -12,6 +12,10 @@ import { cambiarEstado } from '../estado/estado_helper.js';
 import { ESTADOS_LOTE } from '../estado/estado_nombres.js';
 import { Usuario } from '../usuario/usuario.entity.js';
 
+const CANTIDAD_MIN_TN = 0.01;
+const OBSERVACIONES_MAX = 500;
+const INFORME_CALIDAD_MAX = 255;
+
 /**
  * El front (listado y detalle de lote) necesita el estado vigente de cada
  * lote, pero Estado vive en su propia tabla (historial). Se resuelve aca en
@@ -89,6 +93,19 @@ export async function registrarIngresoLote(req: Request, res: Response) {
   if (!tipo_semilla_id || !cantidad_semillas_en_tn || !origen_semilla) {
     return res.status(400).json({ error: 'tipo_semilla_id, cantidad_semillas_en_tn y origen_semilla son requeridos' });
   }
+  // La version anterior no validaba que cantidad_semillas_en_tn fuera
+  // realmente un numero positivo: un valor negativo o texto pasaba sin
+  // problema porque solo se chequeaba truthy.
+  const cantidadNum = Number(cantidad_semillas_en_tn);
+  if (!Number.isFinite(cantidadNum) || cantidadNum < CANTIDAD_MIN_TN) {
+    return res.status(400).json({ error: `cantidad_semillas_en_tn debe ser un numero mayor o igual a ${CANTIDAD_MIN_TN}` });
+  }
+  if (typeof observaciones === 'string' && observaciones.length > OBSERVACIONES_MAX) {
+    return res.status(400).json({ error: `observaciones no puede superar los ${OBSERVACIONES_MAX} caracteres` });
+  }
+  if (typeof informe_calidad_externo === 'string' && informe_calidad_externo.length > INFORME_CALIDAD_MAX) {
+    return res.status(400).json({ error: `informe_calidad_externo no puede superar los ${INFORME_CALIDAD_MAX} caracteres` });
+  }
   if (!Object.values(OrigenSemilla).includes(origen_semilla)) {
     return res.status(400).json({ error: `origen_semilla debe ser uno de: ${Object.values(OrigenSemilla).join(', ')}` });
   }
@@ -124,7 +141,7 @@ export async function registrarIngresoLote(req: Request, res: Response) {
     nro_lote: nroLote,
     origen_semilla,
     descripcion_origen: descripcionOrigen,
-    cantidad_semillas_en_tn,
+    cantidad_semillas_en_tn: String(cantidadNum),
     fecha_ingreso: fechaIngreso,
     observaciones,
     campo,

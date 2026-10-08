@@ -5,6 +5,8 @@ import { Lote } from '../lote/lote.entity.js';
 import { cambiarEstado } from '../estado/estado_helper.js';
 import { Usuario } from '../usuario/usuario.entity.js';
 
+const DESCRIPCION_MAX = 500;
+
 export async function listarControlesPorLote(req: Request, res: Response) {
   const em = getEM();
   const controles = await em.find(
@@ -52,6 +54,21 @@ export async function registrarControlCalidadLote(req: Request, res: Response) {
   if (!lote_id || !tipo_control || humedad == null || poder_germinativo == null || nivel_de_pureza == null) {
     return res.status(400).json({ error: 'lote_id, tipo_control, humedad, poder_germinativo y nivel_de_pureza son requeridos' });
   }
+  // Antes humedad/poder_germinativo/nivel_de_pureza se usaban tal cual
+  // venian del body, sin chequear que fueran numeros validos ni positivos.
+  const humedadNum = Number(humedad);
+  const pgNum = Number(poder_germinativo);
+  const purezaNum = Number(nivel_de_pureza);
+  if (
+    !Number.isFinite(humedadNum) || humedadNum < 0 ||
+    !Number.isFinite(pgNum) || pgNum < 0 ||
+    !Number.isFinite(purezaNum) || purezaNum < 0
+  ) {
+    return res.status(400).json({ error: 'humedad, poder_germinativo y nivel_de_pureza deben ser numeros mayores o iguales a 0' });
+  }
+  if (typeof descripcion === 'string' && descripcion.length > DESCRIPCION_MAX) {
+    return res.status(400).json({ error: `descripcion no puede superar los ${DESCRIPCION_MAX} caracteres` });
+  }
   if (![TipoControl.INICIAL, TipoControl.INTERMEDIO].includes(tipo_control)) {
     return res.status(400).json({ error: 'tipo_control debe ser "inicial" o "intermedio" en este endpoint' });
   }
@@ -61,12 +78,12 @@ export async function registrarControlCalidadLote(req: Request, res: Response) {
 
   const ts = lote.tipo_semilla;
   const dentroDeRango =
-    (ts.humedad_min == null || Number(humedad) >= Number(ts.humedad_min)) &&
-    (ts.humedad_max == null || Number(humedad) <= Number(ts.humedad_max)) &&
-    (ts.poder_germinativo_min == null || Number(poder_germinativo) >= Number(ts.poder_germinativo_min)) &&
-    (ts.poder_germinativo_max == null || Number(poder_germinativo) <= Number(ts.poder_germinativo_max)) &&
-    (ts.nivel_pureza_min == null || Number(nivel_de_pureza) >= Number(ts.nivel_pureza_min)) &&
-    (ts.nivel_pureza_max == null || Number(nivel_de_pureza) <= Number(ts.nivel_pureza_max));
+    (ts.humedad_min == null || humedadNum >= Number(ts.humedad_min)) &&
+    (ts.humedad_max == null || humedadNum <= Number(ts.humedad_max)) &&
+    (ts.poder_germinativo_min == null || pgNum >= Number(ts.poder_germinativo_min)) &&
+    (ts.poder_germinativo_max == null || pgNum <= Number(ts.poder_germinativo_max)) &&
+    (ts.nivel_pureza_min == null || purezaNum >= Number(ts.nivel_pureza_min)) &&
+    (ts.nivel_pureza_max == null || purezaNum <= Number(ts.nivel_pureza_max));
 
   // Paso 3.a: fuera de rango y el usuario todavia no confirmo -> se le pide confirmar,
   // no se persiste nada todavia (misma logica que GUI-07 variante "fuera de rango").
@@ -87,7 +104,7 @@ export async function registrarControlCalidadLote(req: Request, res: Response) {
   const control = em.create(ControlDeCalidad, {
     tipo_control,
     resultado,
-    humedad, poder_germinativo, nivel_de_pureza,
+    humedad: String(humedadNum), poder_germinativo: String(pgNum), nivel_de_pureza: String(purezaNum),
     descripcion,
     lote,
   });

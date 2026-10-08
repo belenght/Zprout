@@ -9,48 +9,48 @@ export async function listarEstimacionesVenta(req: Request, res: Response) {
   const filtro: any = { deleted_at: null };
   if (req.query.lote_id) filtro.lote = Number(req.query.lote_id);
   if (req.query.campana_id) filtro.campana = Number(req.query.campana_id);
-
   const estimaciones = await em.find(EstimacionVenta, filtro, { populate: ['lote', 'campana'] });
   res.json(estimaciones);
 }
-
 export async function crearEstimacionVenta(req: Request, res: Response) {
   const em = getEM();
   const { lote_id, campana_id, volumen_estimado_tn } = req.body;
   if (!lote_id || !campana_id || volumen_estimado_tn == null) {
     return res.status(400).json({ error: 'lote_id, campana_id y volumen_estimado_tn son requeridos' });
   }
-
+  // Antes "volumen_estimado_tn == null" dejaba pasar cualquier negativo.
+  const volumenNum = Number(volumen_estimado_tn);
+  if (!Number.isFinite(volumenNum) || volumenNum <= 0) {
+    return res.status(400).json({ error: 'volumen_estimado_tn debe ser un numero mayor a 0' });
+  }
   const lote = await em.findOne(Lote, { id_lote: lote_id, deleted_at: null });
   if (!lote) return res.status(404).json({ error: 'Lote no encontrado' });
-
   const campana = await em.findOne(Campana, { id_campana: campana_id, deleted_at: null });
   if (!campana) return res.status(404).json({ error: 'Campana no encontrada' });
-
-  const estimacion = em.create(EstimacionVenta, { lote, campana, volumen_estimado_tn });
+  const estimacion = em.create(EstimacionVenta, { lote, campana, volumen_estimado_tn: String(volumenNum) });
   em.persist(estimacion);
   await em.flush();
   res.status(201).json(estimacion);
 }
-
 export async function actualizarEstimacionVenta(req: Request, res: Response) {
   const em = getEM();
   const estimacion = await em.findOne(EstimacionVenta, { id_estimacion: Number(req.params.id), deleted_at: null });
   if (!estimacion) return res.status(404).json({ error: 'EstimacionVenta no encontrada' });
-
-  const cambios = { ...req.body };
-  if (cambios.volumen_estimado_tn != null) cambios.volumen_estimado_tn = String(cambios.volumen_estimado_tn);
-
-  em.assign(estimacion, cambios);
+  const { volumen_estimado_tn } = req.body;
+  if (volumen_estimado_tn !== undefined) {
+    const volumenNum = Number(volumen_estimado_tn);
+    if (!Number.isFinite(volumenNum) || volumenNum <= 0) {
+      return res.status(400).json({ error: 'volumen_estimado_tn debe ser un numero mayor a 0' });
+    }
+    estimacion.volumen_estimado_tn = String(volumenNum);
+  }
   await em.flush();
   res.json(estimacion);
 }
-
 export async function eliminarEstimacionVenta(req: Request, res: Response) {
   const em = getEM();
   const estimacion = await em.findOne(EstimacionVenta, { id_estimacion: Number(req.params.id), deleted_at: null });
   if (!estimacion) return res.status(404).json({ error: 'EstimacionVenta no encontrada' });
-
   estimacion.deleted_at = new Date();
   await em.flush();
   res.status(204).send();
