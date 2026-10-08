@@ -10,6 +10,11 @@ import { TipoSemillaService } from '../../../services/tipo-semilla.service';
 import { Campo, Proveedor, TipoDeSemilla } from '../../../interfaces/catalogos';
 import { NuevoLotePayload, OrigenSemilla } from '../../../interfaces/lote';
 
+// Bloquea < y > para evitar que se cuele markup/scripts en texto libre.
+// No reemplaza escapar al mostrar el dato (eso lo tiene que hacer el
+// template con interpolacion {{ }}, nunca [innerHTML]), es una capa extra.
+const SIN_MARKUP = /^[^<>]*$/;
+
 @Component({
   selector: 'app-nuevo-lote',
   standalone: true,
@@ -23,13 +28,11 @@ export class NuevoLoteComponent implements OnInit {
   proveedores: Proveedor[] = [];
   tiposSemilla: TipoDeSemilla[] = [];
   guardando = false;
-
   // Fuerza el redibujado justo despues de cada subscribe: ver el mismo
   // comentario en listado-lotes.component.ts. Este componente es el de
   // la captura donde "Cultivo/Variedad" se veia vacio: los 3 catalogos
   // se cargan en paralelo en ngOnInit exactamente con este patron.
   private cd = inject(ChangeDetectorRef);
-
   constructor(
     private fb: FormBuilder,
     private loteService: LoteService,
@@ -45,11 +48,10 @@ export class NuevoLoteComponent implements OnInit {
       cantidad_semillas_en_tn: [null, [Validators.required, Validators.min(0.01)]],
       campo_id: [null],
       proveedor_id: [null],
-      informe_calidad_externo: [''],
-      observaciones: ['']
+      informe_calidad_externo: ['', [Validators.maxLength(255), Validators.pattern(SIN_MARKUP)]],
+      observaciones: ['', [Validators.maxLength(500), Validators.pattern(SIN_MARKUP)]]
     });
   }
-
   ngOnInit(): void {
     this.tipoSemillaService.getTiposSemilla().subscribe({
       next: (data) => {
@@ -81,21 +83,17 @@ export class NuevoLoteComponent implements OnInit {
         this.cd.detectChanges();
       }
     });
-
     this.aplicarValidacionesPorOrigen(this.form.value.origen_semilla);
     this.form.get('origen_semilla')?.valueChanges.subscribe((origen) => {
       this.aplicarValidacionesPorOrigen(origen);
     });
   }
-
   get esExterno(): boolean {
     return this.form.get('origen_semilla')?.value === 'externo';
   }
-
   private aplicarValidacionesPorOrigen(origen: OrigenSemilla): void {
     const campoCtrl = this.form.get('campo_id');
     const proveedorCtrl = this.form.get('proveedor_id');
-
     if (origen === 'propio') {
       campoCtrl?.setValidators([Validators.required]);
       proveedorCtrl?.clearValidators();
@@ -108,13 +106,12 @@ export class NuevoLoteComponent implements OnInit {
     campoCtrl?.updateValueAndValidity();
     proveedorCtrl?.updateValueAndValidity();
   }
-
   registrarIngreso(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.toastr.warning('Revisa los campos marcados en rojo antes de guardar', 'Formulario incompleto');
       return;
     }
-
     const valores = this.form.value;
     const payload: NuevoLotePayload = {
       tipo_semilla_id: valores.tipo_semilla_id,
@@ -122,14 +119,12 @@ export class NuevoLoteComponent implements OnInit {
       origen_semilla: valores.origen_semilla,
       observaciones: valores.observaciones || undefined,
     };
-
     if (valores.origen_semilla === 'propio') {
       payload.campo_id = valores.campo_id;
     } else {
       payload.proveedor_id = valores.proveedor_id;
       payload.informe_calidad_externo = valores.informe_calidad_externo || undefined;
     }
-
     this.guardando = true;
     this.loteService.registrarIngreso(payload).subscribe({
       next: (lote) => {
@@ -140,7 +135,7 @@ export class NuevoLoteComponent implements OnInit {
       },
       error: (err) => {
         this.guardando = false;
-        this.toastr.error(err.message, 'Error al registrar el ingreso');
+        this.toastr.error(err.error?.error || err.message, 'Error al registrar el ingreso');
         this.cd.detectChanges();
       }
     });

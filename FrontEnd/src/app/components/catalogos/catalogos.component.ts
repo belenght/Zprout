@@ -9,6 +9,8 @@ import { ProveedorService } from '../../services/proveedor.service';
 import { TipoDeSemilla, Campo, Proveedor } from '../../interfaces/catalogos';
 
 type Tab = 'semillas' | 'campos' | 'proveedores';
+const SIN_MARKUP = /^[^<>]*$/;
+const CUIT_PATTERN = /^\d{2}-?\d{8}-?\d{1}$/;
 
 /**
  * Modulo "Catalogos": ABM de los 3 maestros que bloquean "Nuevo Lote"
@@ -28,26 +30,21 @@ export class CatalogosComponent implements OnInit {
   tabActiva: Tab = 'semillas';
   cargando = true;
   errorMessage: string | null = null;
-
   // --- TipoDeSemilla ---
   tiposSemilla: TipoDeSemilla[] = [];
   formSemilla: FormGroup;
   editandoSemillaId: number | null = null;
-
   // --- Campo ---
   campos: Campo[] = [];
   formCampo: FormGroup;
   editandoCampoId: number | null = null;
-
   // --- Proveedor ---
   proveedores: Proveedor[] = [];
   formProveedor: FormGroup;
   editandoProveedorId: number | null = null;
-
   // Fuerza el redibujado justo despues de cada subscribe: ver el mismo
   // comentario en listado-lotes.component.ts.
   private cd = inject(ChangeDetectorRef);
-
   constructor(
     private fb: FormBuilder,
     private tipoSemillaService: TipoSemillaService,
@@ -56,41 +53,35 @@ export class CatalogosComponent implements OnInit {
     private toastr: ToastrService
   ) {
     this.formSemilla = this.fb.group({
-      nombre_semilla: ['', Validators.required],
-      variante_semilla: ['', Validators.required],
-      humedad_min: [null],
-      humedad_max: [null],
-      poder_germinativo_min: [null],
-      poder_germinativo_max: [null],
-      nivel_pureza_min: [null],
-      nivel_pureza_max: [null],
-      duracion: [''],
+      nombre_semilla: ['', [Validators.required, Validators.maxLength(80), Validators.pattern(SIN_MARKUP)]],
+      variante_semilla: ['', [Validators.required, Validators.maxLength(80), Validators.pattern(SIN_MARKUP)]],
+      humedad_min: [null, [Validators.min(0)]],
+      humedad_max: [null, [Validators.min(0)]],
+      poder_germinativo_min: [null, [Validators.min(0)]],
+      poder_germinativo_max: [null, [Validators.min(0)]],
+      nivel_pureza_min: [null, [Validators.min(0)]],
+      nivel_pureza_max: [null, [Validators.min(0)]],
+      duracion: [null, [Validators.min(1)]],
     });
-
     this.formCampo = this.fb.group({
-      nro_campo: ['', Validators.required],
-      ubicacion: ['', Validators.required],
+      nro_campo: ['', [Validators.required, Validators.maxLength(30), Validators.pattern(SIN_MARKUP)]],
+      ubicacion: ['', [Validators.required, Validators.maxLength(200), Validators.pattern(SIN_MARKUP)]],
     });
-
     this.formProveedor = this.fb.group({
-      razon_social: ['', Validators.required],
-      cuit: [''],
-      contacto: [''],
+      razon_social: ['', [Validators.required, Validators.maxLength(150), Validators.pattern(SIN_MARKUP)]],
+      cuit: ['', [Validators.pattern(CUIT_PATTERN)]],
+      contacto: ['', [Validators.maxLength(150), Validators.pattern(SIN_MARKUP)]],
     });
   }
-
   ngOnInit(): void {
     this.cargarTodo();
   }
-
   cambiarTab(tab: Tab): void {
     this.tabActiva = tab;
   }
-
   private cargarTodo(): void {
     this.cargando = true;
     this.errorMessage = null;
-
     // forkJoin: dispara los 3 GET en paralelo pero solo baja "cargando"
     // cuando los TRES terminaron. Antes cada uno actualizaba su propio
     // array por separado y "cargando" se apagaba apenas terminaba
@@ -116,31 +107,41 @@ export class CatalogosComponent implements OnInit {
       }
     });
   }
-
   // ==================== TipoDeSemilla ====================
-
   editarSemilla(t: TipoDeSemilla): void {
     this.editandoSemillaId = t.id_semilla ?? null;
     this.formSemilla.patchValue(t);
   }
-
   cancelarEdicionSemilla(): void {
     this.editandoSemillaId = null;
     this.formSemilla.reset();
   }
-
   guardarSemilla(): void {
     if (this.formSemilla.invalid) {
       this.formSemilla.markAllAsTouched();
+      this.toastr.warning('Revisa los campos marcados en rojo', 'Formulario incompleto');
       return;
+    }
+    // Chequeo de coherencia min <= max antes de pegarle al backend (el
+    // backend tambien lo valida, pero avisar aca evita un viaje HTTP de ida
+    // y vuelta solo para que rebote).
+    const v = this.formSemilla.value;
+    const pares: [string, string, string][] = [
+      ['humedad_min', 'humedad_max', 'Humedad'],
+      ['poder_germinativo_min', 'poder_germinativo_max', 'Poder germinativo'],
+      ['nivel_pureza_min', 'nivel_pureza_max', 'Pureza'],
+    ];
+    for (const [minKey, maxKey, label] of pares) {
+      if (v[minKey] != null && v[maxKey] != null && Number(v[minKey]) > Number(v[maxKey])) {
+        this.toastr.error(`${label}: el minimo no puede ser mayor al maximo`, 'Rango invalido');
+        return;
+      }
     }
     const valores = this.formSemilla.value;
     const idEditando = this.editandoSemillaId;
-
     const obs = idEditando
       ? this.tipoSemillaService.actualizarTipoSemilla(idEditando, valores)
       : this.tipoSemillaService.crearTipoSemilla(valores);
-
     obs.subscribe({
       next: (resultado) => {
         // Actualiza el array local con la respuesta del POST/PUT en vez de
@@ -155,10 +156,9 @@ export class CatalogosComponent implements OnInit {
         this.cancelarEdicionSemilla();
         this.cd.detectChanges();
       },
-      error: (err) => this.toastr.error(err.message, 'Error al guardar')
+      error: (err) => this.toastr.error(err.error?.error || err.message, 'Error al guardar')
     });
   }
-
   eliminarSemilla(t: TipoDeSemilla): void {
     if (!t.id_semilla || !confirm(`¿Eliminar "${t.nombre_semilla} / ${t.variante_semilla}"?`)) return;
     this.tipoSemillaService.eliminarTipoSemilla(t.id_semilla).subscribe({
@@ -167,34 +167,29 @@ export class CatalogosComponent implements OnInit {
         this.toastr.success('Tipo de semilla eliminado', 'Listo');
         this.cd.detectChanges();
       },
-      error: (err) => this.toastr.error(err.message, 'Error al eliminar')
+      error: (err) => this.toastr.error(err.error?.error || err.message, 'Error al eliminar')
     });
   }
-
   // ==================== Campo ====================
-
   editarCampo(c: Campo): void {
     this.editandoCampoId = c.id_campo ?? null;
     this.formCampo.patchValue(c);
   }
-
   cancelarEdicionCampo(): void {
     this.editandoCampoId = null;
     this.formCampo.reset();
   }
-
   guardarCampo(): void {
     if (this.formCampo.invalid) {
       this.formCampo.markAllAsTouched();
+      this.toastr.warning('Revisa los campos marcados en rojo', 'Formulario incompleto');
       return;
     }
     const valores = this.formCampo.value;
     const idEditando = this.editandoCampoId;
-
     const obs = idEditando
       ? this.campoService.actualizarCampo(idEditando, valores)
       : this.campoService.crearCampo(valores);
-
     obs.subscribe({
       next: (resultado) => {
         if (idEditando) {
@@ -206,10 +201,9 @@ export class CatalogosComponent implements OnInit {
         this.cancelarEdicionCampo();
         this.cd.detectChanges();
       },
-      error: (err) => this.toastr.error(err.message, 'Error al guardar')
+      error: (err) => this.toastr.error(err.error?.error || err.message, 'Error al guardar')
     });
   }
-
   eliminarCampo(c: Campo): void {
     if (!c.id_campo || !confirm(`¿Eliminar el campo "${c.nro_campo}"?`)) return;
     this.campoService.eliminarCampo(c.id_campo).subscribe({
@@ -218,34 +212,29 @@ export class CatalogosComponent implements OnInit {
         this.toastr.success('Campo eliminado', 'Listo');
         this.cd.detectChanges();
       },
-      error: (err) => this.toastr.error(err.message, 'Error al eliminar')
+      error: (err) => this.toastr.error(err.error?.error || err.message, 'Error al eliminar')
     });
   }
-
   // ==================== Proveedor ====================
-
   editarProveedor(p: Proveedor): void {
     this.editandoProveedorId = p.id_proveedor ?? null;
     this.formProveedor.patchValue(p);
   }
-
   cancelarEdicionProveedor(): void {
     this.editandoProveedorId = null;
     this.formProveedor.reset();
   }
-
   guardarProveedor(): void {
     if (this.formProveedor.invalid) {
       this.formProveedor.markAllAsTouched();
+      this.toastr.warning('Revisa los campos marcados en rojo (el CUIT debe tener formato 20-12345678-9)', 'Formulario incompleto');
       return;
     }
     const valores = this.formProveedor.value;
     const idEditando = this.editandoProveedorId;
-
     const obs = idEditando
       ? this.proveedorService.actualizarProveedor(idEditando, valores)
       : this.proveedorService.crearProveedor(valores);
-
     obs.subscribe({
       next: (resultado) => {
         if (idEditando) {
@@ -257,10 +246,9 @@ export class CatalogosComponent implements OnInit {
         this.cancelarEdicionProveedor();
         this.cd.detectChanges();
       },
-      error: (err) => this.toastr.error(err.message, 'Error al guardar')
+      error: (err) => this.toastr.error(err.error?.error || err.message, 'Error al guardar')
     });
   }
-
   eliminarProveedor(p: Proveedor): void {
     if (!p.id_proveedor || !confirm(`¿Eliminar el proveedor "${p.razon_social}"?`)) return;
     this.proveedorService.eliminarProveedor(p.id_proveedor).subscribe({
@@ -269,7 +257,7 @@ export class CatalogosComponent implements OnInit {
         this.toastr.success('Proveedor eliminado', 'Listo');
         this.cd.detectChanges();
       },
-      error: (err) => this.toastr.error(err.message, 'Error al eliminar')
+      error: (err) => this.toastr.error(err.error?.error || err.message, 'Error al eliminar')
     });
   }
 }

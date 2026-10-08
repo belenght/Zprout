@@ -12,11 +12,19 @@
       <div class="grid gap-4 sm:grid-cols-2">
         <div>
           <label class="mb-1 block text-sm font-medium text-brand-900">Volumen restante post-limpieza (tn)</label>
-          <input type="number" step="0.01" formControlName="volumen_restante_tn" placeholder="Ej: 16.8" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+          <input type="number" step="0.01" formControlName="volumen_restante_tn" placeholder="Ej: 16.8" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 [&.ng-invalid.ng-touched]:border-red-500">
+          <p *ngIf="form.get('volumen_restante_tn')?.invalid && form.get('volumen_restante_tn')?.touched" class="mt-1 text-xs text-red-600">
+            <ng-container *ngIf="form.get('volumen_restante_tn')?.hasError('required')">Ingresá el volumen restante.</ng-container>
+            <ng-container *ngIf="form.get('volumen_restante_tn')?.hasError('min')">No puede ser negativo.</ng-container>
+          </p>
         </div>
         <div>
           <label class="mb-1 block text-sm font-medium text-brand-900">Merma obtenida (tn)</label>
-          <input type="number" step="0.01" formControlName="merma_tn" placeholder="Ej: 1.4" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+          <input type="number" step="0.01" formControlName="merma_tn" placeholder="Ej: 1.4" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 [&.ng-invalid.ng-touched]:border-red-500">
+          <p *ngIf="form.get('merma_tn')?.invalid && form.get('merma_tn')?.touched" class="mt-1 text-xs text-red-600">
+            <ng-container *ngIf="form.get('merma_tn')?.hasError('required')">Ingresá la merma obtenida.</ng-container>
+            <ng-container *ngIf="form.get('merma_tn')?.hasError('min')">No puede ser negativa.</ng-container>
+          </p>
         </div>
       </div>
 
@@ -31,7 +39,10 @@
 
       <div>
         <label class="mb-1 block text-sm font-medium text-brand-900">Observaciones del procesamiento</label>
-        <textarea rows="2" formControlName="observaciones" placeholder="Ej: presencia de semillas partidas..." class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"></textarea>
+        <textarea rows="2" formControlName="observaciones" placeholder="Ej: presencia de semillas partidas..." class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 [&.ng-invalid.ng-touched]:border-red-500"></textarea>
+        <p *ngIf="form.get('observaciones')?.invalid && form.get('observaciones')?.touched" class="mt-1 text-xs text-red-600">
+          Máximo 500 caracteres.
+        </p>
       </div>
 
       <p class="text-xs text-gray-500">
@@ -39,7 +50,7 @@
       </p>
 
       <div class="flex gap-2 pt-2">
-        <button type="submit" [disabled]="guardando" class="inline-flex items-center gap-2 rounded-md bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60">
+        <button type="submit" [disabled]="guardando || excedeVolumenDisponible" class="inline-flex items-center gap-2 rounded-md bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60">
           <span *ngIf="guardando" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
           <i class="bi bi-check-lg"></i> Confirmar limpieza
         </button>

@@ -21,46 +21,67 @@
       <div class="grid gap-4 sm:grid-cols-2">
         <div>
           <label for="tipo_semilla_id" class="mb-1 block text-sm font-medium text-brand-900">Cultivo / Variedad</label>
-          <select id="tipo_semilla_id" formControlName="tipo_semilla_id" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+          <select id="tipo_semilla_id" formControlName="tipo_semilla_id" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 [&.ng-invalid.ng-touched]:border-red-500">
             <option [ngValue]="null" disabled>Seleccionar...</option>
             <option *ngFor="let ts of tiposSemilla" [ngValue]="ts.id_semilla">
               {{ ts.nombre_semilla }} / {{ ts.variante_semilla }}
             </option>
           </select>
+          <p *ngIf="form.get('tipo_semilla_id')?.invalid && form.get('tipo_semilla_id')?.touched" class="mt-1 text-xs text-red-600">
+            Seleccioná un cultivo / variedad.
+          </p>
         </div>
 
         <div>
           <label for="cantidad_semillas_en_tn" class="mb-1 block text-sm font-medium text-brand-900">Cantidad ingresada (tn)</label>
-          <input type="number" step="0.01" id="cantidad_semillas_en_tn" formControlName="cantidad_semillas_en_tn" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+          <input type="number" step="0.01" id="cantidad_semillas_en_tn" formControlName="cantidad_semillas_en_tn" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 [&.ng-invalid.ng-touched]:border-red-500">
+          <p *ngIf="form.get('cantidad_semillas_en_tn')?.invalid && form.get('cantidad_semillas_en_tn')?.touched" class="mt-1 text-xs text-red-600">
+            <ng-container *ngIf="form.get('cantidad_semillas_en_tn')?.hasError('required')">La cantidad es obligatoria.</ng-container>
+            <ng-container *ngIf="form.get('cantidad_semillas_en_tn')?.hasError('min')">La cantidad debe ser mayor o igual a 0,01 tn.</ng-container>
+          </p>
         </div>
       </div>
 
       <div *ngIf="!esExterno">
         <label for="campo_id" class="mb-1 block text-sm font-medium text-brand-900">Campo de procedencia</label>
-        <select id="campo_id" formControlName="campo_id" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+        <select id="campo_id" formControlName="campo_id" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 [&.ng-invalid.ng-touched]:border-red-500">
           <option [ngValue]="null" disabled>Seleccionar...</option>
           <option *ngFor="let c of campos" [ngValue]="c.id_campo">{{ c.nro_campo }} - {{ c.ubicacion }}</option>
         </select>
+        <p *ngIf="form.get('campo_id')?.invalid && form.get('campo_id')?.touched" class="mt-1 text-xs text-red-600">
+          Seleccioná el campo de procedencia.
+        </p>
       </div>
 
       <ng-container *ngIf="esExterno">
         <div>
           <label for="proveedor_id" class="mb-1 block text-sm font-medium text-brand-900">Proveedor externo</label>
-          <select id="proveedor_id" formControlName="proveedor_id" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+          <select id="proveedor_id" formControlName="proveedor_id" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 [&.ng-invalid.ng-touched]:border-red-500">
             <option [ngValue]="null" disabled>Seleccionar...</option>
             <option *ngFor="let p of proveedores" [ngValue]="p.id_proveedor">{{ p.razon_social }}</option>
           </select>
+          <p *ngIf="form.get('proveedor_id')?.invalid && form.get('proveedor_id')?.touched" class="mt-1 text-xs text-red-600">
+            Seleccioná el proveedor.
+          </p>
         </div>
 
         <div>
           <label for="informe_calidad_externo" class="mb-1 block text-sm font-medium text-brand-900">Informe de calidad del proveedor (URL/referencia)</label>
-          <input type="text" id="informe_calidad_externo" formControlName="informe_calidad_externo" placeholder="Ej: link al PDF adjunto" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+          <input type="text" id="informe_calidad_externo" formControlName="informe_calidad_externo" placeholder="Ej: link al PDF adjunto" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 [&.ng-invalid.ng-touched]:border-red-500">
+          <p *ngIf="form.get('informe_calidad_externo')?.invalid && form.get('informe_calidad_externo')?.touched" class="mt-1 text-xs text-red-600">
+            <ng-container *ngIf="form.get('informe_calidad_externo')?.hasError('maxlength')">Máximo 255 caracteres.</ng-container>
+            <ng-container *ngIf="form.get('informe_calidad_externo')?.hasError('pattern')">No se permiten los caracteres &lt; y &gt;.</ng-container>
+          </p>
         </div>
       </ng-container>
 
       <div>
         <label for="observaciones" class="mb-1 block text-sm font-medium text-brand-900">Observaciones</label>
-        <textarea id="observaciones" rows="2" formControlName="observaciones" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"></textarea>
+        <textarea id="observaciones" rows="2" formControlName="observaciones" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 [&.ng-invalid.ng-touched]:border-red-500"></textarea>
+        <p *ngIf="form.get('observaciones')?.invalid && form.get('observaciones')?.touched" class="mt-1 text-xs text-red-600">
+          <ng-container *ngIf="form.get('observaciones')?.hasError('maxlength')">Máximo 500 caracteres.</ng-container>
+          <ng-container *ngIf="form.get('observaciones')?.hasError('pattern')">No se permiten los caracteres &lt; y &gt;.</ng-container>
+        </p>
       </div>
 
       <div class="flex gap-2 pt-2">

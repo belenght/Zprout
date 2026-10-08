@@ -9,7 +9,6 @@ import { LimpiezaService } from '../../../services/limpieza.service';
 import { AuthService } from '../../../services/auth.service';
 import { Lote } from '../../../interfaces/lote';
 import { RegistrarLimpiezaPayload } from '../../../interfaces/limpieza';
-
 /**
  * GUI-08 - "Registrar limpieza y clasificación"
  * CUU03 - el Operario de Planta registra el resultado del procesamiento
@@ -28,11 +27,9 @@ export class RegistrarLimpiezaComponent implements OnInit {
   cargando = true;
   guardando = false;
   errorMessage: string | null = null;
-
   // Fuerza el redibujado justo despues de cada subscribe: ver el mismo
   // comentario en listado-lotes.component.ts.
   private cd = inject(ChangeDetectorRef);
-
   constructor(
     private fb: FormBuilder,
     private route: ActivatedRoute,
@@ -45,10 +42,9 @@ export class RegistrarLimpiezaComponent implements OnInit {
     this.form = this.fb.group({
       volumen_restante_tn: [null, [Validators.required, Validators.min(0)]],
       merma_tn: [null, [Validators.required, Validators.min(0)]],
-      observaciones: [''],
+      observaciones: ['', [Validators.maxLength(500)]],
     });
   }
-
   ngOnInit(): void {
     const loteId = Number(this.route.snapshot.paramMap.get('loteId'));
     this.loteService.getLote(loteId).subscribe({
@@ -64,42 +60,47 @@ export class RegistrarLimpiezaComponent implements OnInit {
       }
     });
   }
-
   get nombreSemilla(): string {
     const ts = this.lote?.tipo_semilla as any;
     return ts?.nombre_semilla ? `${ts.nombre_semilla} / ${ts.variante_semilla}` : '';
   }
-
   // Ayuda visual del formulario (GUI-08: "El sistema calcula automaticamente
   // la merma %"). El backend solo exige que restante + merma no supere el
   // volumen ingresado; el porcentaje es puramente informativo aca.
   get volumenInicial(): number {
     return this.lote ? Number(this.lote.cantidad_semillas_en_tn) : 0;
   }
-
   get mermaPorcentaje(): number | null {
     const merma = Number(this.form.value.merma_tn);
     if (!this.volumenInicial || !merma) return null;
     return (merma / this.volumenInicial) * 100;
   }
-
   get sumaProcesada(): number {
     const restante = Number(this.form.value.volumen_restante_tn) || 0;
     const merma = Number(this.form.value.merma_tn) || 0;
     return restante + merma;
   }
-
   get excedeVolumenDisponible(): boolean {
     return this.volumenInicial > 0 && this.sumaProcesada > this.volumenInicial;
   }
-
   registrar(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.toastr.warning('Revisa los campos marcados en rojo antes de guardar', 'Formulario incompleto');
+      return;
+    }
+    // Antes esta validacion solo vivia en el getter "excedeVolumenDisponible",
+    // consultado desde el [disabled] del boton en el html. Si por lo que sea
+    // ese binding fallaba (o alguien llamaba a registrar() desde otro lado),
+    // no habia nada aca adentro que lo frenara.
+    if (this.excedeVolumenDisponible) {
+      this.toastr.error(
+        `Volumen restante + merma (${this.sumaProcesada} tn) supera el volumen disponible del lote (${this.volumenInicial} tn)`,
+        'Volumen invalido'
+      );
       return;
     }
     if (!this.lote?.id_lote) return;
-
     const valores = this.form.value;
     const payload: RegistrarLimpiezaPayload = {
       lote_id: this.lote.id_lote,
@@ -108,7 +109,6 @@ export class RegistrarLimpiezaComponent implements OnInit {
       observaciones: valores.observaciones || undefined,
       operario_id: this.authService.getUserId() ?? undefined,
     };
-
     this.guardando = true;
     this.limpiezaService.registrarLimpieza(payload).subscribe({
       next: () => {
