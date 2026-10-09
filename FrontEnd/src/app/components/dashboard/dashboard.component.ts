@@ -1,4 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
+import { AlertaService } from '../../services/extras.service';
+import { Alerta } from '../../interfaces/extras';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { LoteService } from '../../services/lote.service';
@@ -58,8 +60,17 @@ export class DashboardComponent implements OnInit {
     private authService: AuthService,
     private partidaService: PartidaService,
     private controlCalidadService: ControlCalidadService,
-    private campanaService: CampanaService
+    private campanaService: CampanaService,
+    private alertaService: AlertaService
   ) {}
+
+  // Alertas operativas (lotes demorados, pedidos sin stock, almacenes llenos...).
+  alertas: Alerta[] = [];
+  alertasCargadas = false;
+
+  claseAlerta(a: Alerta): string {
+    return a.severidad === 'alta' ? 'border-red-200 bg-red-50 text-red-800' : 'border-amber-200 bg-amber-50 text-amber-900';
+  }
 
   claseBadgeEstadoSolido = claseBadgeEstadoSolido;
 
@@ -107,6 +118,15 @@ export class DashboardComponent implements OnInit {
       error: () => {}
     });
 
+    this.alertaService.getAlertas().subscribe({
+      next: (r) => {
+        this.alertas = r.alertas;
+        this.alertasCargadas = true;
+        this.cd.detectChanges();
+      },
+      error: () => {}
+    });
+
     // 404 = no hay campaña vigente configurada: el saludo simplemente no la muestra.
     this.campanaService.getCampanaVigente().subscribe({
       next: (campana) => {
@@ -120,11 +140,11 @@ export class DashboardComponent implements OnInit {
   // ---- Indicadores (mismas definiciones que usan Calidad y Curado) ---------
 
   // Igual que la bandeja de Calidad: lotes esperando CC inicial/intermedio
-  // ("Pendiente CC" / "En limpieza") + partidas "Envasado" esperando CC final.
+  // (inicial en "Pendiente CC"; intermedio en lotes limpios) + partidas "Envasado" esperando CC final.
   get pendientesCC(): number | null {
     if (!this.lotes || !this.partidas) return null;
     const lotes = this.lotes.filter(
-      (l) => l.estado_actual === 'Pendiente CC' || l.estado_actual === 'En limpieza'
+      (l) => l.proximo_paso === 'cc_inicial' || l.proximo_paso === 'cc_intermedio'
     ).length;
     const partidas = this.partidas.filter((p) => p.estado_actual === 'Envasado').length;
     return lotes + partidas;

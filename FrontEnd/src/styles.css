@@ -43,3 +43,40 @@
 body {
   font-family: var(--font-sans);
 }
+
+/* ---- Informes imprimibles (window.print) ----
+   Lo que lleva .no-print (botones, filtros) y el chrome de la app (header,
+   sidebar, avisos) no sale en papel / PDF; .print-only solo sale al imprimir. */
+.print-only {
+  display: none;
+}
+@media print {
+  app-header,
+  app-sidebar,
+  .no-print,
+  #toast-container {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  body,
+  main {
+    background: #fff !important;
+  }
+  main {
+    min-height: 0 !important;
+  }
+  /* Cada tarjeta / fila se mantiene entera en una pagina */
+  article,
+  tr {
+    break-inside: avoid;
+  }
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  @page {
+    margin: 14mm;
+  }
+}

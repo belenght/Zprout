@@ -1,9 +1,14 @@
 <div class="mx-auto max-w-6xl px-8 py-6">
   <div class="mb-6 flex items-center justify-between gap-4">
     <h1 class="m-0 font-display text-3xl font-bold text-brand-hero">Gestión de Lotes</h1>
-    <a routerLink="/lotes/nuevo" class="rounded-lg bg-brand-600 px-8 py-3 font-display text-sm font-bold text-white hover:bg-brand-700">
-      + Nuevo Lote
-    </a>
+    <div class="flex flex-wrap gap-3">
+      <button type="button" (click)="exportar()" class="rounded-lg border border-brand-700 bg-white px-5 py-2.5 text-[13px] font-bold text-brand-800 hover:bg-brand-50">
+        <i class="bi bi-file-earmark-spreadsheet"></i> Exportar a Excel
+      </button>
+      <a *ngIf="auth.puede('lotes.ingresar')" routerLink="/lotes/nuevo" class="rounded-lg bg-brand-600 px-8 py-3 font-display text-sm font-bold text-white hover:bg-brand-700">
+        + Nuevo Lote
+      </a>
+    </div>
   </div>
 
   <div *ngIf="errorMessage" class="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-red-700">{{ errorMessage }}</div>

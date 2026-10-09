@@ -2,10 +2,14 @@ import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
-import { Perfil, PerfilService } from '../../services/perfil.service';
+import { ActualizarPerfilPayload, Perfil, PerfilService } from '../../services/perfil.service';
+import { UsuarioService } from '../../services/usuario.service';
+import { RolRegistro } from '../../interfaces/login';
+import { ROL_ADMIN, etiquetaRol } from '../../shared/roles';
 
 const SIN_MARKUP = /^[^<>]*$/;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const USUARIO_PATTERN = /^[A-Za-z0-9_.-]{3,50}$/;
 
 // La foto se recorta en cuadrado y se achica antes de subirla: el backend
 // la guarda en la base y express.json() corta en 100 kb por request.
@@ -52,6 +56,11 @@ export class PerfilComponent implements OnInit {
   fotoNueva: string | null = null;
   confirmandoQuitarFoto = false;
 
+  // Solo para administradores: pueden cambiar su usuario y su rol.
+  roles: RolRegistro[] = [];
+  confirmandoRol = false;
+  etiquetaRol = etiquetaRol;
+
   readonly hoy = new Date().toISOString().slice(0, 10);
 
   // Fuerza el redibujado justo despues de cada subscribe: ver el mismo
@@ -61,6 +70,7 @@ export class PerfilComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private perfilService: PerfilService,
+    private usuarioService: UsuarioService,
     private toastr: ToastrService
   ) {
     this.formDatos = this.fb.group({
@@ -68,6 +78,8 @@ export class PerfilComponent implements OnInit {
       apellido: ['', [Validators.required, Validators.maxLength(80), Validators.pattern(SIN_MARKUP)]],
       email: ['', [Validators.required, Validators.maxLength(120), Validators.pattern(EMAIL_PATTERN)]],
       fecha_nacimiento: ['', [fechaNoFutura]],
+      nombre_usuario: ['', [Validators.pattern(USUARIO_PATTERN)]],
+      id_rol: [null as number | null],
     });
     this.formPassword = this.fb.group(
       {
@@ -86,6 +98,7 @@ export class PerfilComponent implements OnInit {
         this.cargarFormulario(perfil);
         this.cargando = false;
         this.cd.detectChanges();
+        this.cargarRolesSiAdmin();
       },
       error: (err) => {
         this.errorMessage = `Error al cargar tu perfil: ${err.message}`;
@@ -95,13 +108,44 @@ export class PerfilComponent implements OnInit {
     });
   }
 
+  get esAdmin(): boolean {
+    return this.perfil?.rol === ROL_ADMIN;
+  }
+
+  // El administrador puede elegir entre todos los roles (incluido administrador).
+  private cargarRolesSiAdmin(): void {
+    if (!this.esAdmin) return;
+    this.usuarioService.getRolesAsignables().subscribe({
+      next: (roles) => {
+        this.roles = roles;
+        this.cd.detectChanges();
+      },
+      error: () => {
+        this.toastr.warning('No se pudo cargar la lista de roles', 'Roles');
+        this.cd.detectChanges();
+      }
+    });
+  }
+
+  // Cambiar a un rol que no es administrador le saca a esta cuenta los permisos de admin.
+  get dejaDeSerAdmin(): boolean {
+    if (!this.esAdmin) return false;
+    const idElegido = this.formDatos.value.id_rol;
+    if (idElegido == null || idElegido === this.perfil?.id_rol) return false;
+    const elegido = this.roles.find((r) => r.id_rol === idElegido);
+    return !!elegido && elegido.desc_rol !== ROL_ADMIN;
+  }
+
   private cargarFormulario(perfil: Perfil): void {
     this.formDatos.reset({
       nombre: perfil.nombre,
       apellido: perfil.apellido,
       email: perfil.email,
       fecha_nacimiento: perfil.fecha_nacimiento ?? '',
+      nombre_usuario: perfil.nombre_usuario,
+      id_rol: perfil.id_rol,
     });
+    this.confirmandoRol = false;
   }
 
   get iniciales(): string {
@@ -222,15 +266,24 @@ export class PerfilComponent implements OnInit {
       this.toastr.warning('Revisá los campos marcados en rojo antes de guardar', 'Formulario incompleto');
       return;
     }
+    if (this.dejaDeSerAdmin && !this.confirmandoRol) {
+      this.confirmandoRol = true;
+      return;
+    }
     const v = this.formDatos.value;
+    const payload: ActualizarPerfilPayload = {
+      nombre: v.nombre,
+      apellido: v.apellido,
+      email: v.email,
+      fecha_nacimiento: v.fecha_nacimiento || null,
+    };
+    if (this.esAdmin) {
+      payload.nombre_usuario = String(v.nombre_usuario).trim();
+      if (v.id_rol != null) payload.id_rol = v.id_rol;
+    }
     this.guardandoDatos = true;
     this.perfilService
-      .actualizar({
-        nombre: v.nombre,
-        apellido: v.apellido,
-        email: v.email,
-        fecha_nacimiento: v.fecha_nacimiento || null,
-      })
+      .actualizar(payload)
       .subscribe({
         next: (perfil) => {
           this.guardandoDatos = false;

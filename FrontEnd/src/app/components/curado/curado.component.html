@@ -19,7 +19,49 @@
     </div>
   </div>
 
-  <h2 class="mb-3 mt-0 text-sm font-bold text-brand-900">Lotes listos para curar</h2>
+  <!-- Demanda de curado: lo que piden los pedidos "Pendiente de stock" y todavia no hay curado -->
+  <section *ngIf="demanda.length > 0" class="mb-7 rounded-xl border border-amber-200 bg-amber-50/60 p-5">
+    <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+      <h2 class="m-0 text-sm font-bold text-brand-900">
+        <i class="bi bi-exclamation-triangle text-amber-700"></i> Demanda de curado (pedidos sin stock)
+      </h2>
+      <button type="button" (click)="exportarDemanda()" class="rounded-md border border-brand-700 bg-white px-3 py-1.5 text-xs font-bold text-brand-800 hover:bg-brand-50">
+        <i class="bi bi-file-earmark-spreadsheet"></i> Exportar a Excel
+      </button>
+    </div>
+    <p class="mb-3 mt-0 text-xs text-gray-700">
+      Estas variedades tienen pedidos esperando stock. Al aprobarse el control final de una partida, los pedidos se aprueban solos.
+    </p>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-[13px]">
+        <thead class="text-xs text-sage-700">
+          <tr>
+            <th class="py-1 pr-3">Variedad</th>
+            <th class="py-1 pr-3">Faltan</th>
+            <th class="py-1 pr-3">A granel para curar</th>
+            <th class="py-1 pr-3">Pedidos</th>
+            <th class="py-1">Fecha requerida más próxima</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let d of demanda" class="border-t border-amber-200">
+            <td class="py-1.5 pr-3 font-bold text-brand-900">{{ d.semilla }} / {{ d.variedad }}</td>
+            <td class="py-1.5 pr-3">{{ d.bolsas_faltantes }} bolsas ({{ d.tn_faltantes | number: '1.0-2' }} tn)</td>
+            <td class="py-1.5 pr-3">
+              <span [ngClass]="alcanzaGranel(d) ? 'text-brand-700' : 'text-red-700'" class="font-bold">
+                {{ d.tn_a_granel_para_curar | number: '1.0-2' }} tn
+              </span>
+              <span class="text-xs text-gray-500"> {{ alcanzaGranel(d) ? '(alcanza)' : '(no alcanza)' }}</span>
+            </td>
+            <td class="py-1.5 pr-3">{{ d.pedidos.join(', ') }}</td>
+            <td class="py-1.5">{{ d.fecha_requerida_mas_proxima ? (d.fecha_requerida_mas_proxima | date: 'dd/MM/yyyy':'UTC') : '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <h2 class="mb-3 mt-0 text-sm font-bold text-brand-900">Lotes para curar</h2>
   <div class="space-y-3">
     <div
       *ngFor="let fila of lotesParaCurar"
@@ -34,7 +76,11 @@
         <div><div class="text-[11px] text-sage-700">Estimación venta</div>{{ fila.estimacion_tn != null ? (fila.estimacion_tn | number: '1.1-1') + ' tn' : '—' }}</div>
         <div><div class="text-[11px] text-sage-700">Vol. a curar</div>{{ fila.vol_a_curar_sugerido | number: '1.1-1' }} tn</div>
       </div>
+      <span *ngIf="fila.falta_cc_intermedio" class="rounded-md bg-amber-100 px-3 py-1.5 text-center text-[11px] font-bold text-amber-800">
+        Falta el CC intermedio
+      </span>
       <button
+        *ngIf="auth.puede('curado.registrar') && !fila.falta_cc_intermedio"
         type="button"
         (click)="registrarCurado(fila)"
         class="rounded-lg bg-brand-700 px-7 py-2.5 text-xs font-bold text-white hover:bg-brand-800"

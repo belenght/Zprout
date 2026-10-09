@@ -16,6 +16,7 @@ export interface Perfil {
   email: string;
   fecha_nacimiento: string | null; // YYYY-MM-DD
   rol: string | null;
+  id_rol: number | null;
   estado: string;
   created_at: string;
   foto: string | null; // data URL (JPEG) o null si no tiene foto
@@ -26,6 +27,9 @@ export interface ActualizarPerfilPayload {
   apellido: string;
   email: string;
   fecha_nacimiento: string | null;
+  // Solo los puede enviar un administrador (el backend responde 403 si no).
+  nombre_usuario?: string;
+  id_rol?: number;
 }
 
 export interface CambiarPasswordPayload {

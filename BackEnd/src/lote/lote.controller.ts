@@ -11,6 +11,9 @@ import { Estado } from '../estado/estado.entity.js';
 import { cambiarEstado } from '../estado/estado_helper.js';
 import { ESTADOS_LOTE } from '../estado/estado_nombres.js';
 import { Usuario } from '../usuario/usuario.entity.js';
+import { LimpiezaClasificacion } from '../limpieza_clasificacion/limpieza_clasificacion.entity.js';
+import { DIAS_MAX_PARA_CURAR } from './reglas.js';
+import { registrarBitacora } from '../bitacora/bitacora.helper.js';
 
 const CANTIDAD_MIN_TN = 0.01;
 const OBSERVACIONES_MAX = 500;
@@ -43,7 +46,47 @@ async function conEstadoActual(em: ReturnType<typeof getEM>, lotes: Lote[]) {
     }
   }
 
-  return lotes.map((l) => ({ ...wrap(l).toJSON(), estado_actual: mapa.get(l.id_lote) ?? null }));
+  // Datos para decidir el proximo paso del lote (una sola fuente de verdad para
+  // el front: stepper, bandeja de calidad, curado y dashboard).
+  const desdeEstado = new Map(abiertos.map((e) => [e.lote?.id_lote, new Date(e.fecha_desde).getTime()]));
+  const conLimpieza = new Set(
+    (await em.find(LimpiezaClasificacion, { lote: { id_lote: { $in: ids } }, deleted_at: null })).map((x) => x.lote.id_lote),
+  );
+  const intermedios = await em.find(
+    ControlDeCalidad,
+    { lote: { id_lote: { $in: ids } }, tipo_control: TipoControl.INTERMEDIO, deleted_at: null },
+    { orderBy: { fecha: 'DESC' } },
+  );
+  const ultimoIntermedio = new Map<number, ControlDeCalidad>();
+  for (const c of intermedios) if (!ultimoIntermedio.has(c.lote!.id_lote)) ultimoIntermedio.set(c.lote!.id_lote, c);
+
+  return lotes.map((l) => {
+    const estado = mapa.get(l.id_lote) ?? null;
+    const limpio = conLimpieza.has(l.id_lote);
+    const ult = ultimoIntermedio.get(l.id_lote);
+    const ccInter = ult ? (ult.resultado === ResultadoControl.APTO ? 'apto' : 'no_apto') : null;
+    let proximo: string | null = null;
+    let puedeSegundoCC = false;
+    if (estado === 'Pendiente CC') proximo = 'cc_inicial';
+    else if (estado === 'En limpieza') proximo = 'limpieza';
+    else if (estado === 'No apto') proximo = 'destino';
+    else if (estado === 'Para curar') {
+      proximo = limpio && ccInter !== 'apto' ? 'cc_intermedio' : 'curado';
+      if (limpio && ult) {
+        const desde = Math.max(new Date(ult.fecha).getTime(), desdeEstado.get(l.id_lote) ?? 0);
+        puedeSegundoCC = Math.floor((Date.now() - desde) / 86_400_000) >= DIAS_MAX_PARA_CURAR;
+      }
+    }
+    return {
+      ...wrap(l).toJSON(),
+      estado_actual: estado,
+      tiene_limpieza: limpio,
+      cc_intermedio: ccInter,
+      proximo_paso: proximo,
+      puede_segundo_cc: puedeSegundoCC,
+      dias_max_para_curar: DIAS_MAX_PARA_CURAR,
+    };
+  });
 }
 
 export async function listarLotes(req: Request, res: Response) {
@@ -197,6 +240,48 @@ export async function asignarAlmacenLote(req: Request, res: Response) {
   }
 
   await em.flush();
+  const [dto] = await conEstadoActual(em, [lote]);
+  res.json(dto);
+}
+
+
+const DESTINOS_VALIDOS = ['Venta como grano', 'Descarte'] as const;
+
+/**
+ * Destino de un lote "No apto" (Minuta de relevamiento + Maquinas de Estado):
+ * si no pasa el primer control, se analiza si puede venderse como grano; si no,
+ * se descarta. Ambos son estados terminales. Solo se llega desde "No apto".
+ * Al salir del circuito de semilla, el lote libera el lugar que ocupaba en el
+ * almacen.
+ */
+export async function asignarDestinoLote(req: Request, res: Response) {
+  const em = getEM();
+  const { destino, motivo } = req.body ?? {};
+  if (!DESTINOS_VALIDOS.includes(destino)) {
+    return res.status(400).json({ error: `destino debe ser uno de: ${DESTINOS_VALIDOS.join(', ')}` });
+  }
+  if (motivo !== undefined && (typeof motivo !== 'string' || motivo.length > 255)) {
+    return res.status(400).json({ error: 'motivo no puede superar los 255 caracteres' });
+  }
+
+  const lote = await em.findOne(Lote, { id_lote: Number(req.params.id), deleted_at: null });
+  if (!lote) return res.status(404).json({ error: 'Lote no encontrado' });
+
+  const estadoActual = await em.findOne(Estado, { lote: { id_lote: lote.id_lote }, fecha_hasta: null, deleted_at: null });
+  if (estadoActual?.nombre !== 'No apto') {
+    return res.status(409).json({
+      error: `Solo un lote "No apto" puede pasar a "${destino}" (estado actual: "${estadoActual?.nombre ?? 'sin estado'}")`,
+    });
+  }
+
+  const usuario = await em.findOne(Usuario, { id_usuario: req.usuario!.id_usuario });
+  if (!usuario) return res.status(401).json({ error: 'Usuario autenticado no disponible' });
+
+  await cambiarEstado(em, { lote }, destino, usuario);
+  lote.almacen = undefined;
+  registrarBitacora(req, 'lote.destino', lote.nro_lote, `${destino}${motivo ? ` — ${motivo}` : ''}`);
+  await em.flush();
+
   const [dto] = await conEstadoActual(em, [lote]);
   res.json(dto);
 }

@@ -3,6 +3,7 @@ import { getEM } from '../shared/db/orm.js';
 import { Usuario, type EstadoUsuario } from './usuario.entity.js';
 import { Rol } from '../rol/rol.entity.js';
 import { hashPassword } from '../auth/auth.service.js';
+import { registrarBitacora } from '../bitacora/bitacora.helper.js';
 
 const PASSWORD_MIN = 8;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -101,8 +102,12 @@ export async function eliminarUsuario(req: Request, res: Response) {
   const em = getEM();
   const usuario = await em.findOne(Usuario, { id_usuario: Number(req.params.id), deleted_at: null });
   if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
+  if (usuario.id_usuario === req.usuario?.id_usuario) {
+    return res.status(400).json({ error: 'No podes eliminar tu propia cuenta' });
+  }
 
   usuario.deleted_at = new Date();
+  registrarBitacora(req, 'usuario.eliminar', `@${usuario.nombre_usuario}`);
   await em.flush();
   res.status(204).send();
 }
@@ -154,6 +159,12 @@ export async function cambiarEstado(req: Request, res: Response) {
   }
 
   usuario.estado = estado as EstadoUsuario;
+  registrarBitacora(
+    req,
+    estado === 'activo' ? 'solicitud.aprobar' : estado === 'rechazado' ? 'solicitud.rechazar' : 'solicitud.pendiente',
+    `@${usuario.nombre_usuario}`,
+    estado === 'activo' ? `Rol asignado: ${usuario.rol?.desc_rol ?? 'sin rol'}` : undefined,
+  );
   await em.flush();
   // Antes devolvia res.json(usuario) directo en todos estos endpoints: el
   // hash de la contrasena quedaba expuesto igual que en actualizarUsuario.

@@ -12,6 +12,10 @@ import { rolRouter } from './rol/rol.routes.js';
 import { usuarioRouter } from './usuario/usuario.routes.js';
 import { authRouter } from './auth/auth.routes.js';
 import { verificarToken } from './auth/auth.middleware.js';
+import { controlarAcceso } from './auth/permisos.js';
+import { bitacoraRouter } from './bitacora/bitacora.routes.js';
+import { trazabilidadRouter } from './trazabilidad/trazabilidad.routes.js';
+import { alertasRouter } from './alertas/alertas.routes.js';
 import { campoRouter } from './campo/campo.routes.js';
 import { proveedorRouter } from './proveedor/proveedor.routes.js';
 import { tipoSemillaRouter } from './tipo_semilla/tipo_semilla.routes.js';
@@ -102,8 +106,13 @@ app.get('/api/health', (req, res) => {
 // /api/auth es publico (login). A partir de aca, todo pide token valido.
 app.use('/api/auth', authRouter);
 app.use(verificarToken);
+// Permisos por rol (ver auth/permisos.ts): lectura para todos, escritura segun rol.
+app.use('/api', controlarAcceso);
 
 app.use('/api/usuarios', usuarioRouter);
+app.use('/api/bitacora', bitacoraRouter);
+app.use('/api/trazabilidad', trazabilidadRouter);
+app.use('/api/alertas', alertasRouter);
 
 // --- Catalogos ---
 app.use('/api/roles', rolRouter);

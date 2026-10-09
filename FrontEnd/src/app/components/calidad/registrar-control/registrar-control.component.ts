@@ -69,7 +69,7 @@ export class RegistrarControlComponent implements OnInit {
         this.lote = lote;
         // Si no vino tipo por query param, lo sugiere segun el estado actual del lote.
         if (!tipoSugerido) {
-          this.form.patchValue({ tipo_control: lote.estado_actual === 'En limpieza' ? 'intermedio' : 'inicial' });
+          this.form.patchValue({ tipo_control: lote.proximo_paso === 'cc_inicial' ? 'inicial' : 'intermedio' });
         }
         this.cargando = false;
         this.cd.detectChanges();

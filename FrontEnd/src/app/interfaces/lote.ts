@@ -19,6 +19,12 @@ export interface Lote {
   proveedor?: Proveedor | number;
   almacen?: Almacen | number | null;
   estado_actual?: string | null;
+  // Calculados por el backend (lote.controller.ts::conEstadoActual): proximo paso del proceso.
+  tiene_limpieza?: boolean;
+  cc_intermedio?: 'apto' | 'no_apto' | null;
+  proximo_paso?: 'cc_inicial' | 'limpieza' | 'cc_intermedio' | 'curado' | 'destino' | null;
+  puede_segundo_cc?: boolean;
+  dias_max_para_curar?: number;
 }
 
 // Body que espera POST /api/lotes (CUU01) - distinto al DTO de lectura,

@@ -1,6 +1,8 @@
 import type { Request, Response } from 'express';
 import { getEM } from '../shared/db/orm.js';
 import { Usuario } from './usuario.entity.js';
+import { Rol } from '../rol/rol.entity.js';
+import { registrarBitacora } from '../bitacora/bitacora.helper.js';
 import { comparePassword, generateToken, hashPassword } from '../auth/auth.service.js';
 
 /**
@@ -14,6 +16,9 @@ const PASSWORD_MIN = 8;
 const PASSWORD_MAX = 72;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SIN_MARKUP = /^[^<>]*$/;
+// Mismo criterio que el registro: sin espacios ni markup.
+const USUARIO_PATTERN = /^[A-Za-z0-9_.-]{3,50}$/;
+const ROL_ADMIN = 'administrador';
 const FECHA_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 // express.json() (app.ts) corta en 100 kb por request; la foto viaja en base64
 // (+33%), asi que 70 kb de imagen es el maximo que entra con margen.
@@ -55,6 +60,7 @@ function perfilDe(usuario: Usuario) {
     email: usuario.email,
     fecha_nacimiento: fechaComoTexto(usuario.fecha_nacimiento),
     rol: usuario.rol?.desc_rol ?? null,
+    id_rol: usuario.rol?.id_rol ?? null,
     estado: usuario.estado,
     created_at: usuario.created_at,
     foto: fotoComoDataUrl(usuario),
@@ -78,14 +84,53 @@ export async function obtenerMiPerfil(req: Request, res: Response) {
 
 /**
  * Datos personales. Se pueden cambiar nombre, apellido, email y fecha de
- * nacimiento. NO el nombre de usuario ni el rol (eso es del administrador).
- * Devuelve un token nuevo porque el nombre viaja dentro del JWT.
+ * nacimiento. El nombre de usuario y el rol SOLO los puede cambiar un
+ * administrador (se valida contra la base, no contra el token).
+ * Devuelve un token nuevo porque el nombre, el usuario y el rol viajan en el JWT.
  */
 export async function actualizarMiPerfil(req: Request, res: Response) {
   const usuario = await usuarioActual(req, res);
   if (!usuario) return;
   const em = getEM();
-  const { nombre, apellido, email, fecha_nacimiento } = req.body ?? {};
+  const { nombre, apellido, email, fecha_nacimiento, nombre_usuario, id_rol } = req.body ?? {};
+  const esAdmin = usuario.rol?.desc_rol === ROL_ADMIN;
+
+  if ((nombre_usuario !== undefined || id_rol !== undefined) && !esAdmin) {
+    return res.status(403).json({ error: 'Solo un administrador puede cambiar el nombre de usuario o el rol' });
+  }
+
+  if (nombre_usuario !== undefined) {
+    const v = String(nombre_usuario).trim();
+    if (!USUARIO_PATTERN.test(v)) {
+      return res.status(400).json({ error: 'nombre_usuario invalido (3 a 50 caracteres: letras, numeros, punto, guion o guion bajo)' });
+    }
+    if (v !== usuario.nombre_usuario) {
+      // Sin filtrar deleted_at: el unique de la tabla tambien incluye filas dadas de baja.
+      const otro = await em.findOne(Usuario, { nombre_usuario: v, id_usuario: { $ne: usuario.id_usuario } });
+      if (otro) return res.status(409).json({ error: 'Ese nombre de usuario ya esta en uso' });
+      registrarBitacora(req, 'usuario.editar', `@${usuario.nombre_usuario}`, `Cambió su propio usuario a ${v}`);
+      usuario.nombre_usuario = v;
+    }
+  }
+
+  if (id_rol !== undefined && Number(id_rol) !== usuario.rol?.id_rol) {
+    const rol = await em.findOne(Rol, { id_rol: Number(id_rol), deleted_at: null });
+    if (!rol) return res.status(404).json({ error: 'Rol no encontrado' });
+    if (rol.desc_rol !== ROL_ADMIN) {
+      // Evita que el sistema se quede sin administradores.
+      const otrosAdmins = await em.count(Usuario, {
+        rol: { desc_rol: ROL_ADMIN },
+        activo: true,
+        deleted_at: null,
+        id_usuario: { $ne: usuario.id_usuario },
+      });
+      if (otrosAdmins === 0) {
+        return res.status(409).json({ error: 'Sos el unico administrador: asigná otro administrador antes de cambiar tu rol' });
+      }
+    }
+    registrarBitacora(req, 'usuario.editar', `@${usuario.nombre_usuario}`, `Cambió su propio rol: ${usuario.rol?.desc_rol ?? 'sin rol'} -> ${rol.desc_rol}`);
+    usuario.rol = rol;
+  }
 
   if (nombre !== undefined) {
     const v = String(nombre).trim();

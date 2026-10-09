@@ -18,6 +18,7 @@ import { EstimacionVenta } from '../../interfaces/estimacion-venta';
 import { TipoDeSemilla } from '../../interfaces/catalogos';
 import { ESTADOS_LOTE } from '../../shared/estado-nombres';
 import { claseBadgeEstado, claseBadgeEstadoSolido } from '../../shared/estado-badge';
+import { exportarCsv } from '../../shared/exportar-csv';
 
 // Vocabularios cerrados (espejo de BackEnd/src/estado/estado_nombres.ts y pedido.entity.ts)
 const ESTADOS_PARTIDA = ['Envasado', 'Apto para comercializacion', 'Rechazado'];
@@ -562,5 +563,36 @@ export class ReportesComponent implements OnInit {
         clase: pct >= 90 ? 'bg-red-500' : pct >= 75 ? 'bg-gold-500' : 'bg-brand-600',
       };
     });
+  }
+
+  // ---- Informe imprimible y exportacion a Excel ----
+  hoy = new Date();
+
+  get etiquetaFiltros(): string {
+    const per = this.periodos.find((x) => x.valor === this.periodo)?.etiqueta ?? '';
+    const esp = this.especieFiltro !== null ? this.especiesDisponibles.find((e) => e.id === this.especieFiltro)?.etiqueta : null;
+    return `Período: ${per}${esp ? ' · Semilla/variedad: ' + esp : ''}`;
+  }
+
+  imprimir(): void {
+    this.hoy = new Date();
+    this.cd.detectChanges();
+    setTimeout(() => window.print());
+  }
+
+  exportar(): void {
+    const filas: (string | number | null)[][] = [
+      ['Indicadores', 'Volumen ingresado (tn)', this.ingresadoTn, `${this.cantidadLotes} lote(s)`],
+      ['Indicadores', 'Volumen procesado - curado (tn)', this.volumenProcesadoTn, `${this.bolsasTotales} bolsas de 20 kg`],
+      ['Indicadores', 'Merma promedio (%)', this.mermaPromedioPct, `${this.mermaTotalTn} tn descartadas`],
+    ];
+    for (const b of this.procesadoPorEspecie) filas.push(['Procesado por especie (tn)', b.nombre, Number(b.valor.toFixed(2)), '']);
+    for (const b of this.mermaPorEspecie) filas.push(['Merma promedio por especie (%)', b.nombre, Number(b.valor.toFixed(2)), b.detalle ?? '']);
+    for (const c of this.coberturaPorEspecie) filas.push(['Cobertura de la estimación (%)', c.nombre, Number(c.cobertura.toFixed(1)), `estimado ${c.estimadoTn} tn / curado ${c.curadoTn} tn`]);
+    for (const e of this.calidadPorEtapa) filas.push(['Calidad por etapa', e.etapa, e.porcentajeApto !== null ? Number(e.porcentajeApto.toFixed(1)) : null, `${e.total} control(es), ${e.aptos} aptos, ${e.noAptos} no aptos`]);
+    for (const b of this.lotesPorEstado) filas.push(['Lotes por estado', b.nombre, b.valor, '']);
+    for (const b of this.pedidosPorEstado) filas.push(['Pedidos por estado', b.nombre, b.valor, '']);
+    filas.unshift(['Filtros', this.etiquetaFiltros, '', '']);
+    exportarCsv('reportes', ['Sección', 'Concepto', 'Valor', 'Detalle'], filas);
   }
 }

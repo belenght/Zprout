@@ -5,6 +5,10 @@ import { forkJoin } from 'rxjs';
 import { LoteService } from '../../services/lote.service';
 import { PartidaService } from '../../services/partida.service';
 import { EstimacionVentaService } from '../../services/estimacion-venta.service';
+import { DemandaCuradoService } from '../../services/extras.service';
+import { AuthService } from '../../services/auth.service';
+import { DemandaCurado } from '../../interfaces/extras';
+import { exportarCsv, fechaCsv } from '../../shared/exportar-csv';
 
 interface FilaCurado {
   loteId: number;
@@ -13,6 +17,7 @@ interface FilaCurado {
   disponible_tn: number;
   estimacion_tn: number | null;
   vol_a_curar_sugerido: number;
+  falta_cc_intermedio: boolean;
 }
 
 /**
@@ -28,6 +33,8 @@ interface FilaCurado {
 export class CuradoComponent implements OnInit {
   lotesParaCurar: FilaCurado[] = [];
   partidasEnProcesoDeEnvasado = 0;
+  // Demanda insatisfecha: pedidos "Pendiente de stock" agrupados por variedad.
+  demanda: DemandaCurado[] = [];
   cargando = true;
   errorMessage: string | null = null;
 
@@ -39,11 +46,31 @@ export class CuradoComponent implements OnInit {
     private loteService: LoteService,
     private partidaService: PartidaService,
     private estimacionVentaService: EstimacionVentaService,
-    private router: Router
+    private router: Router,
+    private demandaService: DemandaCuradoService,
+    public auth: AuthService
   ) {}
 
   ngOnInit(): void {
     this.cargarListado();
+    // Informativo: si falla no bloquea el listado de curado.
+    this.demandaService.getDemanda().subscribe({
+      next: (d) => { this.demanda = d; this.cd.detectChanges(); },
+      error: () => { /* la tarjeta de demanda simplemente no se muestra */ },
+    });
+  }
+
+  exportarDemanda(): void {
+    exportarCsv(
+      'demanda-de-curado',
+      ['Semilla', 'Variedad', 'Bolsas faltantes', 'Kg faltantes', 'Tn a curar', 'Tn a granel disponibles', 'Pedidos', 'Pedido más antiguo', 'Fecha requerida más próxima'],
+      this.demanda.map((d) => [d.semilla, d.variedad, d.bolsas_faltantes, d.kg_faltantes, d.tn_faltantes, d.tn_a_granel_para_curar, d.pedidos.join(', '), fechaCsv(d.pedido_mas_antiguo), fechaCsv(d.fecha_requerida_mas_proxima)]),
+    );
+  }
+
+  // Hay semilla a granel "Para curar" de esa variedad que alcanza para cubrir lo que falta.
+  alcanzaGranel(d: DemandaCurado): boolean {
+    return d.tn_a_granel_para_curar >= d.tn_faltantes;
   }
 
   cargarListado(): void {
@@ -80,6 +107,8 @@ export class CuradoComponent implements OnInit {
               disponible_tn: disponible,
               estimacion_tn: estimacionTn,
               vol_a_curar_sugerido: estimacionTn != null ? Math.min(disponible, estimacionTn) : disponible,
+              // Lote limpio al que todavia le falta el CC intermedio apto: no se puede curar.
+              falta_cc_intermedio: l.proximo_paso === 'cc_intermedio',
             };
           })
           .filter((f) => f.disponible_tn > 0);
@@ -104,7 +133,7 @@ export class CuradoComponent implements OnInit {
   }
 
   get pendientesCurar(): number {
-    return this.lotesParaCurar.length;
+    return this.lotesParaCurar.filter((f) => !f.falta_cc_intermedio).length;
   }
 
   registrarCurado(fila: FilaCurado): void {

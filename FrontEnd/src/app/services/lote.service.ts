@@ -29,4 +29,9 @@ export class LoteService {
       catchError(handleHttpError)
     );
   }
+
+  // Destino de un lote "No apto": 'Venta como grano' o 'Descarte'.
+  asignarDestino(id: number, destino: 'Venta como grano' | 'Descarte', motivo?: string): Observable<Lote> {
+    return this.http.post<Lote>(`${this.apiUrl}/${id}/destino`, { destino, motivo }).pipe(catchError(handleHttpError));
+  }
 }

@@ -1,0 +1,56 @@
+<div class="mx-auto max-w-6xl px-8 py-6">
+  <div class="mb-1 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="m-0 font-display text-3xl font-bold text-brand-hero">Bitácora</h1>
+    <button type="button" (click)="exportar()" [disabled]="registros.length === 0" class="rounded-md border border-brand-700 px-4 py-2 text-[13px] font-bold text-brand-800 hover:bg-brand-50 disabled:opacity-50">
+      <i class="bi bi-file-earmark-spreadsheet"></i> Exportar a Excel
+    </button>
+  </div>
+  <p class="mb-6 mt-0 text-sm italic text-sage-500">Registro de los cambios sensibles hechos sobre cuentas de usuario y lotes no aptos.</p>
+
+  <form class="mb-5 flex flex-wrap items-end gap-3" (ngSubmit)="cargar()">
+    <div>
+      <label for="f-accion" class="mb-1 block text-xs font-bold text-sage-700">Acción</label>
+      <select id="f-accion" name="accion" [(ngModel)]="filtroAccion" class="rounded-md border border-gray-300 px-3 py-2 text-[13px]">
+        <option value="">Todas</option>
+        <option *ngFor="let a of acciones" [value]="a.valor">{{ a.etiqueta }}</option>
+      </select>
+    </div>
+    <div>
+      <label for="f-usuario" class="mb-1 block text-xs font-bold text-sage-700">Usuario (exacto)</label>
+      <input id="f-usuario" name="usuario" [(ngModel)]="filtroUsuario" class="rounded-md border border-gray-300 px-3 py-2 text-[13px]" />
+    </div>
+    <button type="submit" class="rounded-md bg-brand-700 px-5 py-2 text-sm font-bold text-white hover:bg-brand-800">Filtrar</button>
+    <button type="button" (click)="limpiar()" class="rounded-md border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50">Limpiar</button>
+  </form>
+
+  <div *ngIf="errorMessage" class="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-red-700">{{ errorMessage }}</div>
+
+  <div class="overflow-hidden rounded-md border border-sage-200">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-[13px]">
+        <thead class="bg-brand-900 text-xs text-white">
+          <tr>
+            <th class="px-3 py-3 font-bold">Fecha</th>
+            <th class="px-3 py-3 font-bold">Usuario</th>
+            <th class="px-3 py-3 font-bold">Acción</th>
+            <th class="px-3 py-3 font-bold">Objetivo</th>
+            <th class="px-3 py-3 font-bold">Detalle</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of registros" class="border-t border-sage-200">
+            <td class="whitespace-nowrap px-3 py-2">{{ r.fecha | date: 'dd/MM/yyyy HH:mm' }}</td>
+            <td class="px-3 py-2 font-bold">{{ r.usuario_actor }}</td>
+            <td class="px-3 py-2">{{ etiqueta(r.accion) }}</td>
+            <td class="px-3 py-2">{{ r.objetivo || '—' }}</td>
+            <td class="px-3 py-2 text-gray-600">{{ r.detalle || '—' }}</td>
+          </tr>
+          <tr *ngIf="!cargando && registros.length === 0">
+            <td colspan="5" class="px-3 py-6 text-center text-gray-400">No hay registros.</td>
+          </tr>
+          <tr *ngIf="cargando"><td colspan="5" class="px-3 py-6 text-center text-gray-400">Cargando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

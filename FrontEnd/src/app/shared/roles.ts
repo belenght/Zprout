@@ -8,6 +8,7 @@ const ETIQUETAS_ROL: Record<string, string> = {
   responsable_calidad: 'Responsable de Calidad',
   operario_planta: 'Operario de Planta',
   encargado_comercial: 'Encargado del Área Comercial',
+  director: 'Director (solo lectura)',
 };
 
 export function etiquetaRol(desc_rol?: string | null): string {

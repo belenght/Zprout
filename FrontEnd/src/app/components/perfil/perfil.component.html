@@ -77,14 +77,33 @@
         </div>
           <div>
             <label class="mb-1.5 block text-xs font-bold text-gray-800">Nombre de usuario</label>
-            <div class="rounded-lg border border-sage-200 bg-sage-100 px-4 py-2.5 text-sm text-gray-500">{{ perfil.nombre_usuario }}</div>
+            <ng-container *ngIf="esAdmin; else usuarioFijo">
+              <input type="text" formControlName="nombre_usuario" maxlength="50" class="w-full rounded-lg border border-sage-200 bg-sage-100 px-4 py-2.5 text-sm text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/30 [&.ng-invalid.ng-touched]:border-red-500">
+              <p *ngIf="invalido(formDatos, 'nombre_usuario')" class="mb-0 mt-1 text-xs text-red-600">3 a 50 caracteres: letras, números, punto, guion o guion bajo.</p>
+            </ng-container>
+            <ng-template #usuarioFijo>
+              <div class="rounded-lg border border-sage-200 bg-sage-100 px-4 py-2.5 text-sm text-gray-500">{{ perfil.nombre_usuario }}</div>
+            </ng-template>
           </div>
           <div>
             <label class="mb-1.5 block text-xs font-bold text-gray-800">Rol</label>
-            <div class="rounded-lg border border-sage-200 bg-sage-100 px-4 py-2.5 text-sm capitalize text-gray-500">{{ perfil.rol || '—' }}</div>
+            <ng-container *ngIf="esAdmin && roles.length; else rolFijo">
+              <select formControlName="id_rol" class="w-full rounded-lg border border-sage-200 bg-sage-100 px-4 py-2.5 text-sm text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/30">
+                <option *ngFor="let r of roles" [ngValue]="r.id_rol">{{ etiquetaRol(r.desc_rol) }}</option>
+              </select>
+            </ng-container>
+            <ng-template #rolFijo>
+              <div class="rounded-lg border border-sage-200 bg-sage-100 px-4 py-2.5 text-sm text-gray-500">{{ etiquetaRol(perfil.rol) }}</div>
+            </ng-template>
           </div>
         </div>
-        <p class="mb-0 mt-3 text-[11px] italic text-sage-500">El nombre de usuario y el rol los cambia un administrador.</p>
+        <p class="mb-0 mt-3 text-[11px] italic text-sage-500">
+          {{ esAdmin ? 'Como administrador podés cambiar tu nombre de usuario y tu rol.' : 'El nombre de usuario y el rol los cambia un administrador.' }}
+        </p>
+        <div *ngIf="confirmandoRol" class="mt-4 rounded-lg border border-[#f3b3b3] bg-[#fbe1e1] p-3 text-xs text-[#9b2c2c]">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+          Vas a dejar de ser administrador: perderás el acceso a Solicitudes y a las funciones de administración. Para confirmar, tocá "Guardar cambios" de nuevo.
+        </div>
         <div class="mt-5">
           <button type="submit" [disabled]="guardandoDatos || formDatos.pristine" class="inline-flex items-center gap-2 rounded-lg bg-brand-700 px-8 py-3 text-sm font-bold text-white hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60">
             <span *ngIf="guardandoDatos" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>

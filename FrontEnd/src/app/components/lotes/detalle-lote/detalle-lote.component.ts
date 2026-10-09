@@ -17,17 +17,17 @@ import { LimpiezaClasificacion } from '../../../interfaces/limpieza';
 import { Partida } from '../../../interfaces/partida';
 import { EstadoHistorial } from '../../../interfaces/estado';
 import { Almacen } from '../../../interfaces/almacen';
+import { AuthService } from '../../../services/auth.service';
 import { claseBadgeEstado } from '../../../shared/estado-badge';
-
-// Estados de Lote desde los que corresponde ofrecer "Registrar CC" (CUU02).
-// Ver BackEnd/src/estado/estado_nombres.ts (ESTADOS_LOTE).
-const ESTADOS_CON_CC_PENDIENTE = ['Pendiente CC', 'En limpieza'] as const;
 
 // Estados en los que el lote ya no avanza por el flujo normal (no hay etapa
 // "actual" en el stepper).
 const ESTADOS_TERMINALES = ['No apto', 'Venta como grano', 'Descarte'] as const;
 
-export type EstadoEtapa = 'hecho' | 'actual' | 'pendiente';
+// hecho = completada; actual = la que sigue; pendiente = todavia no; omitida = no aplica
+// a este lote (ej. lote externo no se limpia); opcional = no bloquea el avance;
+// detenida = el lote quedo cortado en esa etapa (No apto / destino).
+export type EstadoEtapa = 'hecho' | 'actual' | 'pendiente' | 'omitida' | 'opcional' | 'detenida';
 
 export interface EtapaLote {
   label: string;
@@ -67,7 +67,8 @@ export class DetalleLoteComponent implements OnInit {
     private almacenService: AlmacenService,
     private estadoService: EstadoService,
     private estimacionVentaService: EstimacionVentaService,
-    private toastr: ToastrService
+    private toastr: ToastrService,
+    public auth: AuthService
   ) {}
 
   claseBadgeEstado = claseBadgeEstado;
@@ -171,30 +172,117 @@ export class DetalleLoteComponent implements OnInit {
     });
   }
 
-  // CUU02, paso 1: habilita "Registrar control de calidad" solo cuando el
-  // lote esta en un estado que efectivamente espera un CC (inicial o
-  // intermedio).
+  // ---- Proximo paso del proceso ---------------------------------------------
+  // Lo calcula el backend (proximo_paso) siguiendo CUU02/03/05 y las maquinas de
+  // estado: CC inicial -> limpieza -> CC intermedio -> curado.
+  get proximoPaso(): string | null {
+    return this.lote?.proximo_paso ?? null;
+  }
+
+  // CC intermedio extra: RN 13 (mucho tiempo en "Para curar" -> segundo control antes de curar).
+  get puedeSegundoCC(): boolean {
+    return this.proximoPaso === 'curado' && !!this.lote?.puede_segundo_cc;
+  }
+
   get puedeRegistrarCC(): boolean {
-    return !!this.lote && ESTADOS_CON_CC_PENDIENTE.includes(this.lote.estado_actual as any);
+    return this.proximoPaso === 'cc_inicial' || this.proximoPaso === 'cc_intermedio' || this.puedeSegundoCC;
   }
 
   get tipoControlSugerido(): 'inicial' | 'intermedio' {
-    return this.lote?.estado_actual === 'En limpieza' ? 'intermedio' : 'inicial';
+    return this.proximoPaso === 'cc_inicial' ? 'inicial' : 'intermedio';
   }
 
-  // CUU03, precondicion: el lote debe estar "En limpieza" para registrar el
-  // procesamiento fisico (ver limpieza_clasificacion.controller.ts).
+  // CUU03, precondicion: el lote debe estar "En limpieza".
   get puedeRegistrarLimpieza(): boolean {
-    return this.lote?.estado_actual === 'En limpieza';
+    return this.proximoPaso === 'limpieza';
   }
 
-  // CUU05, precondicion: el lote debe estar "Para curar".
+  // CUU05, precondicion: lote "Para curar" (y, si se limpio, con CC intermedio apto).
   get puedeRegistrarCurado(): boolean {
-    return this.lote?.estado_actual === 'Para curar';
+    return this.proximoPaso === 'curado';
+  }
+
+  // Cada accion se muestra solo si el estado del lote la admite Y el rol del
+  // usuario tiene permiso (ver shared/permisos.ts).
+  get verCC(): boolean { return this.puedeRegistrarCC && this.auth.puede('calidad.registrar'); }
+  get verLimpieza(): boolean { return this.puedeRegistrarLimpieza && this.auth.puede('limpieza.registrar'); }
+  get verCurado(): boolean { return this.puedeRegistrarCurado && this.auth.puede('curado.registrar'); }
+
+  // Un lote "No apto" espera una decision: venta como grano o descarte.
+  get esNoApto(): boolean {
+    return this.lote?.estado_actual === 'No apto';
+  }
+  get verDestino(): boolean {
+    return this.esNoApto && this.auth.puede('lotes.destino');
   }
 
   get puedeRegistrarAlgunaAccion(): boolean {
-    return this.puedeRegistrarCC || this.puedeRegistrarLimpieza || this.puedeRegistrarCurado;
+    return this.verCC || this.verLimpieza || this.verCurado || this.verDestino;
+  }
+
+  // El CC es el paso principal salvo que sea el "segundo control" opcional.
+  get ccEsPrincipal(): boolean {
+    return this.proximoPaso === 'cc_inicial' || this.proximoPaso === 'cc_intermedio';
+  }
+
+  // Texto de "que sigue", en lenguaje del proceso y con el responsable.
+  get textoSiguiente(): string {
+    switch (this.proximoPaso) {
+      case 'cc_inicial': return 'Siguiente paso: control de calidad inicial (Responsable de Calidad).';
+      case 'limpieza': return 'Siguiente paso: registrar la limpieza y clasificación (Operario de Planta).';
+      case 'cc_intermedio': return 'Siguiente paso: control de calidad intermedio del lote ya limpio (Responsable de Calidad).';
+      case 'curado':
+        return this.puedeSegundoCC
+          ? `Siguiente paso: registrar el curado (Operario de Planta). Lleva más de ${this.lote?.dias_max_para_curar} días en "Para curar": conviene un segundo control antes de curar.`
+          : 'Siguiente paso: registrar el curado y envasado (Operario de Planta).';
+      case 'destino': return 'El lote no es apto: falta definir su destino (venta como grano o descarte).';
+      default: break;
+    }
+    const e = this.lote?.estado_actual;
+    if (e === 'Venta como grano' || e === 'Descarte') return `Proceso finalizado: el lote quedó como "${e}".`;
+    if (this.partidas.length > 0) return 'El lote ya fue curado: el seguimiento continúa en sus partidas (control final y pedidos).';
+    return '';
+  }
+
+  // ---- Destino del lote no apto (modal de confirmacion) --------------------
+  destinoElegido: 'Venta como grano' | 'Descarte' | null = null;
+  motivoDestino = '';
+  guardandoDestino = false;
+
+  abrirDestino(destino: 'Venta como grano' | 'Descarte'): void {
+    this.destinoElegido = destino;
+    this.motivoDestino = '';
+  }
+
+  cancelarDestino(): void {
+    this.destinoElegido = null;
+  }
+
+  confirmarDestino(): void {
+    if (!this.lote?.id_lote || !this.destinoElegido) return;
+    this.guardandoDestino = true;
+    const elegido = this.destinoElegido;
+    this.loteService.asignarDestino(this.lote.id_lote, elegido, this.motivoDestino.trim() || undefined).subscribe({
+      next: () => {
+        this.toastr.success(`El lote quedó como "${elegido}"`, 'Destino asignado');
+        this.guardandoDestino = false;
+        this.destinoElegido = null;
+        this.cd.detectChanges();
+        this.recargarLote();
+      },
+      error: (err) => {
+        this.guardandoDestino = false;
+        this.toastr.error(err.message, 'No se pudo asignar el destino');
+        this.cd.detectChanges();
+      }
+    });
+  }
+
+  private recargarLote(): void {
+    const id = this.lote?.id_lote;
+    if (!id) return;
+    this.loteService.getLote(id).subscribe((l) => { this.lote = l; this.cd.detectChanges(); });
+    this.estadoService.getHistorialPorLote(id).subscribe((e) => { this.estados = e; this.cd.detectChanges(); });
   }
 
   // Helpers para el template - las relaciones vienen populadas desde el
@@ -274,25 +362,36 @@ export class DetalleLoteComponent implements OnInit {
     const hayControl = (tipo: string) => this.controles.some((c) => c.tipo_control === tipo);
     const partidaEn = (...estados: string[]) =>
       this.partidas.some((p) => estados.includes(p.estado_actual ?? ''));
+    const externo = this.lote?.origen_semilla === 'externo';
 
-    const etapas: { label: string; hecha: boolean }[] = [
+    // Etapas del proceso, en el orden de los casos de uso. Una etapa solo cuenta como
+    // hecha si todas las anteriores lo estan (asi la linea nunca muestra un salto).
+    // En lotes externos no hay limpieza ni CC intermedio (CUU01 4.a, RN 8).
+    const principales: { label: string; hecha: boolean; omitida?: boolean }[] = [
       { label: 'Ingreso', hecha: !!this.lote },
-      { label: 'CC inicial', hecha: hayControl('inicial') },
-      { label: 'Limpieza', hecha: this.limpiezas.length > 0 },
-      { label: 'CC interm.', hecha: hayControl('intermedio') },
-      { label: 'Est. venta', hecha: !!this.estimacion },
+      { label: 'CC inicial', hecha: externo || hayControl('inicial') },
+      { label: 'Limpieza', hecha: this.limpiezas.length > 0, omitida: externo },
+      { label: 'CC interm.', hecha: hayControl('intermedio'), omitida: externo },
       { label: 'Curado', hecha: this.partidas.length > 0 },
       { label: 'CC final', hecha: partidaEn('Apto para comercializacion', 'Rechazado') },
       { label: 'Habilitado', hecha: partidaEn('Apto para comercializacion') },
     ];
 
     const terminal = ESTADOS_TERMINALES.includes(this.lote?.estado_actual as any);
-    const indiceActual = terminal ? -1 : etapas.findIndex((e) => !e.hecha);
+    let cortado = false; // ya aparecio una etapa pendiente
+    const resultado: EtapaLote[] = [];
+    for (const e of principales) {
+      if (e.omitida) { resultado.push({ label: e.label, estado: 'omitida' }); continue; }
+      if (!cortado && e.hecha) { resultado.push({ label: e.label, estado: 'hecho' }); continue; }
+      if (!cortado) { cortado = true; resultado.push({ label: e.label, estado: terminal ? 'detenida' : 'actual' }); continue; }
+      resultado.push({ label: e.label, estado: 'pendiente' });
+    }
 
-    return etapas.map((e, i) => ({
-      label: e.label,
-      estado: e.hecha ? 'hecho' : i === indiceActual ? 'actual' : 'pendiente',
-    }));
+    // "Est. venta" es opcional (no frena el avance): se muestra entre CC interm. y Curado.
+    const estVenta: EtapaLote = { label: 'Est. venta', estado: this.estimacion ? 'hecho' : 'opcional' };
+    const posCurado = resultado.findIndex((_, i) => principales[i].label === 'Curado');
+    resultado.splice(posCurado, 0, estVenta);
+    return resultado;
   }
 
   // ---- Estilos --------------------------------------------------------------

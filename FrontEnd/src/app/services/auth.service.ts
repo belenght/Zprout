@@ -4,6 +4,7 @@ import { Observable, tap } from 'rxjs';
 import { JwtHelperService } from '@auth0/angular-jwt';
 import { environment } from '../environments/environment';
 import { AuthStateService } from './auth-state.service';
+import { Capacidad, rolPuede } from '../shared/permisos';
 import { LoginRequest, LoginResponse, RegistroRequest, RolRegistro, TokenPayload } from '../interfaces/login';
 
 @Injectable({
@@ -73,6 +74,11 @@ export class AuthService {
 
   getRole(): string | null {
     return this.getPayload()?.rol ?? null;
+  }
+
+  // Para ocultar acciones segun el rol (el backend igual valida con 403).
+  puede(capacidad: Capacidad): boolean {
+    return rolPuede(this.getRole(), capacidad);
   }
 
   getUserId(): number | null {

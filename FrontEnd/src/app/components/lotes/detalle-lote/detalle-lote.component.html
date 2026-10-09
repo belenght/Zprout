@@ -8,31 +8,42 @@
   </div>
 
   <!-- Stepper de etapas del lote: se calcula con los datos reales (ver `etapas` en el .ts) -->
-  <ol class="mb-8 flex">
+  <ol class="mb-3 flex" aria-label="Etapas del lote">
     <li *ngFor="let etapa of etapas; let last = last" class="relative flex flex-1 flex-col items-center">
       <div
         *ngIf="!last"
         class="absolute left-1/2 top-3.5 h-0.5 w-full -translate-y-1/2"
-        [ngClass]="etapa.estado === 'hecho' ? 'bg-brand-700' : 'bg-gray-200'"
+        [ngClass]="etapa.estado === 'hecho' || etapa.estado === 'omitida' ? 'bg-brand-700' : 'bg-gray-200'"
       ></div>
       <span
-        class="relative z-10 flex h-7 w-7 items-center justify-center rounded-full text-xs text-white"
+        class="relative z-10 flex h-7 w-7 items-center justify-center rounded-full text-xs"
         [ngClass]="{
-          'bg-brand-700': etapa.estado === 'hecho',
-          'bg-brand-800': etapa.estado === 'actual',
-          'bg-gray-200': etapa.estado === 'pendiente'
+          'bg-brand-700 text-white': etapa.estado === 'hecho',
+          'bg-white text-brand-800 ring-4 ring-gold-400 border-2 border-brand-800 font-bold': etapa.estado === 'actual',
+          'bg-gray-200 text-gray-400': etapa.estado === 'pendiente',
+          'bg-white text-gray-400 border border-dashed border-gray-400': etapa.estado === 'omitida' || etapa.estado === 'opcional',
+          'bg-red-600 text-white': etapa.estado === 'detenida'
         }"
       >
         <i *ngIf="etapa.estado === 'hecho'" class="bi bi-check-lg"></i>
+        <i *ngIf="etapa.estado === 'actual'" class="bi bi-arrow-right-short text-lg"></i>
+        <i *ngIf="etapa.estado === 'detenida'" class="bi bi-x-lg"></i>
+        <i *ngIf="etapa.estado === 'omitida'" class="bi bi-dash"></i>
       </span>
       <span
-        class="mt-2 text-[11px]"
-        [ngClass]="etapa.estado === 'actual' ? 'font-bold text-brand-900' : 'text-gray-500'"
+        class="mt-2 text-center text-[11px]"
+        [ngClass]="etapa.estado === 'actual' ? 'font-bold text-brand-900' : etapa.estado === 'detenida' ? 'font-bold text-red-700' : 'text-gray-500'"
       >
         {{ etapa.label }}
+        <span *ngIf="etapa.estado === 'omitida'" class="block text-[10px]">(no aplica)</span>
+        <span *ngIf="etapa.estado === 'opcional'" class="block text-[10px]">(opcional)</span>
+        <span *ngIf="etapa.estado === 'actual'" class="block text-[10px] text-gold-500">Paso actual</span>
       </span>
     </li>
   </ol>
+  <p *ngIf="textoSiguiente" class="mb-8 mt-0 rounded-lg border border-brand-100 bg-brand-50 px-4 py-2.5 text-[13px] text-brand-900">
+    <i class="bi bi-info-circle"></i> {{ textoSiguiente }}
+  </p>
 
   <!-- Tres tarjetas resumen -->
   <section class="mb-8 grid gap-5 md:grid-cols-3">
@@ -134,26 +145,47 @@
     <!-- Acciones: CUU02 / CUU03 / CUU05 segun el estado del lote -->
     <div class="flex flex-col gap-3 lg:mt-8">
       <a
-        *ngIf="puedeRegistrarCurado"
+        *ngIf="verCC && ccEsPrincipal"
+        [routerLink]="['/calidad/registrar', lote.id_lote]"
+        [queryParams]="{ tipo: tipoControlSugerido }"
+        class="block rounded-lg bg-brand-700 px-4 py-3 text-center text-sm font-bold text-white hover:bg-brand-800"
+      >
+        Registrar CC {{ tipoControlSugerido }} →
+      </a>
+      <a
+        *ngIf="verLimpieza"
+        [routerLink]="['/lotes', lote.id_lote, 'limpieza']"
+        class="block rounded-lg bg-brand-700 px-4 py-3 text-center text-sm font-bold text-white hover:bg-brand-800"
+      >
+        Registrar limpieza →
+      </a>
+      <a
+        *ngIf="verCurado"
         [routerLink]="['/curado/registrar', lote.id_lote]"
         class="block rounded-lg bg-brand-700 px-4 py-3 text-center text-sm font-bold text-white hover:bg-brand-800"
       >
         Registrar curado →
       </a>
+      <ng-container *ngIf="verDestino">
+        <button type="button" (click)="abrirDestino('Venta como grano')" class="block rounded-lg bg-brand-700 px-4 py-3 text-center text-sm font-bold text-white hover:bg-brand-800">
+          Destinar a venta como grano
+        </button>
+        <button
+          type="button"
+          (click)="abrirDestino('Descarte')"
+          class="block rounded-lg border border-red-300 bg-white px-4 py-3 text-center text-sm font-bold text-red-700 hover:bg-red-50"
+        >
+          Descartar lote
+        </button>
+      </ng-container>
+      <!-- Segundo control (RN 13): secundario, solo si el lote lleva mucho tiempo en "Para curar" -->
       <a
-        *ngIf="puedeRegistrarCC"
+        *ngIf="verCC && !ccEsPrincipal"
         [routerLink]="['/calidad/registrar', lote.id_lote]"
-        [queryParams]="{ tipo: tipoControlSugerido }"
-        class="block rounded-lg bg-brand-700 px-4 py-3 text-center text-sm font-bold text-white hover:bg-brand-800"
+        [queryParams]="{ tipo: 'intermedio' }"
+        class="block rounded-lg border border-brand-700 bg-white px-4 py-3 text-center text-sm font-bold text-brand-800 hover:bg-brand-50"
       >
-        Registrar CC {{ tipoControlSugerido }}
-      </a>
-      <a
-        *ngIf="puedeRegistrarLimpieza"
-        [routerLink]="['/lotes', lote.id_lote, 'limpieza']"
-        class="block rounded-lg bg-brand-700 px-4 py-3 text-center text-sm font-bold text-white hover:bg-brand-800"
-      >
-        Registrar limpieza →
+        Registrar segundo CC intermedio
       </a>
       <a
         routerLink="/calidad"
@@ -161,7 +193,10 @@
       >
         Ver historial de CC
       </a>
-      <p *ngIf="!puedeRegistrarAlgunaAccion" class="m-0 text-center text-xs text-gray-400">
+      <p *ngIf="!puedeRegistrarAlgunaAccion && textoSiguiente" class="m-0 text-center text-xs text-gray-400">
+        Tu rol no tiene una acción disponible para este paso.
+      </p>
+      <p *ngIf="!puedeRegistrarAlgunaAccion && !textoSiguiente" class="m-0 text-center text-xs text-gray-400">
         No hay acciones disponibles para el estado actual del lote.
       </p>
     </div>
@@ -172,7 +207,10 @@
     <!-- Asignar almacen: el backend ya tenia PATCH /lotes/:id/almacen -->
     <article class="rounded-xl border border-brand-100 bg-white p-5">
       <h2 class="mb-4 text-sm font-bold text-brand-900">Almacén</h2>
-      <div class="flex flex-wrap items-end gap-2">
+      <p *ngIf="!auth.puede('lotes.almacen')" class="m-0 text-[13px] text-gray-800">
+        {{ $any(lote.almacen)?.id_almacen ? $any(lote.almacen).tipo + ' #' + $any(lote.almacen).id_almacen : 'Sin asignar' }}
+      </p>
+      <div *ngIf="auth.puede('lotes.almacen')" class="flex flex-wrap items-end gap-2">
         <select
           [(ngModel)]="almacenSeleccionado"
           class="min-w-0 flex-1 rounded-md border border-gray-300 px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-brand-500"
@@ -257,4 +295,36 @@
 
 <div class="mx-auto max-w-6xl px-8 py-6" *ngIf="errorMessage">
   <div class="rounded-md border border-red-200 bg-red-50 p-3 text-red-700">{{ errorMessage }}</div>
+</div>
+
+<!-- Confirmacion del destino de un lote no apto -->
+<div *ngIf="destinoElegido" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
+  <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+    <h2 class="m-0 mb-2 font-display text-xl font-bold text-brand-900">
+      {{ destinoElegido === 'Descarte' ? 'Descartar lote' : 'Destinar a venta como grano' }}
+    </h2>
+    <p class="m-0 mb-4 text-[13px] text-gray-700">
+      El lote {{ lote?.nro_lote }} pasará a "{{ destinoElegido }}" y se liberará su almacén. Esta decisión no se puede deshacer.
+    </p>
+    <label class="mb-1 block text-xs font-bold text-sage-700" for="motivo-destino">Motivo (opcional)</label>
+    <textarea
+      id="motivo-destino"
+      [(ngModel)]="motivoDestino"
+      rows="3"
+      maxlength="255"
+      class="mb-5 w-full rounded-md border border-gray-300 px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-brand-500"
+    ></textarea>
+    <div class="flex justify-end gap-3">
+      <button type="button" (click)="cancelarDestino()" [disabled]="guardandoDestino" class="rounded-md border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50">Cancelar</button>
+      <button
+        type="button"
+        (click)="confirmarDestino()"
+        [disabled]="guardandoDestino"
+        class="rounded-md px-4 py-2 text-sm font-bold text-white disabled:opacity-60"
+        [ngClass]="destinoElegido === 'Descarte' ? 'bg-red-600 hover:bg-red-700' : 'bg-brand-700 hover:bg-brand-800'"
+      >
+        {{ guardandoDestino ? 'Guardando…' : 'Confirmar' }}
+      </button>
+    </div>
+  </div>
 </div>

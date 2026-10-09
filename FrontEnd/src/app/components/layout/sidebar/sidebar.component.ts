@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import { AuthStateService } from '../../../services/auth-state.service';
 import { AuthService } from '../../../services/auth.service';
 import { ROL_ADMIN } from '../../../shared/roles';
+import { ROL_ACOPIO } from '../../../shared/permisos';
 
 interface ItemNav {
   label: string;
@@ -36,9 +37,12 @@ export class SidebarComponent {
     { label: 'Curado', icono: 'bi-droplet', ruta: '/curado' },
     { label: 'Almacén', icono: 'bi-building', ruta: '/almacen' },
     { label: 'Pedidos', icono: 'bi-bag', ruta: '/pedidos' },
+    { label: 'Trazabilidad', icono: 'bi-diagram-3', ruta: '/trazabilidad' },
     { label: 'Reportes', icono: 'bi-graph-up', ruta: '/reportes' },
-    { label: 'Catálogos', icono: 'bi-collection', ruta: '/catalogos' },
+    { label: 'Catálogos', icono: 'bi-collection', ruta: '/catalogos', roles: [ROL_ADMIN, ROL_ACOPIO] },
+    { label: 'Usuarios', icono: 'bi-people', ruta: '/usuarios', roles: [ROL_ADMIN] },
     { label: 'Solicitudes', icono: 'bi-person-check', ruta: '/solicitudes', roles: [ROL_ADMIN] },
+    { label: 'Bitácora', icono: 'bi-journal-text', ruta: '/bitacora', roles: [ROL_ADMIN] },
   ];
 
   constructor(private authStateService: AuthStateService, private authService: AuthService) {

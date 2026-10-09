@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -37,6 +37,10 @@ export class LoginComponent {
   rolesCargados = false;
   etiquetaRol = etiquetaRol;
 
+  // Fuerza el redibujado justo despues de cada subscribe: los roles llegan de
+  // forma asincrona y sin esto el <select> aparece vacio hasta el proximo evento.
+  private cd = inject(ChangeDetectorRef);
+
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
@@ -73,8 +77,12 @@ export class LoginComponent {
         next: (roles) => {
           this.roles = roles;
           this.rolesCargados = true;
+          this.cd.detectChanges();
         },
-        error: () => this.toastr.error('No se pudieron cargar los roles', 'Error')
+        error: () => {
+          this.toastr.error('No se pudieron cargar los roles', 'Error');
+          this.cd.detectChanges();
+        }
       });
     }
   }
@@ -105,6 +113,7 @@ export class LoginComponent {
           : 'Usuario o contraseña incorrectos';
         this.toastr.error(mensaje, 'Error de acceso');
         console.error('Error en login:', err);
+        this.cd.detectChanges();
       }
     });
   }
@@ -122,10 +131,12 @@ export class LoginComponent {
         this.toastr.success(res.message, 'Solicitud enviada');
         this.formRegistro.reset();
         this.cambiarModo('login');
+        this.cd.detectChanges();
       },
       error: (err) => {
         this.cargando = false;
         this.toastr.error(err?.error?.error ?? 'No se pudo crear la cuenta', 'Error');
+        this.cd.detectChanges();
       }
     });
   }

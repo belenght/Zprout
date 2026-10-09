@@ -6,6 +6,8 @@ import { LoteService } from '../../../services/lote.service';
 import { Lote } from '../../../interfaces/lote';
 import { claseBadgeEstado, claseBadgeEstadoSolido } from '../../../shared/estado-badge';
 import { ESTADOS_LOTE } from '../../../shared/estado-nombres';
+import { AuthService } from '../../../services/auth.service';
+import { exportarCsv, fechaCsv } from '../../../shared/exportar-csv';
 
 @Component({
   selector: 'app-listado-lotes',
@@ -60,6 +62,8 @@ export class ListadoLotesComponent implements OnInit {
     });
   }
 
+  auth = inject(AuthService);
+
   get lotesFiltrados(): Lote[] {
     const texto = this.busqueda.trim().toLowerCase();
     return this.lotes.filter((lote) => {
@@ -77,5 +81,17 @@ export class ListadoLotesComponent implements OnInit {
 
   setFiltroEstado(estado: string | null): void {
     this.estadoFiltro = estado;
+  }
+
+  // Exporta a Excel lo que se ve en la grilla (respeta busqueda y filtro).
+  exportar(): void {
+    exportarCsv(
+      'lotes',
+      ['Lote', 'Semilla', 'Variedad', 'Origen', 'Cantidad (tn)', 'Ingreso', 'Estado'],
+      this.lotesFiltrados.map((l) => {
+        const ts = l.tipo_semilla as any;
+        return [l.nro_lote, ts?.nombre_semilla, ts?.variante_semilla, l.origen_semilla, l.cantidad_semillas_en_tn, fechaCsv(l.fecha_ingreso), l.estado_actual];
+      }),
+    );
   }
 }

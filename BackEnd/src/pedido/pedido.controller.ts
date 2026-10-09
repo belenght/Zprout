@@ -189,17 +189,12 @@ export async function cancelarPedido(req: Request, res: Response) {
  * correr la misma logica de asignacion FIFO de gestionarPedido sobre lo que
  * todavia falta cubrir de este pedido puntual.
  */
-export async function reintentarAsignacion(req: Request, res: Response) {
-  const em = getEM();
-  const pedido = await em.findOne(Pedido, { id_pedido: Number(req.params.id), deleted_at: null });
-  if (!pedido) return res.status(404).json({ error: 'Pedido no encontrado' });
-
-  if (pedido.estado_pedido !== EstadoPedido.PENDIENTE_DE_STOCK) {
-    return res.status(409).json({
-      error: `Solo tiene sentido reintentar un pedido "Pendiente de stock" (estado actual: "${pedido.estado_pedido}")`,
-    });
-  }
-
+/**
+ * Corre la asignacion FIFO sobre lo que todavia falta cubrir de un pedido
+ * "Pendiente de stock". Devuelve true si el pedido sigue sin cubrirse del todo.
+ * No hace flush: lo hace quien llama.
+ */
+export async function reasignarPedido(em: any, pedido: Pedido): Promise<boolean> {
   const detalleExistente = await em.find(
     PedidoDetalle,
     { pedido: { id_pedido: pedido.id_pedido }, deleted_at: null },
@@ -210,7 +205,7 @@ export async function reintentarAsignacion(req: Request, res: Response) {
   // quedado repartido en varias filas de PedidoDetalle (una por Partida que
   // alcanzo a cubrir parte del pedido, ver gestionarPedido).
   const porTipoSemilla = new Map<number, { tipoSemilla: TipoDeSemilla; cantidadSolicitadaKg: number; bolsasYaAsignadas: number }>();
-  for (const d of detalleExistente) {
+  for (const d of detalleExistente as PedidoDetalle[]) {
     const key = d.tipo_semilla.id_semilla;
     const acc = porTipoSemilla.get(key) ?? {
       tipoSemilla: d.tipo_semilla,
@@ -248,7 +243,118 @@ export async function reintentarAsignacion(req: Request, res: Response) {
   if (!siguenFaltando) {
     pedido.estado_pedido = EstadoPedido.APROBADO_PARA_DESPACHO;
   }
+  return siguenFaltando;
+}
 
+/**
+ * Se llama cuando una Partida pasa a "Apto para comercializacion": reintenta,
+ * del pedido mas antiguo al mas nuevo, todos los "Pendiente de stock".
+ * Devuelve los numeros de pedido que quedaron aprobados.
+ */
+export async function reintentarPendientes(em: any): Promise<string[]> {
+  const pendientes: Pedido[] = await em.find(
+    Pedido,
+    { estado_pedido: EstadoPedido.PENDIENTE_DE_STOCK, deleted_at: null },
+    { orderBy: { fecha_pedido: 'ASC', id_pedido: 'ASC' } },
+  );
+  const aprobados: string[] = [];
+  for (const pedido of pendientes) {
+    const siguenFaltando = await reasignarPedido(em, pedido);
+    // Flush por pedido: el stock que toma uno tiene que verse al evaluar el siguiente.
+    await em.flush();
+    if (!siguenFaltando) aprobados.push(pedido.nro_pedido);
+  }
+  return aprobados;
+}
+
+export async function reintentarAsignacion(req: Request, res: Response) {
+  const em = getEM();
+  const pedido = await em.findOne(Pedido, { id_pedido: Number(req.params.id), deleted_at: null });
+  if (!pedido) return res.status(404).json({ error: 'Pedido no encontrado' });
+
+  if (pedido.estado_pedido !== EstadoPedido.PENDIENTE_DE_STOCK) {
+    return res.status(409).json({
+      error: `Solo tiene sentido reintentar un pedido "Pendiente de stock" (estado actual: "${pedido.estado_pedido}")`,
+    });
+  }
+
+  const siguenFaltando = await reasignarPedido(em, pedido);
   await em.flush();
   res.json({ pedido, stock_pendiente: siguenFaltando });
+}
+
+/**
+ * Demanda de curado (CUU07, alternativo 3.a: "genera una alerta de demanda
+ * para el galpon, lo cual habilita al Operario de Planta a curar esa cantidad").
+ * Por variedad: cuantas bolsas faltan para cubrir los pedidos "Pendiente de
+ * stock", y cuantas toneladas hay a granel esperando curado ("Para curar").
+ */
+export async function demandaCurado(_req: Request, res: Response) {
+  const em = getEM();
+  const pendientes: Pedido[] = await em.find(
+    Pedido,
+    { estado_pedido: EstadoPedido.PENDIENTE_DE_STOCK, deleted_at: null },
+    { orderBy: { fecha_pedido: 'ASC', id_pedido: 'ASC' } },
+  );
+
+  const porVariedad = new Map<number, {
+    tipo_semilla_id: number; semilla: string; variedad: string;
+    bolsas_faltantes: number; pedidos: Set<string>; pedido_mas_antiguo: Date | null; fecha_requerida_mas_proxima: Date | null;
+  }>();
+
+  for (const pedido of pendientes) {
+    const detalle: PedidoDetalle[] = await em.find(
+      PedidoDetalle,
+      { pedido: { id_pedido: pedido.id_pedido }, deleted_at: null },
+      { populate: ['tipo_semilla'] },
+    );
+    const porTipo = new Map<number, { ts: TipoDeSemilla; kg: number; asignadas: number }>();
+    for (const d of detalle) {
+      const acc = porTipo.get(d.tipo_semilla.id_semilla) ?? { ts: d.tipo_semilla, kg: Number(d.cantidad_solicitada_kg), asignadas: 0 };
+      acc.asignadas += d.cantidad_asignada_bolsas ?? 0;
+      porTipo.set(d.tipo_semilla.id_semilla, acc);
+    }
+    for (const { ts, kg, asignadas } of porTipo.values()) {
+      const faltan = Math.ceil(kg / KG_POR_BOLSA) - asignadas;
+      if (faltan <= 0) continue;
+      const fila = porVariedad.get(ts.id_semilla) ?? {
+        tipo_semilla_id: ts.id_semilla, semilla: ts.nombre_semilla, variedad: ts.variante_semilla,
+        bolsas_faltantes: 0, pedidos: new Set<string>(), pedido_mas_antiguo: null, fecha_requerida_mas_proxima: null,
+      };
+      fila.bolsas_faltantes += faltan;
+      fila.pedidos.add(pedido.nro_pedido);
+      if (!fila.pedido_mas_antiguo || pedido.fecha_pedido < fila.pedido_mas_antiguo) fila.pedido_mas_antiguo = pedido.fecha_pedido;
+      if (!fila.fecha_requerida_mas_proxima || pedido.fecha_requerida < fila.fecha_requerida_mas_proxima) fila.fecha_requerida_mas_proxima = pedido.fecha_requerida;
+      porVariedad.set(ts.id_semilla, fila);
+    }
+  }
+
+  // Toneladas a granel esperando curado, por variedad.
+  const paraCurar: Estado[] = await em.find(Estado, { nombre: 'Para curar', fecha_hasta: null, deleted_at: null }, { populate: ['lote', 'lote.tipo_semilla'] });
+  const tnPorVariedad = new Map<number, number>();
+  for (const e of paraCurar) {
+    const lote = e.lote;
+    if (!lote || lote.deleted_at) continue;
+    const id = lote.tipo_semilla.id_semilla;
+    // Disponible = volumen del lote menos lo ya fraccionado en partidas (igual que la pantalla de Curado).
+    const partidas = await em.find(Partida, { lote: { id_lote: lote.id_lote }, deleted_at: null });
+    const yaCurado = partidas.reduce((acc, p) => acc + Number(p.volumen_en_tn), 0);
+    const disponible = Math.max(Number(lote.cantidad_semillas_en_tn) - yaCurado, 0);
+    tnPorVariedad.set(id, (tnPorVariedad.get(id) ?? 0) + disponible);
+  }
+
+  const filas = [...porVariedad.values()].map((f) => ({
+    tipo_semilla_id: f.tipo_semilla_id,
+    semilla: f.semilla,
+    variedad: f.variedad,
+    bolsas_faltantes: f.bolsas_faltantes,
+    kg_faltantes: f.bolsas_faltantes * KG_POR_BOLSA,
+    tn_faltantes: (f.bolsas_faltantes * KG_POR_BOLSA) / 1000,
+    pedidos: [...f.pedidos],
+    pedido_mas_antiguo: f.pedido_mas_antiguo,
+    fecha_requerida_mas_proxima: f.fecha_requerida_mas_proxima,
+    tn_a_granel_para_curar: tnPorVariedad.get(f.tipo_semilla_id) ?? 0,
+  }));
+  filas.sort((a, b) => String(a.fecha_requerida_mas_proxima).localeCompare(String(b.fecha_requerida_mas_proxima)));
+  res.json(filas);
 }

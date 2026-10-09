@@ -1,6 +1,8 @@
 import type { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { getJwtSecret, JwtPayload } from './auth.service.js';
+import { getEM } from '../shared/db/orm.js';
+import { Usuario } from '../usuario/usuario.entity.js';
 
 // Permite colgar el usuario autenticado en req.usuario sin castear en cada handler.
 declare global {
@@ -17,7 +19,7 @@ declare global {
  * El interceptor del front (auth.interceptor.ts) es el que agrega este header
  * a cada request saliente cuando hay sesion.
  */
-export function verificarToken(req: Request, res: Response, next: NextFunction) {
+export async function verificarToken(req: Request, res: Response, next: NextFunction) {
   const header = req.headers.authorization;
   if (!header || !header.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Token no provisto' });
@@ -26,10 +28,21 @@ export function verificarToken(req: Request, res: Response, next: NextFunction) 
   const token = header.slice('Bearer '.length);
   try {
     req.usuario = jwt.verify(token, getJwtSecret()) as JwtPayload;
-    next();
   } catch {
     return res.status(401).json({ error: 'Token invalido o expirado' });
   }
+
+  // Una cuenta deshabilitada o eliminada por un administrador deja de poder
+  // operar de inmediato, sin esperar a que venza el token (8 h).
+  const vigente = await getEM().count(Usuario, {
+    id_usuario: req.usuario.id_usuario,
+    activo: true,
+    deleted_at: null,
+  });
+  if (!vigente) {
+    return res.status(401).json({ error: 'Tu cuenta esta deshabilitada o ya no existe' });
+  }
+  next();
 }
 
 /**

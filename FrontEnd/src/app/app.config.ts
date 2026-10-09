@@ -13,6 +13,8 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(withInterceptors([authInterceptor])),
     provideAnimations(),
-    provideToastr(),
+    // Evita que los avisos se apilen: maximo 3 a la vez, el mas viejo se descarta
+    // al llegar uno nuevo y no se repite el mismo mensaje.
+    provideToastr({ maxOpened: 3, autoDismiss: true, preventDuplicates: true, timeOut: 4000 }),
   ],
 };

@@ -4,6 +4,9 @@ import { ControlDeCalidad, TipoControl, ResultadoControl } from './control_calid
 import { Lote } from '../lote/lote.entity.js';
 import { cambiarEstado } from '../estado/estado_helper.js';
 import { Usuario } from '../usuario/usuario.entity.js';
+import { Estado } from '../estado/estado.entity.js';
+import { LimpiezaClasificacion } from '../limpieza_clasificacion/limpieza_clasificacion.entity.js';
+import { DIAS_MAX_PARA_CURAR } from '../lote/reglas.js';
 
 const DESCRIPCION_MAX = 500;
 
@@ -75,6 +78,38 @@ export async function registrarControlCalidadLote(req: Request, res: Response) {
 
   const lote = await em.findOne(Lote, { id_lote: lote_id, deleted_at: null }, { populate: ['tipo_semilla'] });
   if (!lote) return res.status(404).json({ error: 'Lote no encontrado' });
+
+  // Orden del proceso (CUU02 precondicion: "lote disponible para ser inspeccionado
+  // segun la etapa"; CUU03/CRE: limpieza -> control intermedio):
+  //  - inicial: solo con el lote en "Pendiente CC".
+  //  - intermedio: solo con el lote ya limpio ("Para curar" con limpieza registrada);
+  //    un segundo intermedio solo despues del limite de dias (RN 13).
+  const estadoActual = await em.findOne(Estado, { lote: { id_lote: lote.id_lote }, fecha_hasta: null, deleted_at: null });
+  const nombreEstado = estadoActual?.nombre ?? 'sin estado';
+  if (tipo_control === TipoControl.INICIAL && nombreEstado !== 'Pendiente CC') {
+    return res.status(409).json({ error: `El control inicial solo se registra con el lote en "Pendiente CC" (estado actual: ${nombreEstado})` });
+  }
+  if (tipo_control === TipoControl.INTERMEDIO) {
+    if (nombreEstado !== 'Para curar') {
+      return res.status(409).json({
+        error: nombreEstado === 'En limpieza'
+          ? 'El control intermedio se registra despues de la limpieza: primero registra la limpieza y clasificacion del lote'
+          : `El control intermedio solo se registra con el lote limpio, en "Para curar" (estado actual: ${nombreEstado})`,
+      });
+    }
+    const limpiezas = await em.count(LimpiezaClasificacion, { lote: { id_lote: lote.id_lote }, deleted_at: null });
+    if (limpiezas === 0) {
+      return res.status(409).json({ error: 'Este lote no tuvo limpieza y clasificacion, por lo que no lleva control intermedio' });
+    }
+    const previos = await em.find(ControlDeCalidad, { lote: { id_lote: lote.id_lote }, tipo_control: TipoControl.INTERMEDIO, deleted_at: null }, { orderBy: { fecha: 'DESC' }, limit: 1 });
+    if (previos.length > 0) {
+      const desde = Math.max(new Date(previos[0].fecha).getTime(), new Date(estadoActual!.fecha_desde).getTime());
+      const dias = Math.floor((Date.now() - desde) / 86_400_000);
+      if (dias < DIAS_MAX_PARA_CURAR) {
+        return res.status(409).json({ error: `El lote ya tiene control intermedio. Un segundo control se habilita despues de ${DIAS_MAX_PARA_CURAR} dias en "Para curar" (pasaron ${dias})` });
+      }
+    }
+  }
 
   const ts = lote.tipo_semilla;
   const dentroDeRango =

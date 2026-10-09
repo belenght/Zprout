@@ -8,7 +8,7 @@ import { Rol } from '../rol/rol.entity.js';
  *
  * Si cambias algun desc_rol, cambialo tambien en FrontEnd/src/app/shared/roles.ts.
  */
-const ROLES = ['administrador', 'encargado_acopio', 'responsable_calidad', 'operario_planta', 'encargado_comercial'];
+const ROLES = ['administrador', 'encargado_acopio', 'responsable_calidad', 'operario_planta', 'encargado_comercial', 'director'];
 
 async function main() {
   const orm = await initORM();

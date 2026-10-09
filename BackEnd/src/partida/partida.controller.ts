@@ -8,7 +8,9 @@ import { PartidaInsumo } from '../partida_insumo/partida_insumo.entity.js';
 import { ControlDeCalidad, TipoControl, ResultadoControl } from '../control_calidad/control_calidad.entity.js';
 import { Estado } from '../estado/estado.entity.js';
 import { cambiarEstado } from '../estado/estado_helper.js';
+import { reintentarPendientes } from '../pedido/pedido.controller.js';
 import { Usuario } from '../usuario/usuario.entity.js';
+import { LimpiezaClasificacion } from '../limpieza_clasificacion/limpieza_clasificacion.entity.js';
 
 const KG_POR_BOLSA = 20;
 
@@ -114,6 +116,17 @@ export async function registrarCurado(req: Request, res: Response) {
     return res.status(409).json({
       error: `El lote no esta en condiciones de ser curado (estado actual: ${estadoActual?.nombre ?? 'sin estado'})`,
     });
+  }
+
+  // Flujo documentado (CRE/CUR paso 4 -> 5): un lote que paso por limpieza tiene su
+  // control intermedio (apto) registrado antes de curarse. Los lotes externos, que
+  // no se limpian, quedan exentos.
+  const huboLimpieza = await em.count(LimpiezaClasificacion, { lote: { id_lote: lote.id_lote }, deleted_at: null });
+  if (huboLimpieza > 0) {
+    const intermedios = await em.find(ControlDeCalidad, { lote: { id_lote: lote.id_lote }, tipo_control: TipoControl.INTERMEDIO, deleted_at: null }, { orderBy: { fecha: 'DESC' }, limit: 1 });
+    if (intermedios.length === 0 || intermedios[0].resultado !== ResultadoControl.APTO) {
+      return res.status(409).json({ error: 'El lote necesita un control de calidad intermedio apto antes de curarse' });
+    }
   }
 
   // Alternativo 4.a: stock disponible = volumen del lote menos lo ya fraccionado en partidas previas
@@ -262,6 +275,11 @@ export async function registrarControlFinalYGenerarInforme(req: Request, res: Re
   await cambiarEstado(em, { partida }, 'Apto para comercializacion', usuario);
   await em.flush();
 
+  // Maquinas de Estado (Pedido): un pedido "Pendiente de stock" sale de ese
+  // estado cuando se habilitan bolsas nuevas. Se reintentan solos, del mas
+  // antiguo al mas nuevo, sin esperar a que Comercial lo haga a mano.
+  const pedidosAprobados = await reintentarPendientes(em);
+
   const informeDePartida = {
     nro_partida: partida.nro_partida,
     nro_lote_origen: partida.lote.nro_lote,
@@ -271,5 +289,8 @@ export async function registrarControlFinalYGenerarInforme(req: Request, res: Re
     estado: 'Apto para comercializacion',
   };
 
-  res.status(200).json({ partida, control, informe_generado: true, informe_de_partida: informeDePartida });
+  res.status(200).json({
+    partida, control, informe_generado: true, informe_de_partida: informeDePartida,
+    pedidos_aprobados: pedidosAprobados,
+  });
 }

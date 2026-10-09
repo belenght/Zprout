@@ -1,4 +1,5 @@
 import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
+import { AuthService } from '../../services/auth.service';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
@@ -34,6 +35,7 @@ export class CalidadComponent implements OnInit {
   // Fuerza el redibujado justo despues de cada subscribe: ver el mismo
   // comentario en listado-lotes.component.ts.
   private cd = inject(ChangeDetectorRef);
+  auth = inject(AuthService);
 
   constructor(
     private loteService: LoteService,
@@ -54,16 +56,17 @@ export class CalidadComponent implements OnInit {
       partidas: this.partidaService.getPartidas(),
     }).subscribe({
       next: ({ lotes, partidas }) => {
-        // CUU02, paso 1: lotes en "Pendiente CC" (CC inicial) o "En limpieza"
-        // (CC intermedio, ver CRE paso 4) esperando inspeccion.
+        // CUU02, paso 1: lotes en "Pendiente CC" (CC inicial) o ya limpios y sin CC
+        // intermedio (CRE paso 4: el intermedio se hace despues de la limpieza).
+        // El backend calcula `proximo_paso`.
         const itemsLotes: ItemBandejaCalidad[] = lotes
-          .filter((l) => l.estado_actual === 'Pendiente CC' || l.estado_actual === 'En limpieza')
+          .filter((l) => l.proximo_paso === 'cc_inicial' || l.proximo_paso === 'cc_intermedio')
           .map((l) => ({
             tipo: 'lote' as const,
             id: l.id_lote!,
             codigo: l.nro_lote ?? `#${l.id_lote}`,
             semilla_variedad: this.nombreSemilla(l.tipo_semilla),
-            etapa: (l.estado_actual === 'Pendiente CC' ? 'CC inicial' : 'CC intermedio') as EtapaControl,
+            etapa: (l.proximo_paso === 'cc_inicial' ? 'CC inicial' : 'CC intermedio') as EtapaControl,
             estado_actual: l.estado_actual ?? null,
             fecha: l.fecha_ingreso ?? null,
           }));

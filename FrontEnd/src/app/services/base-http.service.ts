@@ -17,6 +17,9 @@ export function handleHttpError(error: HttpErrorResponse): Observable<never> {
       case 401:
         errorMessage = 'Credenciales invalidas o sesion expirada.';
         break;
+      case 403:
+        errorMessage = error.error?.error || 'Tu rol no tiene permiso para realizar esta accion.';
+        break;
       case 404:
         errorMessage = error.error?.error || 'Recurso no encontrado.';
         break;

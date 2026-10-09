@@ -46,6 +46,24 @@
     </article>
   </section>
 
+  <!-- Alertas operativas -->
+  <section *ngIf="alertasCargadas" class="mb-8" aria-label="Alertas">
+    <h2 class="mb-3 mt-0 font-display text-xl font-bold text-brand-hero">
+      Alertas <span *ngIf="alertas.length > 0" class="text-base text-red-700">({{ alertas.length }})</span>
+    </h2>
+    <p *ngIf="alertas.length === 0" class="m-0 rounded-lg border border-brand-100 bg-brand-50 px-4 py-3 text-[13px] text-brand-800">
+      <i class="bi bi-check-circle"></i> Todo en orden: no hay alertas pendientes.
+    </p>
+    <ul *ngIf="alertas.length > 0" class="m-0 grid list-none gap-2 p-0 md:grid-cols-2">
+      <li *ngFor="let al of alertas">
+        <a [routerLink]="al.ruta" class="flex items-start gap-3 rounded-lg border px-4 py-3 text-[13px] hover:shadow-sm" [ngClass]="claseAlerta(al)">
+          <i class="bi mt-0.5" [ngClass]="al.severidad === 'alta' ? 'bi-exclamation-octagon' : 'bi-exclamation-triangle'"></i>
+          <span>{{ al.mensaje }}</span>
+        </a>
+      </li>
+    </ul>
+  </section>
+
   <div class="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
     <!-- Ultimos lotes ingresados -->
     <section>

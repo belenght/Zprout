@@ -7,6 +7,8 @@ import { AlmacenService } from '../../services/almacen.service';
 import { LoteService } from '../../services/lote.service';
 import { PartidaService } from '../../services/partida.service';
 import { Almacen, TipoAlmacen } from '../../interfaces/almacen';
+import { AuthService } from '../../services/auth.service';
+import { exportarCsv } from '../../shared/exportar-csv';
 
 interface StockVariedad {
   tipoSemillaId: number;
@@ -35,6 +37,7 @@ export class AlmacenComponent implements OnInit {
   form: FormGroup;
   editandoId: number | null = null;
 
+  auth = inject(AuthService);
   private cd = inject(ChangeDetectorRef);
 
   constructor(
@@ -187,5 +190,13 @@ export class AlmacenComponent implements OnInit {
         this.cd.detectChanges();
       }
     });
+  }
+
+  exportarStock(): void {
+    exportarCsv(
+      'stock-por-variedad',
+      ['Semilla', 'Variedad', 'A granel (tn)', 'Envasado (bolsas)', 'Estado'],
+      this.stockPorVariedad.map((s) => [s.semilla, s.variedad, s.aGranelTn, s.envasadoBolsas, s.estado]),
+    );
   }
 }

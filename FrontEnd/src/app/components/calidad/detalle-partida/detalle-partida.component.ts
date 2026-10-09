@@ -28,6 +28,7 @@ interface PedidoConsumidor {
 })
 export class DetallePartidaComponent implements OnInit {
   partida: Partida | null = null;
+  hoy = new Date();
   controlFinal: ControlDeCalidad | null = null;
   pedidosConsumidores: PedidoConsumidor[] = [];
   cargando = true;
@@ -139,5 +140,11 @@ export class DetallePartidaComponent implements OnInit {
 
   get poderGerminativo(): number | null {
     return this.controlFinal ? Number(this.controlFinal.poder_germinativo) : null;
+  }
+
+  // Informe de partida imprimible / PDF (el navegador permite 'Guardar como PDF').
+  imprimir(): void {
+    this.hoy = new Date();
+    setTimeout(() => window.print());
   }
 }

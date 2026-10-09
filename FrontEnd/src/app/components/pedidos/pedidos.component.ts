@@ -6,8 +6,10 @@ import { ToastrService } from 'ngx-toastr';
 import { PedidoService } from '../../services/pedido.service';
 import { Pedido, EstadoPedido } from '../../interfaces/pedido';
 import { claseBadgeEstado, claseBadgeEstadoSolido } from '../../shared/estado-badge';
+import { AuthService } from '../../services/auth.service';
+import { exportarCsv, fechaCsv } from '../../shared/exportar-csv';
 
-type FiltroPedido = 'Todos' | 'Aprobado' | 'Pendiente de stock';
+type FiltroPedido = 'Todos' | 'Aprobado' | 'Pendiente de stock' | 'Despachado' | 'Cancelado';
 
 /**
  * GUI-16 - "Listado de pedidos". CUU07.
@@ -64,11 +66,15 @@ export class PedidosComponent implements OnInit {
     this.filtro = f;
   }
 
+  auth = inject(AuthService);
+
   get pedidosFiltrados(): Pedido[] {
     const texto = this.busqueda.trim().toLowerCase();
     return this.pedidos.filter((p) => {
       if (this.filtro === 'Aprobado' && p.estado_pedido !== 'Aprobado para despacho') return false;
       if (this.filtro === 'Pendiente de stock' && p.estado_pedido !== 'Pendiente de stock') return false;
+      if (this.filtro === 'Despachado' && p.estado_pedido !== 'Despachado') return false;
+      if (this.filtro === 'Cancelado' && p.estado_pedido !== 'Cancelado') return false;
       if (!texto) return true;
       return [p.nro_pedido, p.comprador].some((v) => v.toLowerCase().includes(texto));
     });
@@ -132,5 +138,13 @@ export class PedidosComponent implements OnInit {
         this.cd.detectChanges();
       }
     });
+  }
+
+  exportar(): void {
+    exportarCsv(
+      'pedidos',
+      ['Pedido', 'Cliente', 'Fecha pedido', 'Fecha requerida', 'Tipo', 'Estado'],
+      this.pedidosFiltrados.map((p) => [p.nro_pedido, p.comprador, fechaCsv(p.fecha_pedido), fechaCsv(p.fecha_requerida), p.tipo, p.estado_pedido]),
+    );
   }
 }
