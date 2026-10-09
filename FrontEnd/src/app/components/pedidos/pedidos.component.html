@@ -67,7 +67,7 @@
           <tr *ngFor="let p of pedidosFiltrados; let odd = odd" [class.bg-sage-100]="odd" class="border-t border-sage-200 text-gray-900 hover:bg-brand-50">
             <td class="px-4 py-2.5 font-bold text-brand-600">{{ p.nro_pedido }}</td>
             <td class="px-4 py-2.5">{{ p.comprador }}</td>
-            <td class="px-4 py-2.5">{{ p.fecha_requerida | date: 'dd/MM/yy' }}</td>
+            <td class="px-4 py-2.5">{{ p.fecha_requerida | date: 'dd/MM/yy':'UTC' }}</td>
             <td class="px-4 py-2.5 text-center">
               <span
                 class="inline-block min-w-[10rem] rounded-md px-3 py-1 text-center text-[11px] font-bold"

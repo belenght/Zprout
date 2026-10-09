@@ -35,6 +35,11 @@ export async function crearCampana(req: Request, res: Response) {
   }
   const errorFechas = validarFechas(fecha_inicio, fecha_fin);
   if (errorFechas) return res.status(400).json({ error: errorFechas });
+  // El nombre es unico (tambien entre las eliminadas): se valida antes de
+  // desmarcar la vigente, para no dejar al sistema sin campana vigente si falla.
+  if (await em.findOne(Campana, { nombre })) {
+    return res.status(409).json({ error: `Ya existe una campana llamada "${nombre}"` });
+  }
   // Si esta nueva campana se marca vigente, desmarca cualquier otra
   // (regla implicita: solo puede haber una campana vigente a la vez, CUU08)
   if (vigente) {
@@ -55,6 +60,9 @@ export async function actualizarCampana(req: Request, res: Response) {
   }
   const errorFechas = validarFechas(fecha_inicio ?? campana.fecha_inicio, fecha_fin ?? campana.fecha_fin);
   if (errorFechas) return res.status(400).json({ error: errorFechas });
+  if (nombre !== undefined && nombre !== campana.nombre && await em.findOne(Campana, { nombre })) {
+    return res.status(409).json({ error: `Ya existe una campana llamada "${nombre}"` });
+  }
   if (vigente === true) {
     await em.nativeUpdate(Campana, { vigente: true }, { vigente: false });
   }

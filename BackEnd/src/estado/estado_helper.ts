@@ -17,10 +17,16 @@ export async function cambiarEstado(
   usuario: Usuario,
 ): Promise<Estado> {
   const filtro: any = { fecha_hasta: null, deleted_at: null };
-  if (target.lote) filtro.lote = target.lote.id_lote;
-  if (target.partida) filtro.partida = target.partida.id_partida;
+  const idLote = target.lote?.id_lote;
+  const idPartida = target.partida?.id_partida;
+  if (idLote != null) filtro.lote = idLote;
+  if (idPartida != null) filtro.partida = idPartida;
 
-  const abierto = await em.findOne(Estado, filtro);
+  // Si el Lote/Partida todavia no tiene id (entidad nueva sin flush), no puede
+  // tener un estado abierto. Sin este control el filtro quedaba sin lote ni
+  // partida y cerraba el primer estado abierto de CUALQUIER otro lote.
+  const tieneFiltroDeEntidad = idLote != null || idPartida != null;
+  const abierto = tieneFiltroDeEntidad ? await em.findOne(Estado, filtro) : null;
   if (abierto) {
     abierto.fecha_hasta = new Date();
   }

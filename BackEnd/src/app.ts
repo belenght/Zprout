@@ -33,11 +33,25 @@ export let orm: MikroORM<MySqlDriver>;
 const app = express();
 app.set('trust proxy', 1);
 
+// Express genera un ETag "weak" por defecto para toda respuesta JSON (ver
+// app.set('etag', ...) en su documentacion). Sin un Cache-Control que lo
+// acompañe, el browser guarda esa respuesta y en el siguiente pedido
+// identico manda If-None-Match; el servidor responde 304 con el BODY
+// VACIO. Para endpoints publicos/estaticos esto es deseable, pero toda
+// esta API es dinamica y va detras de Authorization (ver mas abajo,
+// verificarToken es global) - cachear una respuesta autenticada por URL,
+// sin variar por el header Authorization, puede hasta devolverle a un
+// usuario datos de la sesion de otro. Se desactiva aca, antes de definir
+// cualquier ruta.
 app.disable('etag');
 
 // 1. SEGURIDAD BASE
 app.use(helmet());
 
+// Refuerza lo de arriba a nivel de header explicito: sin esto, un proxy o
+// el propio browser podrian igual decidir cachear por heuristica al no ver
+// ningun Cache-Control. no-store = nunca guardar esta respuesta, ni
+// siquiera para revalidar despues.
 app.use('/api', (req, res, next) => {
     res.set('Cache-Control', 'no-store');
     next();
@@ -135,8 +149,16 @@ app.use((req: Request, res: Response) => {
 
 // Capturador global de errores
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    // Errores del cliente (body demasiado grande, JSON invalido): no son un 500.
+    const status = err?.status ?? err?.statusCode;
+    if (typeof status === 'number' && status >= 400 && status < 500) {
+        const mensaje = status === 413
+            ? 'El archivo o los datos enviados son demasiado grandes'
+            : 'Solicitud invalida';
+        return res.status(status).json({ message: mensaje });
+    }
     console.error('Error no controlado:', err);
-    res.status(500).json({ 
+    res.status(500).json({
         message: 'Error interno del servidor',
         error: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
