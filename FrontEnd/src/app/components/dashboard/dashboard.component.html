@@ -1,85 +1,115 @@
-<div class="mx-auto max-w-6xl px-4 py-6">
-  <div class="mb-6 flex items-center gap-2 rounded-lg border border-brand-200 bg-brand-50 p-4 text-brand-900">
-    <i class="bi bi-flower1 text-xl text-brand-600"></i>
-    <div>Buenos dias, {{ nombreUsuario }}</div>
+<div class="mx-auto max-w-6xl px-8 py-6">
+  <!-- Saludo + campaña vigente -->
+  <div class="mb-6 flex items-center gap-3 rounded-xl border border-brand-200 bg-[#e8f5ee] px-6 py-4 text-brand-hero">
+    <span class="text-xl" aria-hidden="true">🌱</span>
+    <p class="m-0 text-lg font-bold">
+      Buenos días, {{ nombreUsuario }}<ng-container *ngIf="campanaVigente"> &nbsp;·&nbsp; Campaña {{ campanaVigente }}</ng-container>
+    </p>
   </div>
 
   <div *ngIf="errorMessage" class="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-red-700">{{ errorMessage }}</div>
 
-  <div class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-    <div class="rounded-xl border border-brand-100 bg-white p-5">
-      <div class="mb-2 flex items-center gap-2">
-        <span class="h-2.5 w-2.5 rounded-sm bg-brand-700"></span>
-        <span class="text-sm font-semibold text-brand-900">Lotes Activos</span>
-      </div>
-      <div class="text-3xl font-bold text-brand-800">{{ cargando ? '...' : cantidadLotesActivos }}</div>
-      <div class="text-xs text-gray-400">en proceso</div>
-    </div>
+  <!-- Indicadores -->
+  <section class="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <article class="rounded-2xl border border-sage-200 bg-white p-5 text-center shadow-sm">
+      <span class="block rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-bold text-white">Lotes Activos</span>
+      <p class="m-0 mt-3 font-display text-4xl font-bold text-brand-600">{{ cargando ? '…' : cantidadLotesActivos }}</p>
+      <p class="m-0 mt-1 text-xs text-sage-500">en proceso</p>
+    </article>
 
-    <!--
-      Los siguientes indicadores del CUU08 (pendientes CC, para curar, stock
-      curado) dependen de los modulos de Control de Calidad y Curado, que
-      todavia no estan implementados en el front. Se agregan placeholders
-      para que quede claro que faltan, no que se rompio algo.
-    -->
-    <div class="rounded-xl border border-brand-100 bg-white p-5">
-      <div class="mb-2 flex items-center gap-2">
-        <span class="h-2.5 w-2.5 rounded-sm bg-gold-500"></span>
-        <span class="text-sm font-semibold text-brand-900">Pendientes CC</span>
-      </div>
-      <div class="text-3xl font-bold text-gray-400">—</div>
-      <div class="text-xs text-gray-400">modulo Calidad pendiente</div>
-    </div>
-    <div class="rounded-xl border border-brand-100 bg-white p-5">
-      <div class="mb-2 flex items-center gap-2">
-        <span class="h-2.5 w-2.5 rounded-sm bg-brand-400"></span>
-        <span class="text-sm font-semibold text-brand-900">Para curar</span>
-      </div>
-      <div class="text-3xl font-bold text-gray-400">—</div>
-      <div class="text-xs text-gray-400">modulo Curado pendiente</div>
-    </div>
-    <div class="rounded-xl border border-brand-100 bg-white p-5">
-      <div class="mb-2 flex items-center gap-2">
-        <span class="h-2.5 w-2.5 rounded-sm bg-brand-900"></span>
-        <span class="text-sm font-semibold text-brand-900">Stock curado</span>
-      </div>
-      <div class="text-3xl font-bold text-gray-400">—</div>
-      <div class="text-xs text-gray-400">modulo Curado pendiente</div>
-    </div>
-  </div>
+    <article class="rounded-2xl border border-sage-200 bg-white p-5 text-center shadow-sm">
+      <span class="block rounded-lg bg-gold-500 px-3 py-1.5 text-sm font-bold text-white">Pendientes CC</span>
+      <p class="m-0 mt-3 font-display text-4xl font-bold text-gold-500">{{ pendientesCC === null ? '—' : pendientesCC }}</p>
+      <p class="m-0 mt-1 text-xs text-sage-500">controles de calidad</p>
+    </article>
 
-  <div class="overflow-hidden rounded-xl border border-brand-100">
-    <div class="flex items-center justify-between bg-brand-900 px-4 py-3 text-white">
-      <span class="font-medium">Ultimos lotes ingresados</span>
-      <a routerLink="/lotes" class="rounded-md border border-white/40 px-3 py-1 text-sm hover:bg-white/10">Ver todos</a>
-    </div>
-    <table class="w-full text-sm">
-      <thead class="border-b border-brand-100 text-left text-brand-900">
-        <tr>
-          <th class="px-4 py-2">Nro Lote</th>
-          <th class="px-4 py-2">Origen</th>
-          <th class="px-4 py-2">Cantidad (tn)</th>
-          <th class="px-4 py-2">Estado</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let lote of ultimosLotes" [routerLink]="['/lotes', lote.id_lote]" class="cursor-pointer border-b border-brand-50 hover:bg-brand-50">
-          <td class="px-4 py-2">{{ lote.nro_lote }}</td>
-          <td class="px-4 py-2">{{ lote.origen_semilla }}</td>
-          <td class="px-4 py-2">{{ lote.cantidad_semillas_en_tn }}</td>
-          <td class="px-4 py-2">
-            <span class="rounded-full px-2 py-0.5 text-xs" [ngClass]="claseBadgeEstado(lote.estado_actual)">
-              {{ lote.estado_actual || 'Sin estado' }}
-            </span>
-          </td>
-        </tr>
-        <tr *ngIf="!cargando && ultimosLotes.length === 0">
-          <td colspan="4" class="px-4 py-6 text-center text-gray-400">No hay lotes registrados todavia.</td>
-        </tr>
-        <tr *ngIf="cargando">
-          <td colspan="4" class="px-4 py-6 text-center text-gray-400">Cargando...</td>
-        </tr>
-      </tbody>
-    </table>
+    <article class="rounded-2xl border border-sage-200 bg-white p-5 shadow-sm">
+      <div class="flex items-center gap-2">
+        <span class="h-4 w-4 rounded bg-brand-400"></span>
+        <span class="text-xs font-bold text-sage-700">Para Curar</span>
+      </div>
+      <p class="m-0 mt-3 font-display text-4xl font-bold text-brand-400">
+        {{ paraCurarTn === null ? '—' : (paraCurarTn | number: '1.0-1') + ' tn' }}
+      </p>
+      <p class="m-0 mt-1 text-xs text-sage-500">listo para curado</p>
+    </article>
+
+    <article class="rounded-2xl border border-sage-200 bg-white p-5 shadow-sm">
+      <div class="flex items-center gap-2">
+        <span class="h-4 w-4 rounded bg-brand-hero"></span>
+        <span class="text-xs font-bold text-sage-700">Stock Curado</span>
+      </div>
+      <p class="m-0 mt-3 font-display text-4xl font-bold text-brand-hero">
+        {{ stockCuradoTn === null ? '—' : (stockCuradoTn | number: '1.0-1') + ' tn' }}
+      </p>
+      <p class="m-0 mt-1 text-xs text-sage-500">disponible</p>
+    </article>
+  </section>
+
+  <div class="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
+    <!-- Ultimos lotes ingresados -->
+    <section>
+      <div class="mb-3 flex items-baseline justify-between gap-4">
+        <h2 class="m-0 font-display text-xl font-bold text-brand-hero">Últimos Lotes Ingresados</h2>
+        <a routerLink="/lotes" class="text-sm font-bold text-brand-600 hover:underline">Ver todos →</a>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-[13px]">
+          <thead class="bg-brand-900 text-left text-xs text-white">
+            <tr>
+              <th class="px-3 py-2.5 font-bold">Nro Lote</th>
+              <th class="px-3 py-2.5 font-bold">Semilla</th>
+              <th class="px-3 py-2.5 font-bold">Variedad</th>
+              <th class="px-3 py-2.5 font-bold">Kg</th>
+              <th class="px-3 py-2.5 font-bold">Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="let lote of ultimosLotes; let odd = odd"
+              [routerLink]="['/lotes', lote.id_lote]"
+              [class.bg-sage-100]="odd"
+              class="cursor-pointer border-b border-sage-200 text-gray-900 hover:bg-brand-50"
+            >
+              <td class="px-3 py-2.5">{{ lote.nro_lote }}</td>
+              <td class="px-3 py-2.5">{{ semilla(lote) }}</td>
+              <td class="px-3 py-2.5">{{ variedad(lote) }}</td>
+              <td class="px-3 py-2.5">{{ lote.cantidad_semillas_en_tn | number: '1.1-1' }} tn</td>
+              <td class="px-3 py-2.5">
+                <span
+                  class="inline-block min-w-[5.5rem] rounded-md px-3 py-1 text-center text-[11px] font-bold"
+                  [ngClass]="claseBadgeEstadoSolido(lote.estado_actual)"
+                >
+                  {{ lote.estado_actual || 'Sin estado' }}
+                </span>
+              </td>
+            </tr>
+            <tr *ngIf="!cargando && ultimosLotes.length === 0">
+              <td colspan="5" class="px-3 py-6 text-center text-gray-400">No hay lotes registrados todavía.</td>
+            </tr>
+            <tr *ngIf="cargando">
+              <td colspan="5" class="px-3 py-6 text-center text-gray-400">Cargando...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Actividad reciente -->
+    <aside>
+      <h2 class="mb-3 mt-0 font-display text-xl font-bold text-brand-hero">Actividad Reciente</h2>
+      <div class="rounded-xl border border-sage-200 bg-white px-4 py-1 shadow-sm">
+        <ul class="m-0 list-none p-0">
+          <li *ngFor="let a of actividad" class="border-b border-sage-200 py-3 last:border-0">
+            <p class="m-0 text-[11px] text-sage-500">{{ a.hora }}</p>
+            <p class="m-0 mt-0.5 text-[13px] text-sage-700">{{ a.texto }}</p>
+          </li>
+        </ul>
+        <p *ngIf="actividad.length === 0" class="m-0 py-5 text-center text-[13px] text-sage-500">
+          Todavía no hay actividad registrada.
+        </p>
+      </div>
+    </aside>
   </div>
 </div>

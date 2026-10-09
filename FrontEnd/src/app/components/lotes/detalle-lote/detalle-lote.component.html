@@ -1,141 +1,260 @@
-<div class="mx-auto max-w-4xl px-4 py-6" *ngIf="lote">
-  <div class="overflow-hidden rounded-xl border border-brand-100">
-    <div class="flex items-center justify-between bg-brand-900 px-4 py-3 text-white">
-      <h4 class="m-0 font-display text-lg">{{ lote.nro_lote }} — {{ nombreSemilla }}</h4>
-      <span class="rounded-full px-3 py-1 text-sm" [ngClass]="claseBadgeEstado(lote.estado_actual)">
-        {{ lote.estado_actual || 'Sin estado' }}
+<div class="mx-auto max-w-6xl px-8 py-6" *ngIf="lote">
+  <!-- Cabecera: nro de lote + semilla/variedad + estado (GUI-06) -->
+  <div class="mb-6 flex flex-wrap items-center gap-5">
+    <h1 class="m-0 font-display text-3xl font-bold text-brand-900">{{ lote.nro_lote }} — {{ nombreSemilla }}</h1>
+    <span class="rounded-md px-4 py-1.5 text-xs font-bold text-white" [ngClass]="claseBadgeCabecera">
+      {{ lote.estado_actual || 'Sin estado' }}
+    </span>
+  </div>
+
+  <!-- Stepper de etapas del lote: se calcula con los datos reales (ver `etapas` en el .ts) -->
+  <ol class="mb-8 flex">
+    <li *ngFor="let etapa of etapas; let last = last" class="relative flex flex-1 flex-col items-center">
+      <div
+        *ngIf="!last"
+        class="absolute left-1/2 top-3.5 h-0.5 w-full -translate-y-1/2"
+        [ngClass]="etapa.estado === 'hecho' ? 'bg-brand-700' : 'bg-gray-200'"
+      ></div>
+      <span
+        class="relative z-10 flex h-7 w-7 items-center justify-center rounded-full text-xs text-white"
+        [ngClass]="{
+          'bg-brand-700': etapa.estado === 'hecho',
+          'bg-brand-800': etapa.estado === 'actual',
+          'bg-gray-200': etapa.estado === 'pendiente'
+        }"
+      >
+        <i *ngIf="etapa.estado === 'hecho'" class="bi bi-check-lg"></i>
       </span>
+      <span
+        class="mt-2 text-[11px]"
+        [ngClass]="etapa.estado === 'actual' ? 'font-bold text-brand-900' : 'text-gray-500'"
+      >
+        {{ etapa.label }}
+      </span>
+    </li>
+  </ol>
+
+  <!-- Tres tarjetas resumen -->
+  <section class="mb-8 grid gap-5 md:grid-cols-3">
+    <article class="rounded-xl border border-brand-100 bg-white p-5">
+      <h2 class="mb-4 text-sm font-bold text-brand-900">Datos del lote</h2>
+      <div class="space-y-1.5 text-[13px] text-gray-800">
+        <p class="m-0">Origen: {{ origenTexto }}</p>
+        <p class="m-0">Kg ingresados: {{ (kgIngresados | number: '1.1-1') ?? '—' }} tn</p>
+        <p class="m-0">Kg post-limpieza: {{ (kgPostLimpieza | number: '1.1-1') ?? '—' }} tn</p>
+        <p class="m-0">Merma: {{ (mermaTotal | number: '1.1-1') ?? '—' }} tn</p>
+        <p class="m-0 text-gray-500" *ngIf="lote.fecha_ingreso">
+          Ingreso: {{ lote.fecha_ingreso | date: 'dd/MM/yyyy':'UTC' }}
+        </p>
+        <p class="m-0 text-gray-500" *ngIf="lote.observaciones">Obs.: {{ lote.observaciones }}</p>
+      </div>
+    </article>
+
+    <article class="rounded-xl border border-brand-100 bg-white p-5">
+      <h2 class="mb-4 text-sm font-bold text-brand-900">Calidad inicial</h2>
+      <ng-container *ngIf="controlInicial as ci; else sinControlInicial">
+        <div class="space-y-1.5 text-[13px] text-gray-800">
+          <p class="m-0">Humedad: {{ ci.humedad | number: '1.0-1' }} %</p>
+          <p class="m-0">Poder germinativo: {{ ci.poder_germinativo | number: '1.0-1' }} %</p>
+          <p class="m-0">Pureza: {{ ci.nivel_de_pureza | number: '1.0-1' }} %</p>
+        </div>
+        <span
+          class="mt-3 inline-flex items-center gap-1 rounded-full px-4 py-1 text-xs font-bold"
+          [ngClass]="claseResultado(ci.resultado)"
+        >
+          <i class="bi" [ngClass]="ci.resultado === 'Apto' ? 'bi-check-lg' : 'bi-x-lg'"></i>
+          {{ ci.resultado }}
+        </span>
+      </ng-container>
+      <ng-template #sinControlInicial>
+        <p class="m-0 text-[13px] text-gray-400">Todavía no se registró el control de calidad inicial.</p>
+      </ng-template>
+    </article>
+
+    <article class="rounded-xl border border-brand-100 bg-white p-5">
+      <h2 class="mb-4 text-sm font-bold text-brand-900">Estimación de venta</h2>
+      <div class="space-y-1.5 text-[13px] text-gray-800">
+        <ng-container *ngIf="estimacion; else sinEstimacion">
+          <p class="m-0">Volumen estimado: {{ volumenEstimado | number: '1.1-1' }} tn</p>
+          <p class="m-0">Campaña: {{ nombreCampana }}</p>
+          <p class="m-0">
+            Estado curado: {{ volumenCurado | number: '1.0-1' }} / {{ volumenEstimado | number: '1.0-1' }} tn
+          </p>
+        </ng-container>
+        <ng-template #sinEstimacion>
+          <p class="m-0 text-gray-400">Todavía no se cargó una estimación de venta.</p>
+        </ng-template>
+        <p class="m-0">Stock bolsas: {{ stockBolsas }} unidades</p>
+      </div>
+    </article>
+  </section>
+
+  <!-- Historial de controles de calidad + acciones -->
+  <section class="grid items-start gap-6 lg:grid-cols-[1fr_17rem]">
+    <div>
+      <h2 class="mb-2 text-base font-bold text-brand-900">Historial de controles de calidad</h2>
+      <div class="overflow-hidden border border-brand-100">
+        <table class="w-full text-[13px]">
+          <thead class="bg-brand-900 text-left text-white">
+            <tr>
+              <th class="px-2.5 py-2 font-semibold">Instancia</th>
+              <th class="px-2.5 py-2 font-semibold">Fecha</th>
+              <th class="px-2.5 py-2 font-semibold">Humedad</th>
+              <th class="px-2.5 py-2 font-semibold">PG</th>
+              <th class="px-2.5 py-2 font-semibold">Pureza</th>
+              <th class="px-2.5 py-2 font-semibold">Resultado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let c of controles; let odd = odd" [class.bg-brand-50]="odd" class="border-t border-brand-100">
+              <td class="px-2.5 py-1.5">CC {{ c.tipo_control }}</td>
+              <td class="px-2.5 py-1.5">{{ c.fecha | date: 'dd/MM/yy' }}</td>
+              <td class="px-2.5 py-1.5">{{ c.humedad | number: '1.0-1' }} %</td>
+              <td class="px-2.5 py-1.5">{{ c.poder_germinativo | number: '1.0-1' }} %</td>
+              <td class="px-2.5 py-1.5">{{ c.nivel_de_pureza | number: '1.0-1' }} %</td>
+              <td class="px-2.5 py-1.5">
+                <span
+                  class="block rounded-full py-1 text-center text-xs font-bold"
+                  [ngClass]="claseResultado(c.resultado)"
+                >
+                  {{ c.resultado }}
+                </span>
+              </td>
+            </tr>
+            <tr *ngIf="controles.length === 0">
+              <td colspan="6" class="px-2.5 py-4 text-center text-gray-400">
+                Todavía no hay controles de calidad registrados.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <div class="p-4">
-      <div class="rounded-lg border border-brand-100 bg-white p-4">
-        <h6 class="mb-2 font-semibold text-brand-900">Datos del lote</h6>
-        <p class="mb-1 text-sm"><strong>Origen:</strong> {{ origenTexto }}</p>
-        <p class="mb-1 text-sm"><strong>Cantidad operativa:</strong> {{ lote.cantidad_semillas_en_tn }} tn</p>
-        <p class="mb-1 text-sm"><strong>Fecha de ingreso:</strong> {{ lote.fecha_ingreso | date: 'dd/MM/yyyy':'UTC' }}</p>
-        <p class="mb-1 text-sm" *ngIf="lote.observaciones"><strong>Observaciones:</strong> {{ lote.observaciones }}</p>
-      </div>
+    <!-- Acciones: CUU02 / CUU03 / CUU05 segun el estado del lote -->
+    <div class="flex flex-col gap-3 lg:mt-8">
+      <a
+        *ngIf="puedeRegistrarCurado"
+        [routerLink]="['/curado/registrar', lote.id_lote]"
+        class="block rounded-lg bg-brand-700 px-4 py-3 text-center text-sm font-bold text-white hover:bg-brand-800"
+      >
+        Registrar curado →
+      </a>
+      <a
+        *ngIf="puedeRegistrarCC"
+        [routerLink]="['/calidad/registrar', lote.id_lote]"
+        [queryParams]="{ tipo: tipoControlSugerido }"
+        class="block rounded-lg bg-brand-700 px-4 py-3 text-center text-sm font-bold text-white hover:bg-brand-800"
+      >
+        Registrar CC {{ tipoControlSugerido }}
+      </a>
+      <a
+        *ngIf="puedeRegistrarLimpieza"
+        [routerLink]="['/lotes', lote.id_lote, 'limpieza']"
+        class="block rounded-lg bg-brand-700 px-4 py-3 text-center text-sm font-bold text-white hover:bg-brand-800"
+      >
+        Registrar limpieza →
+      </a>
+      <a
+        routerLink="/calidad"
+        class="block rounded-lg border border-brand-100 bg-white px-4 py-3 text-center text-sm text-brand-900 hover:bg-brand-50"
+      >
+        Ver historial de CC
+      </a>
+      <p *ngIf="!puedeRegistrarAlgunaAccion" class="m-0 text-center text-xs text-gray-400">
+        No hay acciones disponibles para el estado actual del lote.
+      </p>
+    </div>
+  </section>
 
-      <div class="mt-4 rounded-lg border border-brand-100 bg-white p-4" *ngIf="estados.length > 0">
-        <h6 class="mb-2 font-semibold text-brand-900">Historial de estados</h6>
-        <ul class="space-y-2 text-sm">
-          <li *ngFor="let estado of estados" class="border-b border-brand-50 pb-2 last:border-0">
-            <div><strong>Estado:</strong> {{ estado.nombre }}</div>
-            <div><strong>Fecha:</strong> {{ estado.fecha_desde | date: 'dd/MM/yyyy' }}</div>
-            <div><strong>Hora:</strong> {{ estado.fecha_desde | date: 'HH:mm' }}</div>
-            <div>
-              <strong>Usuario:</strong>
-              {{ estado.usuario ? estado.usuario.nombre + ' ' + estado.usuario.apellido : 'Usuario no disponible' }}
-            </div>
-          </li>
-        </ul>
-      </div>
-
-      <!-- Asignar almacen: el backend ya tenia PATCH /lotes/:id/almacen, no habia forma de usarlo desde el front -->
-      <div class="mt-4 flex flex-wrap items-end gap-2 rounded-lg border border-brand-100 bg-white p-4">
-        <div class="flex-1">
-          <label class="mb-1 block text-sm font-medium text-brand-900">Almacén</label>
-          <select [(ngModel)]="almacenSeleccionado" class="w-full max-w-xs rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
-            <option [ngValue]="null">Sin asignar</option>
-            <option *ngFor="let a of almacenes" [ngValue]="a.id_almacen">{{ a.tipo }} #{{ a.id_almacen }} ({{ a.ocupado_tn ?? 0 }}/{{ a.capacidad }} tn)</option>
-          </select>
-        </div>
+  <!-- Detalle adicional (ya existia en la pantalla): almacen, limpieza, partidas y estados -->
+  <section class="mt-10 grid gap-5 md:grid-cols-2">
+    <!-- Asignar almacen: el backend ya tenia PATCH /lotes/:id/almacen -->
+    <article class="rounded-xl border border-brand-100 bg-white p-5">
+      <h2 class="mb-4 text-sm font-bold text-brand-900">Almacén</h2>
+      <div class="flex flex-wrap items-end gap-2">
+        <select
+          [(ngModel)]="almacenSeleccionado"
+          class="min-w-0 flex-1 rounded-md border border-gray-300 px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-brand-500"
+        >
+          <option [ngValue]="null">Sin asignar</option>
+          <option *ngFor="let a of almacenes" [ngValue]="a.id_almacen">
+            {{ a.tipo }} #{{ a.id_almacen }} ({{ a.ocupado_tn ?? 0 }}/{{ a.capacidad }} tn)
+          </option>
+        </select>
         <button
           type="button"
           [disabled]="asignandoAlmacen"
           (click)="asignarAlmacen()"
-          class="rounded-md border border-brand-300 px-4 py-2 text-sm font-medium text-brand-800 hover:bg-brand-50 disabled:opacity-60"
+          class="rounded-md border border-brand-700 px-4 py-2 text-[13px] font-bold text-brand-800 hover:bg-brand-50 disabled:opacity-60"
         >
           Asignar
         </button>
       </div>
+    </article>
 
-      <!-- CUU02: se habilita cuando el lote esta "Pendiente CC" o "En limpieza" -->
-      <!-- CUU03: se habilita cuando el lote esta "En limpieza" -->
-      <!-- CUU05: se habilita cuando el lote esta "Para curar" -->
-      <div class="my-4 flex flex-wrap items-center gap-2" *ngIf="puedeRegistrarAlgunaAccion">
-        <a
-          *ngIf="puedeRegistrarCC"
-          [routerLink]="['/calidad/registrar', lote.id_lote]"
-          [queryParams]="{ tipo: tipoControlSugerido }"
-          class="inline-flex items-center gap-1 rounded-md bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-800"
+    <article class="rounded-xl border border-brand-100 bg-white p-5" *ngIf="estados.length > 0">
+      <h2 class="mb-4 text-sm font-bold text-brand-900">Historial de estados</h2>
+      <ul class="m-0 list-none space-y-2 p-0 text-[13px] text-gray-800">
+        <li *ngFor="let estado of estados" class="border-b border-brand-50 pb-2 last:border-0 last:pb-0">
+          <span class="font-bold">{{ estado.nombre }}</span>
+          <span class="text-gray-500"> · {{ estado.fecha_desde | date: 'dd/MM/yyyy HH:mm' }}</span>
+          <div class="text-gray-500">
+            {{ estado.usuario ? estado.usuario.nombre + ' ' + estado.usuario.apellido : 'Usuario no disponible' }}
+          </div>
+        </li>
+      </ul>
+    </article>
+
+    <!-- Historial de limpieza y clasificacion (CUU03) -->
+    <article class="rounded-xl border border-brand-100 bg-white p-5" *ngIf="limpiezas.length > 0">
+      <h2 class="mb-4 text-sm font-bold text-brand-900">Limpieza y clasificación</h2>
+      <ul class="m-0 list-none space-y-2 p-0 text-[13px] text-gray-800">
+        <li *ngFor="let l of limpiezas" class="border-b border-brand-50 pb-2 last:border-0 last:pb-0">
+          Vol. restante: <strong>{{ l.volumen_restante_tn | number: '1.1-1' }} tn</strong> · Merma:
+          <strong>{{ l.merma_tn | number: '1.1-1' }} tn</strong>
+          <span class="text-gray-500"> ({{ l.fecha | date: 'dd/MM/yyyy':'UTC' }})</span>
+          <div *ngIf="l.observaciones" class="text-gray-500">{{ l.observaciones }}</div>
+        </li>
+      </ul>
+    </article>
+
+    <!-- Partidas generadas a partir de este lote (CUU05/CUU06) -->
+    <article class="rounded-xl border border-brand-100 bg-white p-5" *ngIf="partidas.length > 0">
+      <h2 class="mb-4 text-sm font-bold text-brand-900">Partidas generadas</h2>
+      <ul class="m-0 list-none space-y-2 p-0 text-[13px] text-gray-800">
+        <li
+          *ngFor="let p of partidas"
+          class="flex flex-wrap items-center justify-between gap-2 border-b border-brand-50 pb-2 last:border-0 last:pb-0"
         >
-          <i class="bi bi-clipboard-check"></i> Registrar control de calidad ({{ tipoControlSugerido }})
-        </a>
-        <a
-          *ngIf="puedeRegistrarLimpieza"
-          [routerLink]="['/lotes', lote.id_lote, 'limpieza']"
-          class="inline-flex items-center gap-1 rounded-md bg-gold-500 px-4 py-2 text-sm font-medium text-white hover:bg-gold-500/85"
-        >
-          <i class="bi bi-droplet"></i> Registrar limpieza y clasificación
-        </a>
-        <a
-          *ngIf="puedeRegistrarCurado"
-          [routerLink]="['/curado/registrar', lote.id_lote]"
-          class="inline-flex items-center gap-1 rounded-md bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-800"
-        >
-          <i class="bi bi-fire"></i> Registrar curado →
-        </a>
-      </div>
+          <span>
+            <a [routerLink]="['/calidad/partidas', p.id_partida]" class="font-bold text-brand-700 hover:underline">{{ p.nro_partida }}</a> — {{ p.volumen_en_tn | number: '1.0-1' }} tn ·
+            {{ p.cantidad_bolsas_20kg ?? 0 }} bolsas (20 kg)
+          </span>
+          <span class="flex items-center gap-2">
+            <span class="rounded-full px-2 py-0.5 text-xs" [ngClass]="claseBadgeEstado(p.estado_actual)">{{ p.estado_actual }}</span>
+            <a
+              *ngIf="p.estado_actual === 'Envasado'"
+              [routerLink]="['/curado/control-final', p.id_partida]"
+              class="text-xs font-bold text-brand-700 hover:underline"
+            >
+              Registrar CC final →
+            </a>
+          </span>
+        </li>
+      </ul>
+    </article>
+  </section>
 
-      <div class="my-4 flex items-start gap-2 rounded-md border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600" *ngIf="!puedeRegistrarAlgunaAccion">
-        <i class="bi bi-info-circle mt-0.5"></i>
-        <span>No hay acciones disponibles para el estado actual del lote.</span>
-      </div>
-
-      <!-- Historial de controles de calidad del lote (CUU02) -->
-      <div class="mt-4 rounded-lg border border-brand-100 bg-white p-4" *ngIf="controles.length > 0">
-        <h6 class="mb-2 font-semibold text-brand-900">Historial de controles de calidad</h6>
-        <ul class="space-y-2 text-sm">
-          <li *ngFor="let c of controles" class="border-b border-brand-50 pb-2 last:border-0">
-            <span class="font-medium capitalize">{{ c.tipo_control }}</span> — {{ c.resultado }}
-            · H: {{ c.humedad }} · PG: {{ c.poder_germinativo }} · Pureza: {{ c.nivel_de_pureza }}
-            <span class="text-gray-400">({{ c.fecha | date: 'dd/MM/yyyy' }})</span>
-          </li>
-        </ul>
-      </div>
-
-      <!-- Historial de limpieza y clasificacion del lote (CUU03) -->
-      <div class="mt-4 rounded-lg border border-brand-100 bg-white p-4" *ngIf="limpiezas.length > 0">
-        <h6 class="mb-2 font-semibold text-brand-900">Historial de limpieza y clasificación</h6>
-        <ul class="space-y-2 text-sm">
-          <li *ngFor="let l of limpiezas" class="border-b border-brand-50 pb-2 last:border-0">
-            Vol. restante: <strong>{{ l.volumen_restante_tn }} tn</strong> · Merma: <strong>{{ l.merma_tn }} tn</strong>
-            <span class="text-gray-400">({{ l.fecha | date: 'dd/MM/yyyy':'UTC' }})</span>
-            <div *ngIf="l.observaciones" class="text-gray-500">{{ l.observaciones }}</div>
-          </li>
-        </ul>
-      </div>
-
-      <!-- Partidas generadas a partir de este lote (CUU05/CUU06) -->
-      <div class="mt-4 rounded-lg border border-brand-100 bg-white p-4" *ngIf="partidas.length > 0">
-        <h6 class="mb-2 font-semibold text-brand-900">Partidas generadas</h6>
-        <ul class="space-y-2 text-sm">
-          <li *ngFor="let p of partidas" class="flex flex-wrap items-center justify-between gap-2 border-b border-brand-50 pb-2 last:border-0">
-            <span>
-              <strong>{{ p.nro_partida }}</strong> — {{ p.volumen_en_tn }} tn · {{ p.cantidad_bolsas_20kg }} bolsas (20 kg)
-            </span>
-            <span class="flex items-center gap-2">
-              <span class="rounded-full px-2 py-0.5 text-xs" [ngClass]="claseBadgeEstado(p.estado_actual)">{{ p.estado_actual }}</span>
-              <a *ngIf="p.estado_actual === 'Envasado'" [routerLink]="['/curado/control-final', p.id_partida]" class="text-xs font-medium text-brand-700 hover:underline">
-                Registrar CC final →
-              </a>
-            </span>
-          </li>
-        </ul>
-      </div>
-
-      <a routerLink="/lotes" class="mt-4 inline-flex items-center gap-1 rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-        <i class="bi bi-arrow-left"></i> Volver al listado
-      </a>
-    </div>
-  </div>
+  <a routerLink="/lotes" class="mt-8 inline-flex items-center gap-1 text-[13px] text-brand-700 hover:underline">
+    <i class="bi bi-arrow-left"></i> Volver al listado
+  </a>
 </div>
 
-<div class="mx-auto max-w-4xl px-4 py-6" *ngIf="!lote && !errorMessage">
+<div class="mx-auto max-w-6xl px-8 py-6" *ngIf="!lote && !errorMessage">
   <p class="text-gray-400">Cargando...</p>
 </div>
 
-<div class="mx-auto max-w-4xl px-4 py-6" *ngIf="errorMessage">
+<div class="mx-auto max-w-6xl px-8 py-6" *ngIf="errorMessage">
   <div class="rounded-md border border-red-200 bg-red-50 p-3 text-red-700">{{ errorMessage }}</div>
 </div>

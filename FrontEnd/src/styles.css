@@ -2,19 +2,32 @@
 @import "tailwindcss";
 @source "./app/**/*.{html,ts}";
 
-/* Paleta Zprout, tomada de la GUI (verde bosque oscuro + dorado de acento). */
+/* Paleta Zprout. Los hex salen del propio archivo de bocetos (GUI v2.0):
+   verde bosque oscuro + verde medio de acción + dorado de acento. */
 @theme {
+  /* Verdes de marca (de más oscuro a más claro) */
   --color-brand-950: #0f2a20;
-  --color-brand-900: #14352a;
-  --color-brand-800: #1c4a3a;
-  --color-brand-700: #275c48;
-  --color-brand-600: #337058;
-  --color-brand-500: #438a6d;
-  --color-brand-100: #e2efe8;
-  --color-brand-50: #f4f8f6;
+  --color-brand-900: #1b4332; /* header, encabezados de tabla, ítem activo del sidebar */
+  --color-brand-800: #245a42; /* hover de botones primarios */
+  --color-brand-700: #2d6a4f; /* botones primarios */
+  --color-brand-600: #2e7d4f; /* botón principal de login / registro */
+  --color-brand-500: #40916c;
+  --color-brand-400: #4caf75; /* avatar, círculos decorativos */
+  --color-brand-200: #c8e6d4; /* textos claros sobre fondo oscuro */
+  --color-brand-100: #e2efe8; /* bordes suaves, pills "Apto" */
+  --color-brand-50: #f5f9f5;  /* fondo del sidebar y paneles claros */
 
-  --color-gold-500: #c99a3f;
-  --color-gold-400: #d8ae5c;
+  /* Verde de las pantallas de bienvenida / login (panel de marca) */
+  --color-brand-hero: #1b4d2e;
+
+  /* Grises verdosos de formularios (inputs, labels, textos de ayuda) */
+  --color-sage-100: #f1f5f3;
+  --color-sage-200: #e2ebe6;
+  --color-sage-500: #8fa899;
+  --color-sage-700: #4a6357;
+
+  --color-gold-500: #d4a72c; /* badges dorados ("Para curar", "Pendientes CC") */
+  --color-gold-400: #f5c842; /* la "Z" del logo y detalles de acento */
 
   --font-sans: "Carlito", "Calibri", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Caladea", "Cambria", "Georgia", serif;

@@ -7,6 +7,7 @@ import { DetalleLoteComponent } from './components/lotes/detalle-lote/detalle-lo
 import { RegistrarLimpiezaComponent } from './components/lotes/registrar-limpieza/registrar-limpieza.component';
 import { CalidadComponent } from './components/calidad/calidad.component';
 import { RegistrarControlComponent } from './components/calidad/registrar-control/registrar-control.component';
+import { DetallePartidaComponent } from './components/calidad/detalle-partida/detalle-partida.component';
 import { CuradoComponent } from './components/curado/curado.component';
 import { RegistrarCuradoComponent } from './components/curado/registrar-curado/registrar-curado.component';
 import { RegistrarControlFinalComponent } from './components/curado/registrar-control-final/registrar-control-final.component';
@@ -15,6 +16,7 @@ import { PedidosComponent } from './components/pedidos/pedidos.component';
 import { GestionarPedidoComponent } from './components/pedidos/gestionar-pedido/gestionar-pedido.component';
 import { ReportesComponent } from './components/reportes/reportes.component';
 import { CatalogosComponent } from './components/catalogos/catalogos.component';
+import { PerfilComponent } from './components/perfil/perfil.component';
 import { SolicitudesComponent } from './components/solicitudes/solicitudes.component';
 import { RoleGuard } from './guards/auth.guard';
 
@@ -37,6 +39,8 @@ export const routes: Routes = [
       // Modulo Calidad (CUU02) - bandeja real + registro de CC sobre Lote
       { path: 'calidad', component: CalidadComponent },
       { path: 'calidad/registrar/:loteId', component: RegistrarControlComponent },
+      // Trazabilidad de una partida (destino de "Ver partida")
+      { path: 'calidad/partidas/:partidaId', component: DetallePartidaComponent },
 
       // Modulo Curado/Partidas (CUU05 + CUU06)
       { path: 'curado', component: CuradoComponent },
@@ -50,6 +54,9 @@ export const routes: Routes = [
       // Modulo Pedidos (CUU07)
       { path: 'pedidos', component: PedidosComponent },
       { path: 'pedidos/nuevo', component: GestionarPedidoComponent },
+
+      // Mi perfil (cualquier usuario logueado)
+      { path: 'perfil', component: PerfilComponent },
 
       { path: 'reportes', component: ReportesComponent },
 

@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { LoteService } from '../../../services/lote.service';
 import { Lote } from '../../../interfaces/lote';
-import { claseBadgeEstado } from '../../../shared/estado-badge';
+import { claseBadgeEstado, claseBadgeEstadoSolido } from '../../../shared/estado-badge';
 import { ESTADOS_LOTE } from '../../../shared/estado-nombres';
 
 @Component({
@@ -26,6 +26,7 @@ export class ListadoLotesComponent implements OnInit {
   estadoFiltro: string | null = null;
   readonly estadosDisponibles = ESTADOS_LOTE;
   claseBadgeEstado = claseBadgeEstado;
+  claseBadgeEstadoSolido = claseBadgeEstadoSolido;
 
   // Fuerza el redibujado justo despues de que el subscribe actualiza el
   // estado del componente. En algunos entornos (ciertas extensiones de

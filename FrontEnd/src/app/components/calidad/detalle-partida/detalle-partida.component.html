@@ -1,0 +1,90 @@
+<div class="mx-auto max-w-6xl px-8 py-6" *ngIf="!cargando && partida">
+  <h1 class="m-0 mb-1 font-display text-3xl font-bold text-brand-hero">Detalle de partida</h1>
+  <p class="mb-5 mt-0 text-xs italic text-sage-500">Calidad &gt; Partidas &gt; {{ partida.nro_partida }}</p>
+
+  <div class="mb-8 grid grid-cols-1 gap-5 md:grid-cols-3">
+
+    <!-- Identificación -->
+    <article class="rounded-lg border border-sage-200 bg-white p-5 text-xs leading-7 text-gray-800">
+      <h2 class="mb-3 mt-0 text-sm font-bold text-brand-900">Identificación</h2>
+      <p class="m-0">Partida: {{ partida.nro_partida }}</p>
+      <p class="m-0">
+        Lote de origen:
+        <a *ngIf="loteId" [routerLink]="['/lotes', loteId]" class="font-bold text-brand-600 hover:underline">{{ nroLote }}</a>
+      </p>
+      <p class="m-0">Fecha de envasado: {{ partida.fecha_envasado ? (partida.fecha_envasado | date: 'dd/MM/yyyy':'UTC') : '—' }}</p>
+      <p class="m-0">Volumen: {{ partida.volumen_en_tn | number: '1.0-1' }} tn · Curado: <span class="capitalize">{{ partida.tipo_curado }}</span></p>
+    </article>
+
+    <!-- Resultado CC final -->
+    <article class="rounded-lg border border-sage-200 bg-white p-5 text-xs leading-7 text-gray-800">
+      <h2 class="mb-3 mt-0 text-sm font-bold text-brand-900">Resultado CC final</h2>
+      <ng-container *ngIf="controlFinal; else sinControl">
+        <p class="m-0">Humedad: {{ humedad | number: '1.0-2' }} %</p>
+        <p class="m-0">Pureza: {{ pureza | number: '1.0-2' }} %</p>
+        <p class="m-0">Poder germinativo: {{ poderGerminativo | number: '1.0-2' }} %</p>
+      </ng-container>
+      <ng-template #sinControl>
+        <p class="m-0 text-sage-700">Todavía no hay un control final registrado.</p>
+      </ng-template>
+    </article>
+
+    <!-- Stock -->
+    <article class="rounded-lg border border-sage-200 bg-white p-5 text-xs leading-7 text-gray-800">
+      <h2 class="mb-3 mt-0 text-sm font-bold text-brand-900">Stock</h2>
+      <p class="m-0">{{ bolsasTotales }} bolsas de 20 kg</p>
+      <p class="m-0">Comprometidas: {{ bolsasComprometidas }}</p>
+      <p class="m-0">Disponibles: {{ bolsasDisponibles }}</p>
+      <span
+        class="mt-3 block rounded-md px-3 py-1.5 text-center text-[11px] font-bold"
+        [ngClass]="claseBadgeEstadoSolido(partida.estado_actual)"
+      >
+        {{ partida.estado_actual || 'Sin estado' }}
+      </span>
+    </article>
+  </div>
+
+  <!-- Pedidos que consumen esta partida -->
+  <h2 class="mb-3 mt-0 text-sm font-bold text-brand-900">Pedidos que consumen esta partida</h2>
+  <div class="overflow-hidden rounded-md border border-sage-200">
+    <div class="overflow-x-auto">
+      <table class="w-full text-center text-[13px]">
+        <thead class="bg-brand-900 text-xs text-white">
+          <tr>
+            <th class="px-4 py-3 font-bold">Pedido</th>
+            <th class="px-4 py-3 font-bold">Cliente</th>
+            <th class="px-4 py-3 font-bold">Bolsas asignadas</th>
+            <th class="px-4 py-3 font-bold">Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of pedidosConsumidores; let odd = odd" [class.bg-sage-100]="odd" class="border-t border-sage-200 text-gray-900">
+            <td class="px-4 py-2.5 font-bold text-brand-600">{{ c.pedido.nro_pedido }}</td>
+            <td class="px-4 py-2.5">{{ c.pedido.comprador }}</td>
+            <td class="px-4 py-2.5">{{ c.bolsas }} bolsas</td>
+            <td class="px-4 py-2.5">
+              <span class="inline-block min-w-[10rem] rounded-md px-3 py-1 text-center text-[11px] font-bold" [ngClass]="claseBadgeEstadoSolido(c.pedido.estado_pedido)">
+                {{ c.pedido.estado_pedido }}
+              </span>
+            </td>
+          </tr>
+          <tr *ngIf="pedidosConsumidores.length === 0">
+            <td colspan="4" class="px-4 py-6 text-center text-gray-400">Ningún pedido consume esta partida todavía.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <a *ngIf="loteId" [routerLink]="['/lotes', loteId]" class="mt-8 inline-flex items-center gap-1 text-[13px] text-brand-700 hover:underline">
+    <i class="bi bi-arrow-left"></i> Volver al lote
+  </a>
+</div>
+
+<div class="mx-auto max-w-6xl px-8 py-6" *ngIf="cargando">
+  <p class="text-gray-400">Cargando...</p>
+</div>
+
+<div class="mx-auto max-w-6xl px-8 py-6" *ngIf="!cargando && !partida">
+  <div *ngIf="errorMessage" class="rounded-md border border-red-200 bg-red-50 p-3 text-red-700">{{ errorMessage }}</div>
+</div>

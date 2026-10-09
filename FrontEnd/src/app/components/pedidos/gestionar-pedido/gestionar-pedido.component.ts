@@ -127,6 +127,14 @@ export class GestionarPedidoComponent implements OnInit {
     );
   }
 
+  // Solo visual: nombres de los items con stock bajo para el aviso lateral.
+  get nombresItemsConStockBajo(): string {
+    const nombres = this.items.controls
+      .filter((c) => this.itemConStockBajo(c.get('tipo_semilla_id')?.value, c.get('cantidad_tn')?.value))
+      .map((c) => this.nombreSemilla(c.get('tipo_semilla_id')?.value));
+    return nombres.join(', ');
+  }
+
   confirmar(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();

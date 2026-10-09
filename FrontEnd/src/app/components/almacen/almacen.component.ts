@@ -119,6 +119,21 @@ export class AlmacenComponent implements OnInit {
     return Math.min(100, ((a.ocupado_tn ?? 0) / cap) * 100);
   }
 
+  // Solo visual: nombre con tilde y color del numero segun el tipo de unidad.
+  nombreTipo(a: Almacen): string {
+    const nombres: Record<string, string> = { silo: 'Silo', galpon: 'Galpón', deposito: 'Depósito' };
+    return nombres[a.tipo] ?? a.tipo;
+  }
+
+  claseNumeroTipo(a: Almacen): string {
+    const clases: Record<string, string> = {
+      silo: 'text-brand-700',
+      galpon: 'text-[#8a5a0b]',
+      deposito: 'text-[#1d4e89]',
+    };
+    return clases[a.tipo] ?? 'text-brand-700';
+  }
+
   editar(a: Almacen): void {
     this.editandoId = a.id_almacen;
     this.form.patchValue({ tipo: a.tipo, capacidad: Number(a.capacidad) });

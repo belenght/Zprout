@@ -1,111 +1,138 @@
-<div class="mx-auto max-w-6xl px-4 py-6">
-  <h4 class="mb-6 font-display text-xl text-brand-900">Registrar ingreso de lote</h4>
+<div class="mx-auto max-w-5xl px-8 py-8">
+  <h1 class="mb-6 mt-0 font-display text-3xl font-bold text-brand-900">Registrar ingreso de lote</h1>
 
-  <div class="grid gap-6 lg:grid-cols-[1fr_320px]">
-    <form [formGroup]="form" (ngSubmit)="registrarIngreso()" class="space-y-4 rounded-xl border border-brand-100 bg-white p-6">
+  <div class="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_17rem]">
+    <form [formGroup]="form" (ngSubmit)="registrarIngreso()" class="space-y-5">
 
+      <!-- Origen del lote -->
       <div>
-        <label class="mb-1 block text-sm font-medium text-brand-900">Origen del lote</label>
-        <div class="flex w-full overflow-hidden rounded-md border border-brand-200">
-          <label class="flex-1 cursor-pointer border-r border-brand-200 px-3 py-2 text-center text-sm text-brand-700 has-[:checked]:bg-brand-700 has-[:checked]:text-white">
+        <p class="m-0 mb-1.5 text-xs font-bold text-gray-800">Origen del lote</p>
+        <div class="flex flex-wrap gap-3">
+          <label class="group flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-sage-200 bg-white px-12 py-2.5 text-sm text-gray-800 has-[:checked]:border-brand-700 has-[:checked]:bg-brand-700 has-[:checked]:font-bold has-[:checked]:text-white">
             <input type="radio" class="hidden" id="origenPropio" value="propio" formControlName="origen_semilla">
-            Produccion propia
+            <i class="bi bi-check-lg hidden group-has-[:checked]:inline"></i>
+            Producción propia
           </label>
-          <label class="flex-1 cursor-pointer px-3 py-2 text-center text-sm text-gold-500 has-[:checked]:bg-gold-500 has-[:checked]:text-white">
+          <label class="group flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-sage-200 bg-white px-12 py-2.5 text-sm text-gray-800 has-[:checked]:border-brand-700 has-[:checked]:bg-brand-700 has-[:checked]:font-bold has-[:checked]:text-white">
             <input type="radio" class="hidden" id="origenExterno" value="externo" formControlName="origen_semilla">
+            <i class="bi bi-check-lg hidden group-has-[:checked]:inline"></i>
             Externo
           </label>
         </div>
       </div>
 
-      <div class="grid gap-4 sm:grid-cols-2">
+      <!-- Cultivo / Variedad: dos selectores encadenados, guardan tipo_semilla_id -->
+      <div class="grid gap-5 sm:grid-cols-2">
         <div>
-          <label for="tipo_semilla_id" class="mb-1 block text-sm font-medium text-brand-900">Cultivo / Variedad</label>
-          <select id="tipo_semilla_id" formControlName="tipo_semilla_id" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 [&.ng-invalid.ng-touched]:border-red-500">
+          <label for="cultivo" class="mb-1.5 block text-xs font-bold text-gray-800">Cultivo</label>
+          <select id="cultivo" formControlName="cultivo" class="w-full rounded-lg border border-sage-200 bg-sage-100 px-4 py-2.5 text-sm text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/30 [&.ng-invalid.ng-touched]:border-red-500">
             <option [ngValue]="null" disabled>Seleccionar...</option>
-            <option *ngFor="let ts of tiposSemilla" [ngValue]="ts.id_semilla">
-              {{ ts.nombre_semilla }} / {{ ts.variante_semilla }}
-            </option>
+            <option *ngFor="let c of cultivos" [ngValue]="c">{{ c }}</option>
           </select>
-          <p *ngIf="form.get('tipo_semilla_id')?.invalid && form.get('tipo_semilla_id')?.touched" class="mt-1 text-xs text-red-600">
-            Seleccioná un cultivo / variedad.
+          <p *ngIf="form.get('cultivo')?.invalid && form.get('cultivo')?.touched" class="mb-0 mt-1 text-xs text-red-600">
+            Seleccioná un cultivo.
           </p>
         </div>
 
         <div>
-          <label for="cantidad_semillas_en_tn" class="mb-1 block text-sm font-medium text-brand-900">Cantidad ingresada (tn)</label>
-          <input type="number" step="0.01" id="cantidad_semillas_en_tn" formControlName="cantidad_semillas_en_tn" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 [&.ng-invalid.ng-touched]:border-red-500">
-          <p *ngIf="form.get('cantidad_semillas_en_tn')?.invalid && form.get('cantidad_semillas_en_tn')?.touched" class="mt-1 text-xs text-red-600">
+          <label for="tipo_semilla_id" class="mb-1.5 block text-xs font-bold text-gray-800">Variedad</label>
+          <select id="tipo_semilla_id" formControlName="tipo_semilla_id" class="w-full rounded-lg border border-sage-200 bg-sage-100 px-4 py-2.5 text-sm text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/30 [&.ng-invalid.ng-touched]:border-red-500">
+            <option [ngValue]="null" disabled>Seleccionar...</option>
+            <option *ngFor="let ts of variedades" [ngValue]="ts.id_semilla">{{ ts.variante_semilla }}</option>
+          </select>
+          <p *ngIf="form.get('tipo_semilla_id')?.invalid && form.get('tipo_semilla_id')?.touched" class="mb-0 mt-1 text-xs text-red-600">
+            Seleccioná una variedad.
+          </p>
+        </div>
+      </div>
+
+      <!-- Campo (propio) o Proveedor (externo) + Cantidad -->
+      <div class="grid gap-5 sm:grid-cols-2">
+        <div *ngIf="!esExterno">
+          <label for="campo_id" class="mb-1.5 block text-xs font-bold text-gray-800">Campo de procedencia</label>
+          <select id="campo_id" formControlName="campo_id" class="w-full rounded-lg border border-sage-200 bg-sage-100 px-4 py-2.5 text-sm text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/30 [&.ng-invalid.ng-touched]:border-red-500">
+            <option [ngValue]="null" disabled>Seleccionar...</option>
+            <option *ngFor="let c of campos" [ngValue]="c.id_campo">{{ c.nro_campo }} - {{ c.ubicacion }}</option>
+          </select>
+          <p *ngIf="form.get('campo_id')?.invalid && form.get('campo_id')?.touched" class="mb-0 mt-1 text-xs text-red-600">
+            Seleccioná el campo de procedencia.
+          </p>
+        </div>
+
+        <div *ngIf="esExterno">
+          <label for="proveedor_id" class="mb-1.5 block text-xs font-bold text-gray-800">Proveedor</label>
+          <select id="proveedor_id" formControlName="proveedor_id" class="w-full rounded-lg border border-sage-200 bg-sage-100 px-4 py-2.5 text-sm text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/30 [&.ng-invalid.ng-touched]:border-red-500">
+            <option [ngValue]="null" disabled>Seleccionar...</option>
+            <option *ngFor="let p of proveedores" [ngValue]="p.id_proveedor">{{ p.razon_social }}</option>
+          </select>
+          <p *ngIf="form.get('proveedor_id')?.invalid && form.get('proveedor_id')?.touched" class="mb-0 mt-1 text-xs text-red-600">
+            Seleccioná el proveedor.
+          </p>
+        </div>
+
+        <div>
+          <label for="cantidad_semillas_en_tn" class="mb-1.5 block text-xs font-bold text-gray-800">Cantidad ingresada (tn)</label>
+          <input
+            type="number" step="0.01" id="cantidad_semillas_en_tn" formControlName="cantidad_semillas_en_tn"
+            [placeholder]="esExterno ? 'Ej: 30.0' : 'Ej: 24.0'"
+            class="w-full rounded-lg border border-sage-200 bg-sage-100 px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/30 [&.ng-invalid.ng-touched]:border-red-500"
+          >
+          <p *ngIf="form.get('cantidad_semillas_en_tn')?.invalid && form.get('cantidad_semillas_en_tn')?.touched" class="mb-0 mt-1 text-xs text-red-600">
             <ng-container *ngIf="form.get('cantidad_semillas_en_tn')?.hasError('required')">La cantidad es obligatoria.</ng-container>
             <ng-container *ngIf="form.get('cantidad_semillas_en_tn')?.hasError('min')">La cantidad debe ser mayor o igual a 0,01 tn.</ng-container>
           </p>
         </div>
       </div>
 
-      <div *ngIf="!esExterno">
-        <label for="campo_id" class="mb-1 block text-sm font-medium text-brand-900">Campo de procedencia</label>
-        <select id="campo_id" formControlName="campo_id" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 [&.ng-invalid.ng-touched]:border-red-500">
-          <option [ngValue]="null" disabled>Seleccionar...</option>
-          <option *ngFor="let c of campos" [ngValue]="c.id_campo">{{ c.nro_campo }} - {{ c.ubicacion }}</option>
-        </select>
-        <p *ngIf="form.get('campo_id')?.invalid && form.get('campo_id')?.touched" class="mt-1 text-xs text-red-600">
-          Seleccioná el campo de procedencia.
+      <!-- Informe de calidad del proveedor (solo externo) -->
+      <div *ngIf="esExterno">
+        <label for="informe_calidad_externo" class="mb-1.5 block text-xs font-bold text-gray-800">Informe de calidad del proveedor (URL/referencia)</label>
+        <input
+          type="text" id="informe_calidad_externo" formControlName="informe_calidad_externo"
+          placeholder="Ej: link al PDF adjunto"
+          class="w-full rounded-lg border border-dashed border-sage-500 bg-sage-100 px-4 py-3 text-sm text-gray-800 placeholder:text-gray-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/30 [&.ng-invalid.ng-touched]:border-red-500"
+        >
+        <p *ngIf="form.get('informe_calidad_externo')?.invalid && form.get('informe_calidad_externo')?.touched" class="mb-0 mt-1 text-xs text-red-600">
+          <ng-container *ngIf="form.get('informe_calidad_externo')?.hasError('maxlength')">Máximo 255 caracteres.</ng-container>
+          <ng-container *ngIf="form.get('informe_calidad_externo')?.hasError('pattern')">No se permiten los caracteres &lt; y &gt;.</ng-container>
         </p>
       </div>
 
-      <ng-container *ngIf="esExterno">
-        <div>
-          <label for="proveedor_id" class="mb-1 block text-sm font-medium text-brand-900">Proveedor externo</label>
-          <select id="proveedor_id" formControlName="proveedor_id" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 [&.ng-invalid.ng-touched]:border-red-500">
-            <option [ngValue]="null" disabled>Seleccionar...</option>
-            <option *ngFor="let p of proveedores" [ngValue]="p.id_proveedor">{{ p.razon_social }}</option>
-          </select>
-          <p *ngIf="form.get('proveedor_id')?.invalid && form.get('proveedor_id')?.touched" class="mt-1 text-xs text-red-600">
-            Seleccioná el proveedor.
-          </p>
-        </div>
-
-        <div>
-          <label for="informe_calidad_externo" class="mb-1 block text-sm font-medium text-brand-900">Informe de calidad del proveedor (URL/referencia)</label>
-          <input type="text" id="informe_calidad_externo" formControlName="informe_calidad_externo" placeholder="Ej: link al PDF adjunto" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 [&.ng-invalid.ng-touched]:border-red-500">
-          <p *ngIf="form.get('informe_calidad_externo')?.invalid && form.get('informe_calidad_externo')?.touched" class="mt-1 text-xs text-red-600">
-            <ng-container *ngIf="form.get('informe_calidad_externo')?.hasError('maxlength')">Máximo 255 caracteres.</ng-container>
-            <ng-container *ngIf="form.get('informe_calidad_externo')?.hasError('pattern')">No se permiten los caracteres &lt; y &gt;.</ng-container>
-          </p>
-        </div>
-      </ng-container>
-
+      <!-- Observaciones -->
       <div>
-        <label for="observaciones" class="mb-1 block text-sm font-medium text-brand-900">Observaciones</label>
-        <textarea id="observaciones" rows="2" formControlName="observaciones" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 [&.ng-invalid.ng-touched]:border-red-500"></textarea>
-        <p *ngIf="form.get('observaciones')?.invalid && form.get('observaciones')?.touched" class="mt-1 text-xs text-red-600">
+        <label for="observaciones" class="mb-1.5 block text-xs font-bold text-gray-800">Observaciones</label>
+        <textarea
+          id="observaciones" rows="2" formControlName="observaciones" placeholder="Opcional…"
+          class="w-full rounded-lg border border-sage-200 bg-sage-100 px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/30 [&.ng-invalid.ng-touched]:border-red-500"
+        ></textarea>
+        <p *ngIf="form.get('observaciones')?.invalid && form.get('observaciones')?.touched" class="mb-0 mt-1 text-xs text-red-600">
           <ng-container *ngIf="form.get('observaciones')?.hasError('maxlength')">Máximo 500 caracteres.</ng-container>
           <ng-container *ngIf="form.get('observaciones')?.hasError('pattern')">No se permiten los caracteres &lt; y &gt;.</ng-container>
         </p>
       </div>
 
-      <div class="flex gap-2 pt-2">
-        <button type="submit" [disabled]="guardando" class="inline-flex items-center gap-2 rounded-md bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60">
+      <div class="flex flex-wrap gap-3 pt-3">
+        <button type="submit" [disabled]="guardando" class="inline-flex items-center gap-2 rounded-lg bg-brand-700 px-8 py-3 text-sm font-bold text-white hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60">
           <span *ngIf="guardando" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
           <i class="bi bi-check-lg"></i> Registrar ingreso
         </button>
-        <a routerLink="/lotes" class="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Cancelar</a>
+        <a routerLink="/lotes" class="rounded-lg border border-sage-200 bg-white px-8 py-3 text-sm text-gray-800 hover:bg-brand-50">Cancelar</a>
       </div>
     </form>
 
     <aside
-      class="h-fit rounded-xl border p-4 text-sm"
-      [ngClass]="esExterno ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-brand-200 bg-brand-50 text-brand-900'"
+      class="h-fit rounded-lg border p-4 text-xs leading-relaxed"
+      [ngClass]="esExterno ? 'border-[#efd79a] bg-[#fbeacb] text-[#8a5a0b]' : 'border-[#bfe0c6] bg-[#eaf3ea] text-brand-900'"
     >
-      <div class="mb-2 flex items-center gap-2 font-medium">
+      <div class="mb-3 flex items-center gap-2">
         <i class="bi" [class.bi-info-circle]="!esExterno" [class.bi-exclamation-triangle]="esExterno"></i>
-        {{ esExterno ? 'Lote externo' : 'Informacion' }}
+        {{ esExterno ? 'Lote externo' : 'Información' }}
       </div>
-      <p *ngIf="!esExterno">
+      <p *ngIf="!esExterno" class="m-0">
         El sistema generará un Nro Lote automáticamente combinando campo y fecha.
         Queda habilitado el control de calidad inicial (CC).
       </p>
-      <p *ngIf="esExterno">
+      <p *ngIf="esExterno" class="m-0">
         El CC inicial se considera automáticamente aprobado. El lote saltea
         limpieza y curado (solo pasa por el CC final de rutina).
       </p>

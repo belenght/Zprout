@@ -29,7 +29,9 @@ export class Usuario {
   @Property({ type: 'date', nullable: true })
   fecha_nacimiento?: Date;
 
-  @Property({ type: 'blob', columnType: 'mediumblob', nullable: true })
+  // hidden: la foto no debe viajar en los listados de usuarios (pesa y no hace falta);
+  // solo se expone por /usuarios/me (ver perfil.controller.ts).
+  @Property({ type: 'blob', columnType: 'mediumblob', nullable: true, hidden: true })
   foto_perfil?: Buffer;
 
   // Baja/deshabilitacion de una cuenta ya existente.

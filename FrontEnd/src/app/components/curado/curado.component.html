@@ -1,52 +1,52 @@
-<div class="mx-auto max-w-6xl px-4 py-6">
-  <h4 class="mb-1 font-display text-xl text-brand-900">Curado y envasado</h4>
-  <p class="mb-6 text-sm text-gray-500">CUU05 — Registrar curado y envasado</p>
+<div class="mx-auto max-w-6xl px-8 py-6">
+  <h1 class="m-0 mb-1 font-display text-3xl font-bold text-brand-hero">Curado y envasado</h1>
+  <p class="mb-6 mt-0 text-xs italic text-sage-500">CUU05 — Registrar curado y envasado</p>
 
   <div *ngIf="errorMessage" class="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-red-700">{{ errorMessage }}</div>
 
-  <div class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-    <div class="rounded-xl border border-brand-100 bg-white p-5">
-      <div class="text-3xl font-bold text-brand-800">{{ lotesConEstimacion }}</div>
-      <div class="text-sm text-gray-500">Lotes con estimación cargada</div>
+  <div class="mb-7 grid grid-cols-1 gap-5 sm:grid-cols-3">
+    <div class="flex items-center gap-5 rounded-lg border border-sage-200 bg-white px-6 py-5">
+      <span class="font-display text-4xl font-bold text-brand-700">{{ lotesConEstimacion }}</span>
+      <span class="text-xs text-gray-800">Lotes con estimación cargada</span>
     </div>
-    <div class="rounded-xl border border-brand-100 bg-white p-5">
-      <div class="text-3xl font-bold text-brand-800">{{ pendientesCurar }}</div>
-      <div class="text-sm text-gray-500">Pendientes de curar</div>
+    <div class="flex items-center gap-5 rounded-lg border border-sage-200 bg-white px-6 py-5">
+      <span class="font-display text-4xl font-bold text-brand-700">{{ pendientesCurar }}</span>
+      <span class="text-xs text-gray-800">Pendientes de curar</span>
     </div>
-    <div class="rounded-xl border border-brand-100 bg-white p-5">
-      <div class="text-3xl font-bold text-brand-800">{{ partidasEnProcesoDeEnvasado }}</div>
-      <div class="text-sm text-gray-500">En proceso de envasado</div>
+    <div class="flex items-center gap-5 rounded-lg border border-sage-200 bg-white px-6 py-5">
+      <span class="font-display text-4xl font-bold text-brand-700">{{ partidasEnProcesoDeEnvasado }}</span>
+      <span class="text-xs text-gray-800">En proceso de envasado</span>
     </div>
   </div>
 
-  <h5 class="mb-3 font-display text-lg text-brand-900">Lotes listos para curar</h5>
+  <h2 class="mb-3 mt-0 text-sm font-bold text-brand-900">Lotes listos para curar</h2>
   <div class="space-y-3">
     <div
       *ngFor="let fila of lotesParaCurar"
-      class="flex flex-col gap-3 rounded-xl border border-brand-100 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
+      class="flex flex-col gap-4 rounded-lg border border-sage-200 bg-white px-5 py-4 sm:flex-row sm:items-center"
     >
-      <div>
-        <div class="font-medium text-brand-900">{{ fila.nro_lote }}</div>
-        <div class="text-sm text-gray-500">{{ fila.semilla_variedad }}</div>
+      <div class="sm:w-40">
+        <div class="text-sm font-bold text-brand-900">{{ fila.nro_lote }}</div>
+        <div class="text-[11px] text-sage-700">{{ fila.semilla_variedad }}</div>
       </div>
-      <div class="flex flex-wrap gap-4 text-sm text-gray-600">
-        <div><span class="text-gray-400">Kg disponibles</span><br>{{ fila.disponible_tn }} tn</div>
-        <div><span class="text-gray-400">Estimación venta</span><br>{{ fila.estimacion_tn ?? '—' }} tn</div>
-        <div><span class="text-gray-400">Vol. a curar</span><br>{{ fila.vol_a_curar_sugerido }} tn</div>
+      <div class="flex flex-1 flex-wrap gap-x-12 gap-y-2 text-xs text-gray-900">
+        <div><div class="text-[11px] text-sage-700">Kg disponibles</div>{{ fila.disponible_tn | number: '1.1-1' }} tn</div>
+        <div><div class="text-[11px] text-sage-700">Estimación venta</div>{{ fila.estimacion_tn != null ? (fila.estimacion_tn | number: '1.1-1') + ' tn' : '—' }}</div>
+        <div><div class="text-[11px] text-sage-700">Vol. a curar</div>{{ fila.vol_a_curar_sugerido | number: '1.1-1' }} tn</div>
       </div>
       <button
         type="button"
         (click)="registrarCurado(fila)"
-        class="rounded-md bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-800"
+        class="rounded-lg bg-brand-700 px-7 py-2.5 text-xs font-bold text-white hover:bg-brand-800"
       >
         Registrar curado
       </button>
     </div>
 
-    <div *ngIf="!cargando && lotesParaCurar.length === 0" class="rounded-xl border border-brand-100 bg-white p-6 text-center text-gray-400">
+    <div *ngIf="!cargando && lotesParaCurar.length === 0" class="rounded-lg border border-sage-200 bg-white p-6 text-center text-gray-400">
       No hay lotes listos para curar.
     </div>
-    <div *ngIf="cargando" class="rounded-xl border border-brand-100 bg-white p-6 text-center text-gray-400">
+    <div *ngIf="cargando" class="rounded-lg border border-sage-200 bg-white p-6 text-center text-gray-400">
       Cargando...
     </div>
   </div>

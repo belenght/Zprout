@@ -8,7 +8,7 @@ import { LoteService } from '../../../services/lote.service';
 import { ControlCalidadService } from '../../../services/control-calidad.service';
 import { Lote } from '../../../interfaces/lote';
 import { ControlDeCalidad, RangosFueraDeRango, RegistrarControlLotePayload } from '../../../interfaces/control-calidad';
-import { claseBadgeEstado } from '../../../shared/estado-badge';
+import { claseBadgeEstadoSolido } from '../../../shared/estado-badge';
 
 /**
  * GUI-07 - "Registrar CC (Inicial / Intermedio)"
@@ -34,7 +34,7 @@ export class RegistrarControlComponent implements OnInit {
   // confirme el rechazo del lote.
   fueraDeRango: RangosFueraDeRango | null = null;
 
-  claseBadgeEstado = claseBadgeEstado;
+  claseBadgeEstadoSolido = claseBadgeEstadoSolido;
 
   // Fuerza el redibujado justo despues de cada subscribe: ver el mismo
   // comentario en listado-lotes.component.ts.
@@ -139,6 +139,20 @@ export class RegistrarControlComponent implements OnInit {
         this.cd.detectChanges();
       }
     });
+  }
+
+  // Solo visual: marca en rojo el campo cuyo valor cae fuera del rango que
+  // devolvio el backend (409) y arma el texto "Fuera de rango (min. X / max. Y)".
+  // No cambia la validacion, que sigue siendo la del backend.
+  mensajeFueraDeRango(campo: keyof RangosFueraDeRango): string | null {
+    if (!this.fueraDeRango) return null;
+    const valor = Number(this.form.get(campo)?.value);
+    const [min, max] = this.fueraDeRango[campo] ?? [];
+    const tieneMin = min !== null && min !== undefined && min !== '';
+    const tieneMax = max !== null && max !== undefined && max !== '';
+    if (tieneMax && valor > Number(max)) return `Fuera de rango (máx. ${Number(max)}%)`;
+    if (tieneMin && valor < Number(min)) return `Fuera de rango (mín. ${Number(min)}%)`;
+    return null;
   }
 
   corregirDatos(): void {

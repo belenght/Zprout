@@ -17,7 +17,7 @@ import { Almacen } from '../../interfaces/almacen';
 import { EstimacionVenta } from '../../interfaces/estimacion-venta';
 import { TipoDeSemilla } from '../../interfaces/catalogos';
 import { ESTADOS_LOTE } from '../../shared/estado-nombres';
-import { claseBadgeEstado } from '../../shared/estado-badge';
+import { claseBadgeEstado, claseBadgeEstadoSolido } from '../../shared/estado-badge';
 
 // Vocabularios cerrados (espejo de BackEnd/src/estado/estado_nombres.ts y pedido.entity.ts)
 const ESTADOS_PARTIDA = ['Envasado', 'Apto para comercializacion', 'Rechazado'];
@@ -117,6 +117,7 @@ export class ReportesComponent implements OnInit {
   errorMessage: string | null = null;
 
   claseBadgeEstado = claseBadgeEstado;
+  claseBadgeEstadoSolido = claseBadgeEstadoSolido;
 
   // Datos crudos: se cargan una sola vez y los filtros solo recalculan
   private lotes: Lote[] = [];

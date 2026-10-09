@@ -9,7 +9,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ESTADOS_VALIDOS = ['pendiente', 'activo', 'rechazado'] as const;
 
 function sinPassword(usuario: Usuario) {
-  const { password: _omit, ...resto } = usuario as any;
+  const { password: _omit, foto_perfil: _foto, ...resto } = usuario as any;
   return resto;
 }
 

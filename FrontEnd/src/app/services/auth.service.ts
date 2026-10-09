@@ -24,6 +24,13 @@ export class AuthService {
     );
   }
 
+  // Reemplaza el token de la sesion (ej: despues de editar el perfil, el nombre
+  // viaja dentro del JWT). Vuelve a emitir el estado para que el header se refresque.
+  setToken(token: string): void {
+    sessionStorage.setItem('token', token);
+    this.authStateService.setAuthState(true);
+  }
+
   // Registro publico (GUI-02): no devuelve token, la cuenta queda pendiente.
   registro(datos: RegistroRequest): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(`${this.apiUrl}/auth/registro`, datos);

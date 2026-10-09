@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { LoteService } from '../../services/lote.service';
 import { PartidaService } from '../../services/partida.service';
+import { claseBadgeEstadoSolido } from '../../shared/estado-badge';
 
 type EtapaControl = 'CC inicial' | 'CC intermedio' | 'CC final';
 
@@ -14,6 +15,7 @@ interface ItemBandejaCalidad {
   semilla_variedad: string;
   etapa: EtapaControl;
   estado_actual: string | null;
+  fecha: string | null;
 }
 
 @Component({
@@ -27,6 +29,7 @@ export class CalidadComponent implements OnInit {
   items: ItemBandejaCalidad[] = [];
   cargando = true;
   errorMessage: string | null = null;
+  claseBadgeEstadoSolido = claseBadgeEstadoSolido;
 
   // Fuerza el redibujado justo despues de cada subscribe: ver el mismo
   // comentario en listado-lotes.component.ts.
@@ -62,6 +65,7 @@ export class CalidadComponent implements OnInit {
             semilla_variedad: this.nombreSemilla(l.tipo_semilla),
             etapa: (l.estado_actual === 'Pendiente CC' ? 'CC inicial' : 'CC intermedio') as EtapaControl,
             estado_actual: l.estado_actual ?? null,
+            fecha: l.fecha_ingreso ?? null,
           }));
 
         // CUU06: partidas en "Envasado" esperando control final + Informe de Partida.
@@ -74,6 +78,7 @@ export class CalidadComponent implements OnInit {
             semilla_variedad: this.nombreSemilla((p.lote as any)?.tipo_semilla),
             etapa: 'CC final' as EtapaControl,
             estado_actual: p.estado_actual ?? null,
+            fecha: p.fecha_envasado ?? null,
           }));
 
         this.items = [...itemsLotes, ...itemsPartidas];

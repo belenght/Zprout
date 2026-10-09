@@ -5,7 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { PedidoService } from '../../services/pedido.service';
 import { Pedido, EstadoPedido } from '../../interfaces/pedido';
-import { claseBadgeEstado } from '../../shared/estado-badge';
+import { claseBadgeEstado, claseBadgeEstadoSolido } from '../../shared/estado-badge';
 
 type FiltroPedido = 'Todos' | 'Aprobado' | 'Pendiente de stock';
 
@@ -29,6 +29,7 @@ export class PedidosComponent implements OnInit {
   filtro: FiltroPedido = 'Todos';
 
   claseBadgeEstado = claseBadgeEstado;
+  claseBadgeEstadoSolido = claseBadgeEstadoSolido;
 
   private cd = inject(ChangeDetectorRef);
 

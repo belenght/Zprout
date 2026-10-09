@@ -7,7 +7,10 @@ import { AuthService } from '../../services/auth.service';
 import { RolRegistro } from '../../interfaces/login';
 import { etiquetaRol } from '../../shared/roles';
 
-type Modo = 'login' | 'registro';
+// 'bienvenida' = pantalla inicial del boceto ("Ya Tengo Cuenta" / "Soy Nuevo").
+// Si preferís que la app abra directo en el formulario de login, cambiá el
+// valor inicial de `modo` más abajo a 'login'.
+type Modo = 'bienvenida' | 'login' | 'registro';
 
 function passwordsIguales(group: AbstractControl): ValidationErrors | null {
   const p = group.get('password')?.value;
@@ -23,7 +26,7 @@ function passwordsIguales(group: AbstractControl): ValidationErrors | null {
   styleUrl: './login.component.css'
 })
 export class LoginComponent {
-  modo: Modo = 'login';
+  modo: Modo = 'bienvenida';
 
   form: FormGroup;
   formRegistro: FormGroup;

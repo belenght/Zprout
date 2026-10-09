@@ -37,6 +37,8 @@ export class RegistrarCuradoComponent implements OnInit {
   insumoForm: FormGroup;
   lote: Lote | null = null;
   disponibleTn = 0;
+  // Solo visual (campo "Fecha del proceso" del boceto): el backend registra la fecha.
+  readonly hoy = new Date();
   estimacionTn: number | null = null;
   insumosCatalogo: Insumo[] = [];
   insumosSeleccionados: InsumoUtilizado[] = [];
@@ -126,6 +128,10 @@ export class RegistrarCuradoComponent implements OnInit {
   private recalcularDisponible(): void {
     if (!this.lote || this.yaCuradoAcumulado == null) return;
     this.disponibleTn = Number(this.lote.cantidad_semillas_en_tn) - this.yaCuradoAcumulado;
+  }
+  // Solo visual: nombre del operario logueado (boceto: "Operario: ...").
+  get operario(): string | null {
+    return this.authService.getUserName();
   }
   get nombreSemilla(): string {
     const ts = this.lote?.tipo_semilla as any;

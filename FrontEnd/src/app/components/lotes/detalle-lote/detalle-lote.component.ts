@@ -9,6 +9,8 @@ import { LimpiezaService } from '../../../services/limpieza.service';
 import { PartidaService } from '../../../services/partida.service';
 import { AlmacenService } from '../../../services/almacen.service';
 import { EstadoService } from '../../../services/estado.service';
+import { EstimacionVentaService } from '../../../services/estimacion-venta.service';
+import { EstimacionVenta } from '../../../interfaces/estimacion-venta';
 import { Lote } from '../../../interfaces/lote';
 import { ControlDeCalidad } from '../../../interfaces/control-calidad';
 import { LimpiezaClasificacion } from '../../../interfaces/limpieza';
@@ -20,6 +22,17 @@ import { claseBadgeEstado } from '../../../shared/estado-badge';
 // Estados de Lote desde los que corresponde ofrecer "Registrar CC" (CUU02).
 // Ver BackEnd/src/estado/estado_nombres.ts (ESTADOS_LOTE).
 const ESTADOS_CON_CC_PENDIENTE = ['Pendiente CC', 'En limpieza'] as const;
+
+// Estados en los que el lote ya no avanza por el flujo normal (no hay etapa
+// "actual" en el stepper).
+const ESTADOS_TERMINALES = ['No apto', 'Venta como grano', 'Descarte'] as const;
+
+export type EstadoEtapa = 'hecho' | 'actual' | 'pendiente';
+
+export interface EtapaLote {
+  label: string;
+  estado: EstadoEtapa;
+}
 
 @Component({
   selector: 'app-detalle-lote',
@@ -35,6 +48,7 @@ export class DetalleLoteComponent implements OnInit {
   estados: EstadoHistorial[] = [];
   partidas: Partida[] = [];
   almacenes: Almacen[] = [];
+  estimacion: EstimacionVenta | null = null;
   almacenSeleccionado: number | null = null;
   asignandoAlmacen = false;
   cargando = true;
@@ -52,6 +66,7 @@ export class DetalleLoteComponent implements OnInit {
     private partidaService: PartidaService,
     private almacenService: AlmacenService,
     private estadoService: EstadoService,
+    private estimacionVentaService: EstimacionVentaService,
     private toastr: ToastrService
   ) {}
 
@@ -112,6 +127,18 @@ export class DetalleLoteComponent implements OnInit {
       },
       error: () => {
         // Historial informativo: si falla no bloquea la vista de detalle.
+      }
+    });
+
+    // Estimacion de venta del lote (tarjeta "Estimacion de venta" + etapa
+    // "Est. venta" del stepper). Filtra server-side por lote_id.
+    this.estimacionVentaService.getEstimaciones(id).subscribe({
+      next: (data) => {
+        this.estimacion = data[0] ?? null;
+        this.cd.detectChanges();
+      },
+      error: () => {
+        // Informativo: si falla, la tarjeta muestra "sin estimacion".
       }
     });
 
@@ -177,6 +204,114 @@ export class DetalleLoteComponent implements OnInit {
   get nombreSemilla(): string {
     const ts = this.lote?.tipo_semilla as any;
     return ts?.nombre_semilla ? `${ts.nombre_semilla} / ${ts.variante_semilla}` : '';
+  }
+
+  // ---- Tarjeta "Calidad inicial" -------------------------------------------
+
+  get controlInicial(): ControlDeCalidad | null {
+    return this.controles.find((c) => c.tipo_control === 'inicial') ?? null;
+  }
+
+  // ---- Tarjeta "Datos del lote" --------------------------------------------
+  // Al registrar una limpieza el backend deja en lote.cantidad_semillas_en_tn
+  // solo el volumen restante (ver limpieza_clasificacion.controller.ts), asi
+  // que lo ingresado originalmente se reconstruye como restante + merma.
+
+  get ultimaLimpieza(): LimpiezaClasificacion | null {
+    if (this.limpiezas.length === 0) return null;
+    return [...this.limpiezas].sort(
+      (a, b) => new Date(b.fecha ?? 0).getTime() - new Date(a.fecha ?? 0).getTime()
+    )[0];
+  }
+
+  get kgPostLimpieza(): number | null {
+    const l = this.ultimaLimpieza;
+    return l ? Number(l.volumen_restante_tn) : null;
+  }
+
+  get mermaTotal(): number | null {
+    if (this.limpiezas.length === 0) return null;
+    return this.limpiezas.reduce((suma, l) => suma + Number(l.merma_tn), 0);
+  }
+
+  get kgIngresados(): number | null {
+    if (!this.lote) return null;
+    if (this.kgPostLimpieza != null && this.mermaTotal != null) {
+      return this.kgPostLimpieza + this.mermaTotal;
+    }
+    return Number(this.lote.cantidad_semillas_en_tn);
+  }
+
+  // ---- Tarjeta "Estimacion de venta" ---------------------------------------
+
+  get nombreCampana(): string {
+    const c = this.estimacion?.campana as any;
+    return c?.nombre ?? '';
+  }
+
+  get volumenEstimado(): number | null {
+    return this.estimacion ? Number(this.estimacion.volumen_estimado_tn) : null;
+  }
+
+  // Volumen que ya paso a curado (suma de las partidas generadas del lote).
+  get volumenCurado(): number {
+    return this.partidas.reduce((suma, p) => suma + Number(p.volumen_en_tn), 0);
+  }
+
+  // Stock disponible: solo las bolsas de partidas ya habilitadas para venta.
+  get stockBolsas(): number {
+    return this.partidas
+      .filter((p) => p.estado_actual === 'Apto para comercializacion')
+      .reduce((suma, p) => suma + (p.cantidad_bolsas_20kg ?? 0), 0);
+  }
+
+  // ---- Stepper de etapas ----------------------------------------------------
+  // Cada etapa se marca como hecha segun los datos reales del lote; la etapa
+  // "actual" es la primera que todavia no esta hecha (salvo en estados
+  // terminales, donde el lote ya no sigue el flujo).
+
+  get etapas(): EtapaLote[] {
+    const hayControl = (tipo: string) => this.controles.some((c) => c.tipo_control === tipo);
+    const partidaEn = (...estados: string[]) =>
+      this.partidas.some((p) => estados.includes(p.estado_actual ?? ''));
+
+    const etapas: { label: string; hecha: boolean }[] = [
+      { label: 'Ingreso', hecha: !!this.lote },
+      { label: 'CC inicial', hecha: hayControl('inicial') },
+      { label: 'Limpieza', hecha: this.limpiezas.length > 0 },
+      { label: 'CC interm.', hecha: hayControl('intermedio') },
+      { label: 'Est. venta', hecha: !!this.estimacion },
+      { label: 'Curado', hecha: this.partidas.length > 0 },
+      { label: 'CC final', hecha: partidaEn('Apto para comercializacion', 'Rechazado') },
+      { label: 'Habilitado', hecha: partidaEn('Apto para comercializacion') },
+    ];
+
+    const terminal = ESTADOS_TERMINALES.includes(this.lote?.estado_actual as any);
+    const indiceActual = terminal ? -1 : etapas.findIndex((e) => !e.hecha);
+
+    return etapas.map((e, i) => ({
+      label: e.label,
+      estado: e.hecha ? 'hecho' : i === indiceActual ? 'actual' : 'pendiente',
+    }));
+  }
+
+  // ---- Estilos --------------------------------------------------------------
+
+  // Badge solido de la cabecera (boceto GUI-06: "Para curar" en dorado).
+  get claseBadgeCabecera(): string {
+    const porEstado: Record<string, string> = {
+      'Pendiente CC': 'bg-amber-500',
+      'En limpieza': 'bg-blue-600',
+      'Para curar': 'bg-gold-500',
+      'No apto': 'bg-red-600',
+      'Venta como grano': 'bg-brand-600',
+      Descarte: 'bg-red-700',
+    };
+    return porEstado[this.lote?.estado_actual ?? ''] ?? 'bg-gray-500';
+  }
+
+  claseResultado(resultado: string | null | undefined): string {
+    return resultado === 'Apto' ? 'bg-brand-100 text-brand-700' : 'bg-red-100 text-red-700';
   }
 
   get origenTexto(): string {

@@ -1,30 +1,29 @@
-<div class="mx-auto max-w-6xl px-4 py-6">
-  <div class="mb-4 flex items-center justify-between">
-    <h4 class="m-0 font-display text-xl text-brand-900">Gestion de Lotes</h4>
-    <a routerLink="/lotes/nuevo" class="rounded-md bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-800">
+<div class="mx-auto max-w-6xl px-8 py-6">
+  <div class="mb-6 flex items-center justify-between gap-4">
+    <h1 class="m-0 font-display text-3xl font-bold text-brand-hero">Gestión de Lotes</h1>
+    <a routerLink="/lotes/nuevo" class="rounded-lg bg-brand-600 px-8 py-3 font-display text-sm font-bold text-white hover:bg-brand-700">
       + Nuevo Lote
     </a>
   </div>
 
   <div *ngIf="errorMessage" class="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-red-700">{{ errorMessage }}</div>
 
-  <div class="mb-4 flex flex-wrap items-center gap-2">
+  <!-- Búsqueda + filtros por estado (solo en el front, ver el .ts) -->
+  <div class="mb-5 flex flex-wrap items-center gap-3">
     <input
       type="text"
       [(ngModel)]="busqueda"
       placeholder="Buscar lote, semilla, variedad..."
-      class="w-full max-w-xs rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+      class="w-full rounded-lg border border-sage-200 sm:w-80 bg-white px-4 py-2.5 text-sm text-gray-800 placeholder:text-sage-500 focus:outline-none focus:ring-2 focus:ring-brand-600/30"
     >
 
     <button
       type="button"
       (click)="setFiltroEstado(null)"
-      class="rounded-full px-3 py-1.5 text-sm"
-      [class.bg-brand-700]="estadoFiltro === null"
-      [class.text-white]="estadoFiltro === null"
-      [class.border]="estadoFiltro !== null"
-      [class.border-gray-300]="estadoFiltro !== null"
-      [class.text-gray-600]="estadoFiltro !== null"
+      class="rounded-lg border px-3.5 py-2 text-xs"
+      [ngClass]="estadoFiltro === null
+        ? 'border-brand-hero bg-brand-hero text-white'
+        : 'border-sage-200 bg-white text-sage-700 hover:bg-brand-50'"
     >
       Todos
     </button>
@@ -32,67 +31,66 @@
       *ngFor="let estado of estadosDisponibles"
       type="button"
       (click)="setFiltroEstado(estado)"
-      class="rounded-full px-3 py-1.5 text-sm"
-      [class.bg-brand-700]="estadoFiltro === estado"
-      [class.text-white]="estadoFiltro === estado"
-      [class.border]="estadoFiltro !== estado"
-      [class.border-gray-300]="estadoFiltro !== estado"
-      [class.text-gray-600]="estadoFiltro !== estado"
+      class="rounded-lg border px-3.5 py-2 text-xs"
+      [ngClass]="estadoFiltro === estado
+        ? 'border-brand-hero bg-brand-hero text-white'
+        : 'border-sage-200 bg-white text-sage-700 hover:bg-brand-50'"
     >
       {{ estado }}
     </button>
   </div>
 
-  <div class="overflow-hidden rounded-xl border border-brand-100">
+  <div class="overflow-hidden rounded-md border border-sage-200">
     <div class="overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead class="border-b border-brand-100 bg-brand-900 text-left text-white">
+      <table class="w-full text-center text-[13px]">
+        <thead class="bg-brand-900 text-xs text-white">
           <tr>
-            <th class="px-4 py-3">Nro Lote</th>
-            <th class="px-4 py-3">Semilla / Variedad</th>
-            <th class="px-4 py-3">Origen</th>
-            <th class="px-4 py-3">Cantidad (tn)</th>
-            <th class="px-4 py-3">Fecha ingreso</th>
-            <th class="px-4 py-3">Estado</th>
-            <th class="px-4 py-3"></th>
+            <th class="px-3 py-3 font-bold">Nro Lote</th>
+            <th class="px-3 py-3 font-bold">Semilla / Variedad</th>
+            <th class="px-3 py-3 font-bold">Origen</th>
+            <th class="px-3 py-3 font-bold">Cantidad (tn)</th>
+            <th class="px-3 py-3 font-bold">Fecha</th>
+            <th class="px-3 py-3 font-bold">Estado</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let lote of lotesFiltrados" class="border-b border-brand-50 hover:bg-brand-50">
-            <td class="px-4 py-3 font-medium text-brand-900">{{ lote.nro_lote }}</td>
-            <td class="px-4 py-3">
+          <tr
+            *ngFor="let lote of lotesFiltrados; let odd = odd"
+            [routerLink]="['/lotes', lote.id_lote]"
+            [class.bg-sage-100]="odd"
+            class="cursor-pointer border-t border-sage-200 text-gray-900 hover:bg-brand-50"
+          >
+            <td class="px-3 py-2.5">
+              <a
+                [routerLink]="['/lotes', lote.id_lote]"
+                (click)="$event.stopPropagation()"
+                class="font-bold text-brand-600 hover:underline"
+              >
+                {{ lote.nro_lote }}
+              </a>
+            </td>
+            <td class="px-3 py-2.5">
               <ng-container *ngIf="lote.tipo_semilla && $any(lote.tipo_semilla).nombre_semilla">
                 {{ $any(lote.tipo_semilla).nombre_semilla }} / {{ $any(lote.tipo_semilla).variante_semilla }}
               </ng-container>
             </td>
-            <td class="px-4 py-3">
+            <td class="px-3 py-2.5 capitalize">{{ lote.origen_semilla }}</td>
+            <td class="px-3 py-2.5">{{ lote.cantidad_semillas_en_tn | number: '1.1-1' }} tn</td>
+            <td class="px-3 py-2.5">{{ lote.fecha_ingreso | date: 'dd/MM/yy':'UTC' }}</td>
+            <td class="px-3 py-2.5">
               <span
-                class="rounded-full px-2 py-0.5 text-xs"
-                [ngClass]="lote.origen_semilla === 'propio'
-                  ? 'bg-brand-100 text-brand-800'
-                  : 'bg-gold-500/20 text-gold-500'"
+                class="inline-block min-w-[6rem] rounded-md px-3 py-1 text-center text-[11px] font-bold"
+                [ngClass]="claseBadgeEstadoSolido(lote.estado_actual)"
               >
-                {{ lote.origen_semilla }}
-              </span>
-            </td>
-            <td class="px-4 py-3">{{ lote.cantidad_semillas_en_tn }}</td>
-            <td class="px-4 py-3">{{ lote.fecha_ingreso | date: 'dd/MM/yyyy':'UTC' }}</td>
-            <td class="px-4 py-3">
-              <span class="rounded-full px-2 py-0.5 text-xs" [ngClass]="claseBadgeEstado(lote.estado_actual)">
                 {{ lote.estado_actual || 'Sin estado' }}
               </span>
             </td>
-            <td class="px-4 py-3">
-              <a [routerLink]="['/lotes', lote.id_lote]" class="inline-flex items-center gap-1 rounded-md bg-brand-700 px-3 py-1 text-xs text-white hover:bg-brand-800">
-                <i class="bi bi-eye"></i> Ver
-              </a>
-            </td>
           </tr>
           <tr *ngIf="!cargando && lotesFiltrados.length === 0">
-            <td colspan="7" class="px-4 py-6 text-center text-gray-400">No hay lotes que coincidan con la busqueda.</td>
+            <td colspan="6" class="px-4 py-6 text-center text-gray-400">No hay lotes que coincidan con la busqueda.</td>
           </tr>
           <tr *ngIf="cargando">
-            <td colspan="7" class="px-4 py-6 text-center text-gray-400">Cargando...</td>
+            <td colspan="6" class="px-4 py-6 text-center text-gray-400">Cargando...</td>
           </tr>
         </tbody>
       </table>

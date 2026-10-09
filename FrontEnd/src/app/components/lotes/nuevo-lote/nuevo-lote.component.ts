@@ -44,6 +44,9 @@ export class NuevoLoteComponent implements OnInit {
   ) {
     this.form = this.fb.group({
       origen_semilla: ['propio' as OrigenSemilla, Validators.required],
+      // Solo para elegir la variedad en el formulario (boceto: "Cultivo" y
+      // "Variedad" por separado). No se envía: el backend recibe tipo_semilla_id.
+      cultivo: [null, Validators.required],
       tipo_semilla_id: [null, Validators.required],
       cantidad_semillas_en_tn: [null, [Validators.required, Validators.min(0.01)]],
       campo_id: [null],
@@ -87,9 +90,24 @@ export class NuevoLoteComponent implements OnInit {
     this.form.get('origen_semilla')?.valueChanges.subscribe((origen) => {
       this.aplicarValidacionesPorOrigen(origen);
     });
+    // Al cambiar de cultivo, la variedad elegida deja de ser válida.
+    this.form.get('cultivo')?.valueChanges.subscribe(() => {
+      this.form.get('tipo_semilla_id')?.setValue(null);
+    });
   }
   get esExterno(): boolean {
     return this.form.get('origen_semilla')?.value === 'externo';
+  }
+
+  // Cultivos distintos del catálogo de tipos de semilla (ej: Soja, Maíz).
+  get cultivos(): string[] {
+    return Array.from(new Set(this.tiposSemilla.map((ts) => ts.nombre_semilla)));
+  }
+
+  // Variedades del cultivo elegido; cada una es un TipoDeSemilla con su id.
+  get variedades(): TipoDeSemilla[] {
+    const cultivo = this.form.get('cultivo')?.value;
+    return cultivo ? this.tiposSemilla.filter((ts) => ts.nombre_semilla === cultivo) : [];
   }
   private aplicarValidacionesPorOrigen(origen: OrigenSemilla): void {
     const campoCtrl = this.form.get('campo_id');

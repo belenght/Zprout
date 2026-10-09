@@ -1,29 +1,44 @@
-<header *ngIf="autenticado$ | async" class="sticky top-0 z-20 flex h-16 items-center justify-between bg-brand-900 px-6 text-white">
-  <a routerLink="/" class="font-display text-xl">
-    <span class="text-gold-500">Z</span>prout
+<header *ngIf="autenticado$ | async" class="sticky top-0 z-20 flex h-16 items-center justify-between bg-brand-900 px-8 text-white">
+  <a routerLink="/" class="font-display text-4xl leading-none">
+    <span class="font-bold text-gold-400">Z</span>prout
   </a>
 
   <div class="relative">
     <button
       type="button"
       (click)="toggleMenu()"
-      class="flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-sm font-semibold hover:bg-brand-500"
+      aria-label="Menú de usuario"
+      class="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-brand-400 text-sm font-bold hover:bg-brand-500"
     >
-      {{ iniciales }}
+      <img *ngIf="foto$ | async as foto; else sinFoto" [src]="foto" alt="" class="h-full w-full object-cover">
+      <ng-template #sinFoto>{{ iniciales }}</ng-template>
     </button>
 
     <div
       *ngIf="menuAbierto"
-      class="absolute right-0 top-11 w-48 rounded-md border border-brand-100 bg-white py-1 text-sm text-brand-900 shadow-lg"
+      class="absolute right-0 top-13 w-60 overflow-hidden rounded-xl border border-brand-100 bg-white text-sm text-brand-900 shadow-lg"
     >
-      <div class="border-b border-brand-100 px-3 py-2">
-        <div class="font-medium">{{ nombre }}</div>
-        <div class="text-xs text-gray-400">{{ rol }}</div>
+      <div class="flex items-center gap-3 border-b border-brand-100 bg-brand-50 px-4 py-3">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-400 text-xs font-bold text-white">
+          <img *ngIf="foto$ | async as foto; else sinFotoMenu" [src]="foto" alt="" class="h-full w-full object-cover">
+          <ng-template #sinFotoMenu>{{ iniciales }}</ng-template>
+        </span>
+        <div class="min-w-0">
+          <div class="truncate font-bold">{{ nombre }}</div>
+          <div class="text-xs capitalize text-sage-700">{{ rol }}</div>
+        </div>
       </div>
+      <a
+        routerLink="/perfil"
+        (click)="cerrarMenu()"
+        class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-brand-900 hover:bg-brand-50"
+      >
+        <i class="bi bi-person-circle"></i> Mi perfil
+      </a>
       <button
         type="button"
         (click)="logout()"
-        class="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-brand-50"
+        class="flex w-full items-center gap-2 border-0 bg-transparent px-4 py-2.5 text-left text-brand-900 hover:bg-brand-50"
       >
         <i class="bi bi-box-arrow-right"></i> Cerrar sesión
       </button>

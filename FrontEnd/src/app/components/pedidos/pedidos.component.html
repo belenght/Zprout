@@ -1,10 +1,10 @@
-<div class="mx-auto max-w-6xl px-4 py-6">
-  <div class="mb-4 flex items-center justify-between">
-    <h4 class="m-0 font-display text-xl text-brand-900">Pedidos</h4>
+<div class="mx-auto max-w-6xl px-8 py-6">
+  <div class="mb-2 flex items-center justify-between gap-4">
+    <h1 class="m-0 font-display text-3xl font-bold text-brand-hero">Pedidos</h1>
     <button
       type="button"
       (click)="nuevoPedido()"
-      class="rounded-md bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-800"
+      class="rounded-lg bg-brand-600 px-8 py-3 font-display text-sm font-bold text-white hover:bg-brand-700"
     >
       + Nuevo pedido
     </button>
@@ -12,81 +12,78 @@
 
   <div *ngIf="errorMessage" class="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-red-700">{{ errorMessage }}</div>
 
-  <div class="mb-4 flex flex-wrap items-center gap-2">
+  <div class="mb-5 mt-4 flex flex-wrap items-center gap-3">
     <input
       type="text"
       [(ngModel)]="busqueda"
       placeholder="Buscar por cliente..."
-      class="w-64 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+      class="w-full rounded-lg border border-sage-200 bg-white px-4 py-2.5 text-sm text-gray-800 placeholder:text-sage-500 focus:outline-none focus:ring-2 focus:ring-brand-600/30 sm:w-80"
     />
     <button
       type="button"
       (click)="setFiltro('Todos')"
-      class="rounded-full px-3 py-1.5 text-sm"
-      [class.bg-brand-700]="filtro === 'Todos'"
-      [class.text-white]="filtro === 'Todos'"
-      [class.border]="filtro !== 'Todos'"
-      [class.border-gray-300]="filtro !== 'Todos'"
-      [class.text-gray-600]="filtro !== 'Todos'"
+      class="rounded-lg border px-3.5 py-2 text-xs"
+      [ngClass]="filtro === 'Todos'
+        ? 'border-brand-hero bg-brand-hero text-white'
+        : 'border-sage-200 bg-white text-sage-700 hover:bg-brand-50'"
     >
       Todos
     </button>
     <button
       type="button"
       (click)="setFiltro('Aprobado')"
-      class="rounded-full px-3 py-1.5 text-sm"
-      [class.bg-brand-700]="filtro === 'Aprobado'"
-      [class.text-white]="filtro === 'Aprobado'"
-      [class.border]="filtro !== 'Aprobado'"
-      [class.border-gray-300]="filtro !== 'Aprobado'"
-      [class.text-gray-600]="filtro !== 'Aprobado'"
+      class="rounded-lg border px-3.5 py-2 text-xs"
+      [ngClass]="filtro === 'Aprobado'
+        ? 'border-brand-hero bg-brand-hero text-white'
+        : 'border-sage-200 bg-white text-sage-700 hover:bg-brand-50'"
     >
       Aprobado
     </button>
     <button
       type="button"
       (click)="setFiltro('Pendiente de stock')"
-      class="rounded-full px-3 py-1.5 text-sm"
-      [class.bg-brand-700]="filtro === 'Pendiente de stock'"
-      [class.text-white]="filtro === 'Pendiente de stock'"
-      [class.border]="filtro !== 'Pendiente de stock'"
-      [class.border-gray-300]="filtro !== 'Pendiente de stock'"
-      [class.text-gray-600]="filtro !== 'Pendiente de stock'"
+      class="rounded-lg border px-3.5 py-2 text-xs"
+      [ngClass]="filtro === 'Pendiente de stock'
+        ? 'border-brand-hero bg-brand-hero text-white'
+        : 'border-sage-200 bg-white text-sage-700 hover:bg-brand-50'"
     >
       Pendiente de stock
     </button>
   </div>
 
-  <div class="overflow-hidden rounded-xl border border-brand-100">
+  <div class="overflow-hidden rounded-md border border-sage-200">
     <div class="overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead class="bg-brand-900 text-left text-white">
+      <table class="w-full text-left text-[13px]">
+        <thead class="bg-brand-900 text-xs text-white">
           <tr>
-            <th class="px-4 py-3">Nro pedido</th>
-            <th class="px-4 py-3">Cliente</th>
-            <th class="px-4 py-3">Fecha requerida</th>
-            <th class="px-4 py-3">Estado</th>
+            <th class="px-4 py-3 font-bold">Nro pedido</th>
+            <th class="px-4 py-3 font-bold">Cliente</th>
+            <th class="px-4 py-3 font-bold">Fecha requerida</th>
+            <th class="px-4 py-3 text-center font-bold">Estado</th>
             <th class="px-4 py-3"></th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let p of pedidosFiltrados" class="border-b border-brand-50 hover:bg-brand-50">
-            <td class="px-4 py-3 font-medium text-brand-900">{{ p.nro_pedido }}</td>
-            <td class="px-4 py-3">{{ p.comprador }}</td>
-            <td class="px-4 py-3">{{ p.fecha_requerida | date: 'dd/MM/yyyy' }}</td>
-            <td class="px-4 py-3">
-              <span class="rounded-full px-2 py-0.5 text-xs" [ngClass]="claseBadgeEstado(p.estado_pedido)">
+          <tr *ngFor="let p of pedidosFiltrados; let odd = odd" [class.bg-sage-100]="odd" class="border-t border-sage-200 text-gray-900 hover:bg-brand-50">
+            <td class="px-4 py-2.5 font-bold text-brand-600">{{ p.nro_pedido }}</td>
+            <td class="px-4 py-2.5">{{ p.comprador }}</td>
+            <td class="px-4 py-2.5">{{ p.fecha_requerida | date: 'dd/MM/yy' }}</td>
+            <td class="px-4 py-2.5 text-center">
+              <span
+                class="inline-block min-w-[10rem] rounded-md px-3 py-1 text-center text-[11px] font-bold"
+                [ngClass]="claseBadgeEstadoSolido(p.estado_pedido)"
+              >
                 {{ p.estado_pedido }}
               </span>
             </td>
-            <td class="px-4 py-3">
-              <div class="flex flex-wrap gap-2">
+            <td class="px-4 py-2">
+              <div class="flex flex-wrap justify-end gap-2">
                 <button
                   *ngIf="p.estado_pedido === 'Aprobado para despacho'"
                   type="button"
                   [disabled]="procesando === p.id_pedido"
                   (click)="despachar(p)"
-                  class="rounded-md bg-brand-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-800 disabled:opacity-60"
+                  class="rounded-lg bg-brand-700 px-4 py-1.5 text-xs font-bold text-white hover:bg-brand-800 disabled:opacity-60"
                 >
                   Despachar
                 </button>
@@ -95,7 +92,7 @@
                   type="button"
                   [disabled]="procesando === p.id_pedido"
                   (click)="reintentar(p)"
-                  class="rounded-md border border-brand-300 px-3 py-1.5 text-xs font-medium text-brand-800 hover:bg-brand-50 disabled:opacity-60"
+                  class="rounded-lg border border-sage-200 bg-white px-4 py-1.5 text-xs font-bold text-brand-700 hover:bg-brand-50 disabled:opacity-60"
                 >
                   Reintentar
                 </button>
@@ -104,7 +101,7 @@
                   type="button"
                   [disabled]="procesando === p.id_pedido"
                   (click)="cancelar(p)"
-                  class="rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-60"
+                  class="rounded-lg border border-[#f3b3b3] bg-white px-4 py-1.5 text-xs font-bold text-[#9b2c2c] hover:bg-[#fbe1e1] disabled:opacity-60"
                 >
                   Cancelar
                 </button>

@@ -1,105 +1,147 @@
-<div class="mx-auto max-w-4xl px-4 py-6" *ngIf="!cargando && lote">
-  <div class="mb-1 flex items-center justify-between">
-    <h4 class="m-0 font-display text-xl text-brand-900">Registrar control de calidad</h4>
-    <span class="rounded-full px-3 py-1 text-sm" [ngClass]="claseBadgeEstado(lote.estado_actual)">
+<div class="mx-auto max-w-5xl px-8 py-8" *ngIf="!cargando && lote">
+  <h1 class="mb-5 mt-0 font-display text-3xl font-bold text-brand-900">Registrar control de calidad</h1>
+
+  <!-- Resumen del lote + estado -->
+  <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <div class="min-w-0 flex-1 rounded-lg border border-[#bfe0c6] bg-[#eaf3ea] px-4 py-3 text-xs text-brand-900">
+      <span class="mr-5">Lote: <strong>{{ lote.nro_lote }}</strong></span>
+      <span *ngIf="nombreSemilla" class="mr-5">{{ nombreSemilla }}</span>
+      <span>{{ lote.cantidad_semillas_en_tn | number: '1.1-1' }} tn {{ lote.estado_actual === 'Pendiente CC' ? 'ingresadas' : 'disponibles' }}</span>
+    </div>
+    <span
+      class="inline-block min-w-[6.5rem] rounded-md px-3 py-1.5 text-center text-[11px] font-bold"
+      [ngClass]="claseBadgeEstadoSolido(lote.estado_actual)"
+    >
       {{ lote.estado_actual || 'Sin estado' }}
     </span>
   </div>
-  <p class="mb-6 text-sm text-gray-500">{{ lote.nro_lote }} — {{ nombreSemilla }}</p>
 
   <div *ngIf="errorMessage" class="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-red-700">{{ errorMessage }}</div>
 
-  <div class="grid gap-6 lg:grid-cols-[1fr_320px]">
-    <div class="space-y-4 rounded-xl border border-brand-100 bg-white p-6">
+  <div class="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_17rem]">
+    <form [formGroup]="form" (ngSubmit)="registrar()" class="space-y-5">
+
+      <!-- Tipo de control -->
+      <div>
+        <p class="m-0 mb-1.5 text-xs font-bold text-gray-800">Tipo de control</p>
+        <div class="flex flex-wrap gap-3">
+          <label class="group flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-sage-200 bg-white px-8 py-2.5 text-sm text-gray-800 has-[:checked]:border-brand-700 has-[:checked]:bg-brand-700 has-[:checked]:font-bold has-[:checked]:text-white has-[:disabled]:cursor-default">
+            <input type="radio" class="hidden" value="inicial" formControlName="tipo_control">
+            <i class="bi bi-check-lg hidden group-has-[:checked]:inline"></i>
+            CC inicial
+          </label>
+          <label class="group flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-sage-200 bg-white px-8 py-2.5 text-sm text-gray-800 has-[:checked]:border-brand-700 has-[:checked]:bg-brand-700 has-[:checked]:font-bold has-[:checked]:text-white has-[:disabled]:cursor-default">
+            <input type="radio" class="hidden" value="intermedio" formControlName="tipo_control">
+            <i class="bi bi-check-lg hidden group-has-[:checked]:inline"></i>
+            CC intermedio
+          </label>
+        </div>
+      </div>
+
+      <div class="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label class="mb-1.5 block text-xs font-bold text-gray-800">Humedad (%)</label>
+            <input
+              type="number" step="0.01" formControlName="humedad" placeholder="Ej: 13.2" [readonly]="!!fueraDeRango"
+              class="w-full rounded-lg border px-4 py-2.5 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-600/30"
+              [ngClass]="mensajeFueraDeRango('humedad')
+                ? 'border-[#f3b3b3] bg-[#fbe1e1] text-[#9b2c2c]'
+                : 'border-sage-200 bg-sage-100 text-gray-800 focus:bg-white'"
+            >
+            <p *ngIf="mensajeFueraDeRango('humedad') as msg" class="mb-0 mt-1 text-xs text-[#9b2c2c]">
+              <i class="bi bi-exclamation-triangle-fill"></i> {{ msg }}
+            </p>
+          </div>
+          <div>
+            <label class="mb-1.5 block text-xs font-bold text-gray-800">Nivel de pureza (%)</label>
+            <input
+              type="number" step="0.01" formControlName="nivel_de_pureza" placeholder="Ej: 98.5" [readonly]="!!fueraDeRango"
+              class="w-full rounded-lg border px-4 py-2.5 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-600/30"
+              [ngClass]="mensajeFueraDeRango('nivel_de_pureza')
+                ? 'border-[#f3b3b3] bg-[#fbe1e1] text-[#9b2c2c]'
+                : 'border-sage-200 bg-sage-100 text-gray-800 focus:bg-white'"
+            >
+            <p *ngIf="mensajeFueraDeRango('nivel_de_pureza') as msg" class="mb-0 mt-1 text-xs text-[#9b2c2c]">
+              <i class="bi bi-exclamation-triangle-fill"></i> {{ msg }}
+            </p>
+          </div>
+          <div>
+            <label class="mb-1.5 block text-xs font-bold text-gray-800">Poder germinativo – PG (%)</label>
+            <input
+              type="number" step="0.01" formControlName="poder_germinativo" placeholder="Ej: 92" [readonly]="!!fueraDeRango"
+              class="w-full rounded-lg border px-4 py-2.5 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-600/30"
+              [ngClass]="mensajeFueraDeRango('poder_germinativo')
+                ? 'border-[#f3b3b3] bg-[#fbe1e1] text-[#9b2c2c]'
+                : 'border-sage-200 bg-sage-100 text-gray-800 focus:bg-white'"
+            >
+            <p *ngIf="mensajeFueraDeRango('poder_germinativo') as msg" class="mb-0 mt-1 text-xs text-[#9b2c2c]">
+              <i class="bi bi-exclamation-triangle-fill"></i> {{ msg }}
+            </p>
+          </div>
+      </div>
+
+      <div>
+        <label class="mb-1.5 block text-xs font-bold text-gray-800">Observaciones</label>
+        <textarea
+          rows="2" formControlName="descripcion" placeholder="Opcional…" [readonly]="!!fueraDeRango"
+          class="w-full rounded-lg border border-sage-200 bg-sage-100 px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/30"
+        ></textarea>
+      </div>
 
       <!-- CUU02, alternativo 3.a: parametros fuera de rango, pide confirmacion -->
-      <div *ngIf="fueraDeRango" class="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
-        <div class="mb-2 flex items-center gap-2 font-medium">
-          <i class="bi bi-exclamation-triangle"></i> Parametros fuera de rango
+      <div *ngIf="fueraDeRango" class="rounded-lg border border-[#f3b3b3] bg-[#fbe1e1] p-5 text-xs text-[#9b2c2c]">
+        <div class="mb-2 flex items-center gap-2 text-sm font-bold">
+          <i class="bi bi-exclamation-triangle-fill"></i> Parámetros fuera de rango detectados
         </div>
-        <ul class="mb-3 ml-5 list-disc">
+        <ul class="mb-3 ml-5 mt-0 list-disc">
           <li>Humedad permitida: {{ fueraDeRango.humedad[0] ?? '—' }} a {{ fueraDeRango.humedad[1] ?? '—' }}</li>
           <li>Poder germinativo permitido: {{ fueraDeRango.poder_germinativo[0] ?? '—' }} a {{ fueraDeRango.poder_germinativo[1] ?? '—' }}</li>
           <li>Nivel de pureza permitido: {{ fueraDeRango.nivel_de_pureza[0] ?? '—' }} a {{ fueraDeRango.nivel_de_pureza[1] ?? '—' }}</li>
         </ul>
-        <p class="mb-3">
-          ¿Confirmas que los valores ingresados son correctos igual? El lote quedara registrado como
-          <strong>"No apto"</strong> y el caso de uso termina en fracaso.
+        <p class="m-0">
+          Revisá los valores marcados. Si los datos son correctos podés confirmar la no aptitud del lote:
+          quedará registrado como <strong>"No apto"</strong> y el caso de uso termina en fracaso.
         </p>
-        <div class="flex gap-2">
-          <button
-            type="button"
-            (click)="corregirDatos()"
-            class="rounded-md border border-amber-400 px-3 py-1.5 text-xs font-medium text-amber-900 hover:bg-amber-100"
-          >
-            Corregir datos
-          </button>
-          <button
-            type="button"
-            [disabled]="guardando"
-            (click)="confirmarNoApto()"
-            class="rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-60"
-          >
-            Confirmar de todos modos (No apto)
-          </button>
-        </div>
       </div>
 
-      <form [formGroup]="form" (ngSubmit)="registrar()" class="space-y-4" *ngIf="!fueraDeRango">
-        <div>
-          <label class="mb-1 block text-sm font-medium text-brand-900">Tipo de control</label>
-          <select formControlName="tipo_control" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
-            <option value="inicial">Inicial</option>
-            <option value="intermedio">Intermedio</option>
-          </select>
-        </div>
+      <div *ngIf="fueraDeRango" class="flex flex-wrap gap-3 pt-1">
+        <button type="button" (click)="corregirDatos()" class="rounded-lg bg-brand-700 px-8 py-3 text-sm font-bold text-white hover:bg-brand-800">
+          Corregir datos
+        </button>
+        <button
+          type="button" [disabled]="guardando" (click)="confirmarNoApto()"
+          class="inline-flex items-center gap-2 rounded-lg border border-[#9b2c2c] bg-white px-8 py-3 text-sm font-bold text-[#9b2c2c] hover:bg-[#fbe1e1] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <span *ngIf="guardando" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-[#9b2c2c] border-t-transparent"></span>
+          Confirmar no apto
+        </button>
+      </div>
 
-        <div class="grid gap-4 sm:grid-cols-3">
-          <div>
-            <label class="mb-1 block text-sm font-medium text-brand-900">Humedad (%)</label>
-            <input type="number" step="0.01" formControlName="humedad" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-brand-900">Poder germinativo (%)</label>
-            <input type="number" step="0.01" formControlName="poder_germinativo" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-brand-900">Nivel de pureza (%)</label>
-            <input type="number" step="0.01" formControlName="nivel_de_pureza" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
-          </div>
-        </div>
+      <div *ngIf="!fueraDeRango" class="flex flex-wrap gap-3 pt-3">
+        <button type="submit" [disabled]="guardando" class="inline-flex items-center gap-2 rounded-lg bg-brand-700 px-8 py-3 text-sm font-bold text-white hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60">
+          <span *ngIf="guardando" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+          <i class="bi bi-check-lg"></i> Registrar control
+        </button>
+        <a [routerLink]="['/lotes', lote.id_lote]" class="rounded-lg border border-sage-200 bg-white px-8 py-3 text-sm text-gray-800 hover:bg-brand-50">Cancelar</a>
+      </div>
+    </form>
 
-        <div>
-          <label class="mb-1 block text-sm font-medium text-brand-900">Observaciones</label>
-          <textarea rows="2" formControlName="descripcion" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"></textarea>
-        </div>
-
-        <div class="flex gap-2 pt-2">
-          <button type="submit" [disabled]="guardando" class="inline-flex items-center gap-2 rounded-md bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60">
-            <span *ngIf="guardando" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-            <i class="bi bi-check-lg"></i> Registrar control
-          </button>
-          <a [routerLink]="['/lotes', lote.id_lote]" class="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Cancelar</a>
-        </div>
-      </form>
-    </div>
-
-    <aside class="h-fit rounded-xl border border-brand-200 bg-brand-50 p-4 text-sm text-brand-900">
-      <div class="mb-2 flex items-center gap-2 font-medium">
+    <aside class="h-fit rounded-lg border border-[#bfe0c6] bg-[#eaf3ea] p-4 text-xs text-brand-900">
+      <div class="mb-3 flex items-center gap-2 text-sm font-bold">
         <i class="bi bi-clock-history"></i> Historial de controles
       </div>
-      <ul *ngIf="historial.length > 0" class="space-y-2">
-        <li *ngFor="let c of historial" class="border-b border-brand-100 pb-2 text-xs last:border-0">
-          <div class="font-medium capitalize">{{ c.tipo_control }} — {{ c.resultado }}</div>
+      <ul *ngIf="historial.length > 0" class="m-0 list-none space-y-2 p-0">
+        <li *ngFor="let c of historial" class="border-b border-[#bfe0c6] pb-2 last:border-0">
+          <div class="font-bold capitalize">{{ c.tipo_control }} — {{ c.resultado }}</div>
           <div>H: {{ c.humedad }} · PG: {{ c.poder_germinativo }} · Pureza: {{ c.nivel_de_pureza }}</div>
-          <div class="text-gray-500">{{ c.fecha | date: 'dd/MM/yyyy HH:mm' }}</div>
+          <div class="text-sage-700">{{ c.fecha | date: 'dd/MM/yyyy HH:mm' }}</div>
         </li>
       </ul>
-      <p *ngIf="historial.length === 0" class="text-brand-700">Todavia no hay controles registrados para este lote.</p>
+      <p *ngIf="historial.length === 0" class="m-0 text-sage-700">Todavía no hay controles registrados para este lote.</p>
     </aside>
   </div>
 </div>
 
-<div class="mx-auto max-w-4xl px-4 py-6" *ngIf="cargando">
+<div class="mx-auto max-w-5xl px-8 py-8" *ngIf="cargando">
   <p class="text-gray-400">Cargando...</p>
 </div>

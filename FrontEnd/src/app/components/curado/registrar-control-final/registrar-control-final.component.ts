@@ -7,6 +7,7 @@ import { ToastrService } from 'ngx-toastr';
 import { PartidaService } from '../../../services/partida.service';
 import { Partida, RegistrarControlFinalPayload, ResultadoControlFinal } from '../../../interfaces/partida';
 import { RangosFueraDeRango } from '../../../interfaces/control-calidad';
+import { claseBadgeEstadoSolido } from '../../../shared/estado-badge';
 
 /**
  * GUI-12 - "Control de calidad final" + GUI-13 (confirmacion). CUU06.
@@ -26,6 +27,7 @@ export class RegistrarControlFinalComponent implements OnInit {
   errorMessage: string | null = null;
 
   fueraDeRango: RangosFueraDeRango | null = null;
+  claseBadgeEstadoSolido = claseBadgeEstadoSolido;
   resultado: ResultadoControlFinal | null = null;
 
   // Fuerza el redibujado justo despues de cada subscribe: ver el mismo
@@ -123,6 +125,19 @@ export class RegistrarControlFinalComponent implements OnInit {
         this.cd.detectChanges();
       }
     });
+  }
+
+  // Solo visual: marca en rojo el campo cuyo valor cae fuera del rango que
+  // devolvio el backend (409). No cambia la validacion, que sigue siendo la del backend.
+  mensajeFueraDeRango(campo: keyof RangosFueraDeRango): string | null {
+    if (!this.fueraDeRango) return null;
+    const valor = Number(this.form.get(campo)?.value);
+    const [min, max] = this.fueraDeRango[campo] ?? [];
+    const tieneMin = min !== null && min !== undefined && min !== '';
+    const tieneMax = max !== null && max !== undefined && max !== '';
+    if (tieneMax && valor > Number(max)) return `Fuera de rango (máx. ${Number(max)}%)`;
+    if (tieneMin && valor < Number(min)) return `Fuera de rango (mín. ${Number(min)}%)`;
+    return null;
   }
 
   corregirDatos(): void {
