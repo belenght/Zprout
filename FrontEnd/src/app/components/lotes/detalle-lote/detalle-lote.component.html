@@ -160,6 +160,13 @@
         Registrar limpieza →
       </a>
       <a
+        *ngIf="verControlFinal"
+        [routerLink]="['/curado/control-final', lote.partida_pendiente_cc_id]"
+        class="block rounded-lg bg-brand-700 px-4 py-3 text-center text-sm font-bold text-white hover:bg-brand-800"
+      >
+        Registrar CC final →
+      </a>
+      <a
         *ngIf="verCurado"
         [routerLink]="['/curado/registrar', lote.id_lote]"
         class="block rounded-lg bg-brand-700 px-4 py-3 text-center text-sm font-bold text-white hover:bg-brand-800"

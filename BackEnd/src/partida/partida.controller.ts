@@ -131,6 +131,21 @@ export async function registrarCurado(req: Request, res: Response) {
 
   // Alternativo 4.a: stock disponible = volumen del lote menos lo ya fraccionado en partidas previas
   const partidasPrevias = await em.find(Partida, { lote: { id_lote: lote.id_lote }, deleted_at: null });
+
+  // No se puede curar de nuevo mientras una partida del lote espere su control final.
+  if (partidasPrevias.length > 0) {
+    const pendientes = await em.count(Estado, {
+      partida: { id_partida: { $in: partidasPrevias.map((p) => p.id_partida) } },
+      nombre: 'Envasado',
+      fecha_hasta: null,
+      deleted_at: null,
+    });
+    if (pendientes > 0) {
+      return res.status(409).json({
+        error: 'El lote tiene una partida curada pendiente de control de calidad final: registralo antes de curar de nuevo',
+      });
+    }
+  }
   const yaCurado = partidasPrevias.reduce((acc, p) => acc + Number(p.volumen_en_tn), 0);
   const disponible = Number(lote.cantidad_semillas_en_tn) - yaCurado;
 

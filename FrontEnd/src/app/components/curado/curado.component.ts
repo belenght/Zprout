@@ -18,6 +18,7 @@ interface FilaCurado {
   estimacion_tn: number | null;
   vol_a_curar_sugerido: number;
   falta_cc_intermedio: boolean;
+  falta_cc_final: boolean;
 }
 
 /**
@@ -109,6 +110,8 @@ export class CuradoComponent implements OnInit {
               vol_a_curar_sugerido: estimacionTn != null ? Math.min(disponible, estimacionTn) : disponible,
               // Lote limpio al que todavia le falta el CC intermedio apto: no se puede curar.
               falta_cc_intermedio: l.proximo_paso === 'cc_intermedio',
+              // Ya tiene una partida curada esperando CC final: no se puede curar de nuevo todavia.
+              falta_cc_final: l.proximo_paso === 'cc_final',
             };
           })
           .filter((f) => f.disponible_tn > 0);
@@ -133,7 +136,7 @@ export class CuradoComponent implements OnInit {
   }
 
   get pendientesCurar(): number {
-    return this.lotesParaCurar.filter((f) => !f.falta_cc_intermedio).length;
+    return this.lotesParaCurar.filter((f) => !f.falta_cc_intermedio && !f.falta_cc_final).length;
   }
 
   registrarCurado(fila: FilaCurado): void {

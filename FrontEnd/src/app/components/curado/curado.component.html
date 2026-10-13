@@ -79,8 +79,11 @@
       <span *ngIf="fila.falta_cc_intermedio" class="rounded-md bg-amber-100 px-3 py-1.5 text-center text-[11px] font-bold text-amber-800">
         Falta el CC intermedio
       </span>
+      <span *ngIf="fila.falta_cc_final" class="rounded-md bg-amber-100 px-3 py-1.5 text-center text-[11px] font-bold text-amber-800">
+        Falta el CC final de la partida
+      </span>
       <button
-        *ngIf="auth.puede('curado.registrar') && !fila.falta_cc_intermedio"
+        *ngIf="auth.puede('curado.registrar') && !fila.falta_cc_intermedio && !fila.falta_cc_final"
         type="button"
         (click)="registrarCurado(fila)"
         class="rounded-lg bg-brand-700 px-7 py-2.5 text-xs font-bold text-white hover:bg-brand-800"

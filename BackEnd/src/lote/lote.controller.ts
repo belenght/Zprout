@@ -8,6 +8,7 @@ import { Proveedor } from '../proveedor/proveedor.entity.js';
 import { TipoDeSemilla } from '../tipo_semilla/tipo_semilla.entity.js';
 import { ControlDeCalidad, TipoControl, ResultadoControl } from '../control_calidad/control_calidad.entity.js';
 import { Estado } from '../estado/estado.entity.js';
+import { Partida } from '../partida/partida.entity.js';
 import { cambiarEstado } from '../estado/estado_helper.js';
 import { ESTADOS_LOTE } from '../estado/estado_nombres.js';
 import { Usuario } from '../usuario/usuario.entity.js';
@@ -60,6 +61,23 @@ async function conEstadoActual(em: ReturnType<typeof getEM>, lotes: Lote[]) {
   const ultimoIntermedio = new Map<number, ControlDeCalidad>();
   for (const c of intermedios) if (!ultimoIntermedio.has(c.lote!.id_lote)) ultimoIntermedio.set(c.lote!.id_lote, c);
 
+  // Partidas de cada lote: sirven para saber que sigue despues de curar
+  // (control final de la partida "Envasado") y cuanto volumen queda por curar.
+  const partidas = await em.find(Partida, { lote: { id_lote: { $in: ids } }, deleted_at: null });
+  const estadosPartida = partidas.length
+    ? await em.find(Estado, { partida: { id_partida: { $in: partidas.map((p) => p.id_partida) } }, fecha_hasta: null, deleted_at: null })
+    : [];
+  const estadoPorPartida = new Map(estadosPartida.map((e) => [e.partida?.id_partida, e.nombre]));
+  const curadoPorLote = new Map<number, number>();
+  const pendientePorLote = new Map<number, number>(); // id_lote -> id de la partida "Envasado" (espera CC final)
+  for (const p of partidas) {
+    const idLote = p.lote.id_lote;
+    curadoPorLote.set(idLote, (curadoPorLote.get(idLote) ?? 0) + Number(p.volumen_en_tn));
+    if (estadoPorPartida.get(p.id_partida) === 'Envasado' && !pendientePorLote.has(idLote)) {
+      pendientePorLote.set(idLote, p.id_partida);
+    }
+  }
+
   return lotes.map((l) => {
     const estado = mapa.get(l.id_lote) ?? null;
     const limpio = conLimpieza.has(l.id_lote);
@@ -67,10 +85,18 @@ async function conEstadoActual(em: ReturnType<typeof getEM>, lotes: Lote[]) {
     const ccInter = ult ? (ult.resultado === ResultadoControl.APTO ? 'apto' : 'no_apto') : null;
     let proximo: string | null = null;
     let puedeSegundoCC = false;
+    const partidaPendiente = pendientePorLote.get(l.id_lote) ?? null;
+    const volumenDisponible = Number(l.cantidad_semillas_en_tn) - (curadoPorLote.get(l.id_lote) ?? 0);
     if (estado === 'Pendiente CC') proximo = 'cc_inicial';
     else if (estado === 'En limpieza') proximo = 'limpieza';
     else if (estado === 'No apto') proximo = 'destino';
-    else if (estado === 'Para curar') {
+    else if (estado === 'Para curar' && partidaPendiente != null) {
+      // Ya se curo una partida y falta su control final: no se puede seguir curando.
+      proximo = 'cc_final';
+    } else if (estado === 'Para curar' && volumenDisponible <= 0) {
+      // Todo el volumen ya fue fraccionado en partidas: el seguimiento sigue en las partidas.
+      proximo = null;
+    } else if (estado === 'Para curar') {
       proximo = limpio && ccInter !== 'apto' ? 'cc_intermedio' : 'curado';
       if (limpio && ult) {
         const desde = Math.max(new Date(ult.fecha).getTime(), desdeEstado.get(l.id_lote) ?? 0);
@@ -83,6 +109,8 @@ async function conEstadoActual(em: ReturnType<typeof getEM>, lotes: Lote[]) {
       tiene_limpieza: limpio,
       cc_intermedio: ccInter,
       proximo_paso: proximo,
+      partida_pendiente_cc_id: partidaPendiente,
+      volumen_disponible_tn: volumenDisponible,
       puede_segundo_cc: puedeSegundoCC,
       dias_max_para_curar: DIAS_MAX_PARA_CURAR,
     };

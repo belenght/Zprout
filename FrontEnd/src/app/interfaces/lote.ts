@@ -22,7 +22,9 @@ export interface Lote {
   // Calculados por el backend (lote.controller.ts::conEstadoActual): proximo paso del proceso.
   tiene_limpieza?: boolean;
   cc_intermedio?: 'apto' | 'no_apto' | null;
-  proximo_paso?: 'cc_inicial' | 'limpieza' | 'cc_intermedio' | 'curado' | 'destino' | null;
+  proximo_paso?: 'cc_inicial' | 'limpieza' | 'cc_intermedio' | 'curado' | 'cc_final' | 'destino' | null;
+  partida_pendiente_cc_id?: number | null;
+  volumen_disponible_tn?: number;
   puede_segundo_cc?: boolean;
   dias_max_para_curar?: number;
 }

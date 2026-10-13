@@ -206,6 +206,10 @@ export class DetalleLoteComponent implements OnInit {
   // usuario tiene permiso (ver shared/permisos.ts).
   get verCC(): boolean { return this.puedeRegistrarCC && this.auth.puede('calidad.registrar'); }
   get verLimpieza(): boolean { return this.puedeRegistrarLimpieza && this.auth.puede('limpieza.registrar'); }
+  // Despues de curar, el siguiente paso es el CC final de la partida "Envasado" (CUU06).
+  get verControlFinal(): boolean {
+    return this.proximoPaso === 'cc_final' && !!this.lote?.partida_pendiente_cc_id && this.auth.puede('calidad.registrar');
+  }
   get verCurado(): boolean { return this.puedeRegistrarCurado && this.auth.puede('curado.registrar'); }
 
   // Un lote "No apto" espera una decision: venta como grano o descarte.
@@ -217,7 +221,7 @@ export class DetalleLoteComponent implements OnInit {
   }
 
   get puedeRegistrarAlgunaAccion(): boolean {
-    return this.verCC || this.verLimpieza || this.verCurado || this.verDestino;
+    return this.verCC || this.verLimpieza || this.verCurado || this.verControlFinal || this.verDestino;
   }
 
   // El CC es el paso principal salvo que sea el "segundo control" opcional.
@@ -235,6 +239,7 @@ export class DetalleLoteComponent implements OnInit {
         return this.puedeSegundoCC
           ? `Siguiente paso: registrar el curado (Operario de Planta). Lleva más de ${this.lote?.dias_max_para_curar} días en "Para curar": conviene un segundo control antes de curar.`
           : 'Siguiente paso: registrar el curado y envasado (Operario de Planta).';
+      case 'cc_final': return 'Siguiente paso: control de calidad final de la partida envasada (Responsable de Calidad). Hasta registrarlo no se puede curar de nuevo.';
       case 'destino': return 'El lote no es apto: falta definir su destino (venta como grano o descarte).';
       default: break;
     }
