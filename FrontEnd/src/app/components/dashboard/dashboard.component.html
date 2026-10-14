@@ -97,9 +97,9 @@
               <td class="px-3 py-2.5">
                 <span
                   class="inline-block min-w-[5.5rem] rounded-md px-3 py-1 text-center text-[11px] font-bold"
-                  [ngClass]="claseBadgeEstadoSolido(lote.estado_actual)"
+                  [ngClass]="claseBadgeLote(lote)"
                 >
-                  {{ lote.estado_actual || 'Sin estado' }}
+                  {{ etiquetaLote(lote) }}
                 </span>
               </td>
             </tr>

@@ -1,3 +1,5 @@
+import type { Lote } from '../interfaces/lote';
+
 // Vocabulario cerrado de estados de Lote (ver BackEnd/src/estado/estado_nombres.ts,
 // ESTADOS_LOTE). El front no debe inventar ni usar sinonimos: si el backend agrega
 // un estado nuevo a esa lista, agregarlo tambien aca (cae en el default si no).
@@ -62,4 +64,30 @@ const CLASE_SOLIDA_DEFAULT = GRIS;
 export function claseBadgeEstadoSolido(estado: string | null | undefined): string {
   if (!estado) return CLASE_SOLIDA_DEFAULT;
   return CLASES_SOLIDAS_POR_ESTADO[estado] ?? CLASE_SOLIDA_DEFAULT;
+}
+
+// Etiqueta de un lote en tablas (Listado, Dashboard). El estado oficial "Para curar" no
+// cambia al curar (RN), asi que el avance se deriva de lo que calcula el backend
+// (proximo_paso y volumen_disponible_tn) y se muestra en el mismo bloque del estado.
+// Los demas estados se muestran tal cual. El filtro por estado sigue usando estado_actual.
+export function etiquetaLote(lote: Lote): string {
+  const estado = lote.estado_actual;
+  if (estado !== 'Para curar') return estado || 'Sin estado';
+  const total = Number(lote.cantidad_semillas_en_tn);
+  const curado = total - Number(lote.volumen_disponible_tn ?? total);
+  if (lote.proximo_paso === 'cc_final') return 'Falta CC final';
+  if (lote.proximo_paso === 'cc_intermedio') return 'Falta CC interm.';
+  if (curado > 0 && lote.proximo_paso !== 'curado') return 'Curado completo';
+  if (curado > 0) return 'Curado parcial';
+  return 'Para curar';
+}
+
+export function claseBadgeLote(lote: Lote): string {
+  switch (etiquetaLote(lote)) {
+    case 'Curado completo': return VERDE;
+    case 'Curado parcial': return AZUL;
+    case 'Falta CC final':
+    case 'Falta CC interm.': return AMBAR;
+    default: return claseBadgeEstadoSolido(lote.estado_actual);
+  }
 }

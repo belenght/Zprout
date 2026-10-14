@@ -11,7 +11,7 @@ import { CampanaService } from '../../services/campana.service';
 import { Lote } from '../../interfaces/lote';
 import { Partida } from '../../interfaces/partida';
 import { ControlDeCalidad } from '../../interfaces/control-calidad';
-import { claseBadgeEstadoSolido } from '../../shared/estado-badge';
+import { claseBadgeEstadoSolido, claseBadgeLote, etiquetaLote } from '../../shared/estado-badge';
 
 // Evento interno para armar el panel "Actividad reciente". `soloFecha` es true
 // cuando el dato del backend no trae hora (Lote.fecha_ingreso, Partida.fecha_*
@@ -73,6 +73,8 @@ export class DashboardComponent implements OnInit {
   }
 
   claseBadgeEstadoSolido = claseBadgeEstadoSolido;
+  claseBadgeLote = claseBadgeLote;
+  etiquetaLote = etiquetaLote;
 
   ngOnInit(): void {
     this.nombreUsuario = this.authService.getUserName() ?? '';

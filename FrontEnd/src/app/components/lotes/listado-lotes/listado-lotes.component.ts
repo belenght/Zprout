@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { LoteService } from '../../../services/lote.service';
 import { Lote } from '../../../interfaces/lote';
-import { claseBadgeEstado, claseBadgeEstadoSolido } from '../../../shared/estado-badge';
+import { claseBadgeEstado, claseBadgeEstadoSolido, claseBadgeLote, etiquetaLote } from '../../../shared/estado-badge';
 import { ESTADOS_LOTE } from '../../../shared/estado-nombres';
 import { AuthService } from '../../../services/auth.service';
 import { exportarCsv, fechaCsv } from '../../../shared/exportar-csv';
@@ -29,6 +29,8 @@ export class ListadoLotesComponent implements OnInit {
   readonly estadosDisponibles = ESTADOS_LOTE;
   claseBadgeEstado = claseBadgeEstado;
   claseBadgeEstadoSolido = claseBadgeEstadoSolido;
+  claseBadgeLote = claseBadgeLote;
+  etiquetaLote = etiquetaLote;
 
   // Fuerza el redibujado justo despues de que el subscribe actualiza el
   // estado del componente. En algunos entornos (ciertas extensiones de
