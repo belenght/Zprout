@@ -42,6 +42,11 @@
    `font:` que material-theme.scss deja en el body. */
 body {
   font-family: var(--font-sans);
+  /* material-theme.scss deja body con height:100%: el body mide solo el alto de la
+     ventana y el header/sidebar con position:sticky se sueltan al pasar ese alto.
+     Con height:auto el body crece con el contenido y el sticky funciona siempre. */
+  height: auto;
+  min-height: 100%;
 }
 
 /* ---- Informes imprimibles (window.print) ----

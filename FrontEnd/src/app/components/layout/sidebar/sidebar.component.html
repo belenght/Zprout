@@ -1,4 +1,4 @@
-<aside *ngIf="autenticado$ | async" class="hidden w-52 shrink-0 border-r border-brand-100 bg-brand-50 px-3 py-4 sm:block">
+<aside *ngIf="autenticado$ | async" class="sticky top-16 hidden h-[calc(100vh-4rem)] w-52 shrink-0 self-start overflow-y-auto border-r border-brand-100 bg-brand-50 px-3 py-4 sm:block">
   <nav class="space-y-1.5">
     <ng-container *ngFor="let item of itemsVisibles">
       <a
