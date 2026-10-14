@@ -14,8 +14,11 @@ interface StockVariedad {
   tipoSemillaId: number;
   semilla: string;
   variedad: string;
-  aGranelTn: number;
-  envasadoBolsas: number;
+  aGranelTn: number; // disponible: lo que todavia no se curo
+  aGranelTotalTn: number; // total ingresado en lotes a granel
+  envasadoBolsas: number; // bolsas disponibles (aptas menos las asignadas a pedidos)
+  envasadoAptasBolsas: number; // bolsas aptas en total
+  comprometidasBolsas: number; // asignadas a pedidos
   estado: 'Disponible' | 'Stock bajo' | 'Sin stock';
 }
 
@@ -69,23 +72,27 @@ export class AlmacenComponent implements OnInit {
       next: ({ almacenes, lotes, partidas }) => {
         this.almacenes = almacenes;
 
-        const aGranel = new Map<number, { semilla: string; variedad: string; tn: number }>();
+        const aGranel = new Map<number, { semilla: string; variedad: string; tn: number; total: number }>();
         for (const l of lotes) {
           if (!ESTADOS_LOTE_A_GRANEL.includes(l.estado_actual ?? '')) continue;
           const ts = l.tipo_semilla as any;
           if (!ts?.id_semilla) continue;
-          const acc = aGranel.get(ts.id_semilla) ?? { semilla: ts.nombre_semilla, variedad: ts.variante_semilla, tn: 0 };
-          acc.tn += Number(l.cantidad_semillas_en_tn);
+          const acc = aGranel.get(ts.id_semilla) ?? { semilla: ts.nombre_semilla, variedad: ts.variante_semilla, tn: 0, total: 0 };
+          // Disponible = total del lote menos lo ya curado en partidas (lo calcula el backend).
+          acc.tn += Number(l.volumen_disponible_tn ?? l.cantidad_semillas_en_tn);
+          acc.total += Number(l.cantidad_semillas_en_tn);
           aGranel.set(ts.id_semilla, acc);
         }
 
-        const envasado = new Map<number, { semilla: string; variedad: string; bolsas: number }>();
+        const envasado = new Map<number, { semilla: string; variedad: string; bolsas: number; aptas: number; comprometidas: number }>();
         for (const p of partidas) {
           if (p.estado_actual !== 'Apto para comercializacion') continue;
           const ts = (p.lote as any)?.tipo_semilla;
           if (!ts?.id_semilla) continue;
-          const acc = envasado.get(ts.id_semilla) ?? { semilla: ts.nombre_semilla, variedad: ts.variante_semilla, bolsas: 0 };
-          acc.bolsas += p.cantidad_bolsas_20kg ?? 0;
+          const acc = envasado.get(ts.id_semilla) ?? { semilla: ts.nombre_semilla, variedad: ts.variante_semilla, bolsas: 0, aptas: 0, comprometidas: 0 };
+          acc.aptas += p.cantidad_bolsas_20kg ?? 0;
+          acc.comprometidas += p.bolsas_comprometidas ?? 0;
+          acc.bolsas += p.bolsas_disponibles ?? p.cantidad_bolsas_20kg ?? 0;
           envasado.set(ts.id_semilla, acc);
         }
 
@@ -100,7 +107,10 @@ export class AlmacenComponent implements OnInit {
             semilla: g?.semilla ?? e?.semilla ?? '',
             variedad: g?.variedad ?? e?.variedad ?? '',
             aGranelTn,
+            aGranelTotalTn: g?.total ?? 0,
             envasadoBolsas,
+            envasadoAptasBolsas: e?.aptas ?? 0,
+            comprometidasBolsas: e?.comprometidas ?? 0,
             estado: envasadoBolsas > 0 ? 'Disponible' : aGranelTn > 0 ? 'Stock bajo' : 'Sin stock',
           };
         });
@@ -195,8 +205,8 @@ export class AlmacenComponent implements OnInit {
   exportarStock(): void {
     exportarCsv(
       'stock-por-variedad',
-      ['Semilla', 'Variedad', 'A granel (tn)', 'Envasado (bolsas)', 'Estado'],
-      this.stockPorVariedad.map((s) => [s.semilla, s.variedad, s.aGranelTn, s.envasadoBolsas, s.estado]),
+      ['Semilla', 'Variedad', 'A granel disponible (tn)', 'A granel total (tn)', 'Envasado disponible (bolsas)', 'Envasado apto (bolsas)', 'En pedidos (bolsas)', 'Estado'],
+      this.stockPorVariedad.map((s) => [s.semilla, s.variedad, s.aGranelTn, s.aGranelTotalTn, s.envasadoBolsas, s.envasadoAptasBolsas, s.comprometidasBolsas, s.estado]),
     );
   }
 }

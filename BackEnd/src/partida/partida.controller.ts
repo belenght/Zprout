@@ -7,6 +7,7 @@ import { Insumo } from '../insumo/insumo.entity.js';
 import { PartidaInsumo } from '../partida_insumo/partida_insumo.entity.js';
 import { ControlDeCalidad, TipoControl, ResultadoControl } from '../control_calidad/control_calidad.entity.js';
 import { Estado } from '../estado/estado.entity.js';
+import { PedidoDetalle } from '../pedido_detalle/pedido_detalle.entity.js';
 import { cambiarEstado } from '../estado/estado_helper.js';
 import { reintentarPendientes } from '../pedido/pedido.controller.js';
 import { Usuario } from '../usuario/usuario.entity.js';
@@ -25,7 +26,23 @@ async function conEstadoActual(em: ReturnType<typeof getEM>, partidas: Partida[]
   const ids = partidas.map((p) => p.id_partida);
   const abiertos = await em.find(Estado, { partida: { id_partida: { $in: ids } }, fecha_hasta: null, deleted_at: null });
   const mapa = new Map(abiertos.map((e) => [e.partida?.id_partida, e.nombre]));
-  return partidas.map((p) => ({ ...wrap(p).toJSON(), estado_actual: mapa.get(p.id_partida) ?? null }));
+  // Bolsas ya asignadas a pedidos (una Partida puede repartirse entre varios renglones).
+  // Un pedido cancelado libera sus asignaciones (ver cancelarPedido), asi que aca no cuenta.
+  const asignadas = await em.find(PedidoDetalle, { partida_asignada: { id_partida: { $in: ids } }, deleted_at: null }, { populate: ['partida_asignada'] });
+  const comprometidas = new Map<number, number>();
+  for (const d of asignadas) {
+    const idPartida = d.partida_asignada!.id_partida;
+    comprometidas.set(idPartida, (comprometidas.get(idPartida) ?? 0) + (d.cantidad_asignada_bolsas ?? 0));
+  }
+  return partidas.map((p) => {
+    const comp = comprometidas.get(p.id_partida) ?? 0;
+    return {
+      ...wrap(p).toJSON(),
+      estado_actual: mapa.get(p.id_partida) ?? null,
+      bolsas_comprometidas: comp,
+      bolsas_disponibles: Math.max((p.cantidad_bolsas_20kg ?? 0) - comp, 0),
+    };
+  });
 }
 
 export async function listarPartidas(req: Request, res: Response) {

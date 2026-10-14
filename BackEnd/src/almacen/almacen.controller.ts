@@ -2,13 +2,14 @@ import type { Request, Response } from 'express';
 import { getEM } from '../shared/db/orm.js';
 import { Almacen, TipoAlmacen } from './almacen.entity.js';
 import { Lote } from '../lote/lote.entity.js';
+import { Partida } from '../partida/partida.entity.js';
 
 const CAPACIDAD_MIN = 0.01;
 
 /**
  * "Ocupado" no es una columna propia de Almacen: se calcula sumando lo que
  * hay hoy asignado ahi (ver Lote.almacen, seteado via PATCH /lotes/:id/almacen).
- * Solo se suma Lote -- el Modelo de Dominio (ver Copia_de_Modelo_de_dominio_Zprout)
+ * Se suma lo que queda a granel de cada Lote (total menos lo ya curado en Partidas). Solo Lote -- el Modelo de Dominio (ver Copia_de_Modelo_de_dominio_Zprout)
  * no define ninguna relacion entre Partida y Almacen, asi que no se inventa una
  * aca: los almacenes de tipo 'deposito' (pensados para bolsas ya envasadas)
  * no tienen forma de calcular ocupacion real hasta que esa relacion se agregue
@@ -18,10 +19,19 @@ async function conOcupacion(em: ReturnType<typeof getEM>, almacenes: Almacen[]) 
   if (almacenes.length === 0) return [];
   const ids = almacenes.map((a) => a.id_almacen);
   const lotes = await em.find(Lote, { almacen: { id_almacen: { $in: ids } }, deleted_at: null }, { populate: ['almacen'] });
+  // Lo que ya se curo pasa a bolsas y deja de ocupar el almacen a granel:
+  // se resta el volumen de las partidas generadas de cada lote.
+  const partidas = lotes.length
+    ? await em.find(Partida, { lote: { id_lote: { $in: lotes.map((l) => l.id_lote) } }, deleted_at: null })
+    : [];
+  const curadoPorLote = new Map<number, number>();
+  for (const p of partidas) curadoPorLote.set(p.lote.id_lote, (curadoPorLote.get(p.lote.id_lote) ?? 0) + Number(p.volumen_en_tn));
+
   const tnPorAlmacen = new Map<number, number>();
   for (const lote of lotes) {
     const id = lote.almacen!.id_almacen;
-    tnPorAlmacen.set(id, (tnPorAlmacen.get(id) ?? 0) + Number(lote.cantidad_semillas_en_tn));
+    const aGranel = Math.max(Number(lote.cantidad_semillas_en_tn) - (curadoPorLote.get(lote.id_lote) ?? 0), 0);
+    tnPorAlmacen.set(id, (tnPorAlmacen.get(id) ?? 0) + aGranel);
   }
   return almacenes.map((a) => ({ ...a, ocupado_tn: tnPorAlmacen.get(a.id_almacen) ?? 0 }));
 }

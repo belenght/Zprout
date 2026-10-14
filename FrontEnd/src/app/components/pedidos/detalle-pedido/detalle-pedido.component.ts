@@ -4,10 +4,18 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { PedidoService } from '../../../services/pedido.service';
 import { DetallePedidoCompleto, Pedido } from '../../../interfaces/pedido';
+import { Partida } from '../../../interfaces/partida';
 import { AuthService } from '../../../services/auth.service';
 import { claseBadgeEstadoSolido } from '../../../shared/estado-badge';
 
 const KG_POR_BOLSA = 20;
+
+interface RenglonPedido {
+  semilla: string;
+  pedidoKg: number;
+  asignaciones: { partida: Partida; bolsas: number; kg: number }[];
+  asignadoKg: number;
+}
 
 /**
  * Detalle de un pedido (CUU07): que pidio el cliente, cuanto y cuando, y que
@@ -65,16 +73,31 @@ export class DetallePedidoComponent implements OnInit {
     return ts?.nombre_semilla ? `${ts.nombre_semilla} / ${ts.variante_semilla}` : '—';
   }
 
+  // El backend guarda un renglon por partida asignada y repite en cada uno la cantidad
+  // pedida completa (ver gestionarPedido). Se agrupa por semilla para no contarla de mas.
+  get renglones(): RenglonPedido[] {
+    const grupos = new Map<number, RenglonPedido>();
+    for (const d of this.data?.detalle ?? []) {
+      const id = (d.tipo_semilla as any)?.id_semilla ?? 0;
+      let g = grupos.get(id);
+      if (!g) {
+        g = { semilla: this.nombreSemilla(d), pedidoKg: Number(d.cantidad_solicitada_kg), asignaciones: [], asignadoKg: 0 };
+        grupos.set(id, g);
+      }
+      if (d.partida_asignada && d.cantidad_asignada_bolsas) {
+        g.asignaciones.push({ partida: d.partida_asignada, bolsas: d.cantidad_asignada_bolsas, kg: d.cantidad_asignada_bolsas * KG_POR_BOLSA });
+        g.asignadoKg += d.cantidad_asignada_bolsas * KG_POR_BOLSA;
+      }
+    }
+    return Array.from(grupos.values());
+  }
+
   get totalSolicitadoKg(): number {
-    return (this.data?.detalle ?? []).reduce((acc, d) => acc + Number(d.cantidad_solicitada_kg), 0);
+    return this.renglones.reduce((acc, r) => acc + r.pedidoKg, 0);
   }
 
   get totalAsignadoKg(): number {
-    return (this.data?.detalle ?? []).reduce((acc, d) => acc + (d.cantidad_asignada_bolsas ?? 0) * KG_POR_BOLSA, 0);
-  }
-
-  kgAsignados(d: { cantidad_asignada_bolsas?: number }): number {
-    return (d.cantidad_asignada_bolsas ?? 0) * KG_POR_BOLSA;
+    return this.renglones.reduce((acc, r) => acc + r.asignadoKg, 0);
   }
 
   private aplicar(actualizado: Pedido, mensaje: string): void {

@@ -68,26 +68,28 @@
             <tr>
               <th class="px-4 py-3 font-bold">Semilla / Variedad</th>
               <th class="px-4 py-3 text-right font-bold">Cantidad pedida</th>
-              <th class="px-4 py-3 font-bold">Partida asignada</th>
-              <th class="px-4 py-3 text-right font-bold">Bolsas (20 kg)</th>
-              <th class="px-4 py-3 text-right font-bold">Kg asignados</th>
+              <th class="px-4 py-3 font-bold">Partidas asignadas</th>
+              <th class="px-4 py-3 text-right font-bold">Total asignado</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let d of data.detalle; let odd = odd" [class.bg-sage-100]="odd" class="border-t border-sage-200 text-gray-900">
-              <td class="px-4 py-2.5 font-bold">{{ nombreSemilla(d) }}</td>
-              <td class="px-4 py-2.5 text-right">{{ d.cantidad_solicitada_kg | number: '1.0-2' }} kg</td>
+            <tr *ngFor="let r of renglones; let odd = odd" [class.bg-sage-100]="odd" class="border-t border-sage-200 align-top text-gray-900">
+              <td class="px-4 py-2.5 font-bold">{{ r.semilla }}</td>
+              <td class="px-4 py-2.5 text-right">{{ r.pedidoKg | number: '1.0-2' }} kg</td>
               <td class="px-4 py-2.5">
-                <a *ngIf="d.partida_asignada" [routerLink]="['/calidad/partidas', d.partida_asignada.id_partida]" class="font-bold text-brand-700 hover:underline">
-                  {{ d.partida_asignada.nro_partida }}
-                </a>
-                <span *ngIf="!d.partida_asignada" class="text-gray-400">Sin asignar (falta stock)</span>
+                <div *ngFor="let a of r.asignaciones">
+                  <a [routerLink]="['/calidad/partidas', a.partida.id_partida]" class="font-bold text-brand-700 hover:underline">{{ a.partida.nro_partida }}</a>
+                  <span class="text-gray-500"> · {{ a.bolsas }} bolsas ({{ a.kg | number: '1.0-2' }} kg)</span>
+                </div>
+                <span *ngIf="r.asignaciones.length === 0" class="text-gray-400">Sin asignar</span>
+                <div *ngIf="r.asignaciones.length > 0 && r.asignadoKg < r.pedidoKg" class="text-[11px] text-amber-700">
+                  Falta cubrir {{ r.pedidoKg - r.asignadoKg | number: '1.0-2' }} kg (falta stock)
+                </div>
               </td>
-              <td class="px-4 py-2.5 text-right">{{ d.cantidad_asignada_bolsas ?? '—' }}</td>
-              <td class="px-4 py-2.5 text-right">{{ d.cantidad_asignada_bolsas ? (kgAsignados(d) | number: '1.0-2') + ' kg' : '—' }}</td>
+              <td class="px-4 py-2.5 text-right">{{ r.asignadoKg > 0 ? (r.asignadoKg | number: '1.0-2') + ' kg' : '—' }}</td>
             </tr>
-            <tr *ngIf="data.detalle.length === 0">
-              <td colspan="5" class="px-4 py-6 text-center text-gray-400">Este pedido no tiene renglones.</td>
+            <tr *ngIf="renglones.length === 0">
+              <td colspan="4" class="px-4 py-6 text-center text-gray-400">Este pedido no tiene renglones.</td>
             </tr>
           </tbody>
         </table>

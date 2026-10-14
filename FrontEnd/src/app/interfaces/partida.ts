@@ -12,6 +12,9 @@ export interface Partida {
   fecha_envasado?: string;
   lote: Lote | number;
   estado_actual?: string | null;
+  // Calculados por el backend (partida.controller.ts::conEstadoActual)
+  bolsas_comprometidas?: number;
+  bolsas_disponibles?: number;
 }
 
 // Body que espera POST /api/partidas/curado (CUU05)
@@ -51,4 +54,3 @@ export interface ResultadoControlFinal {
   informe_generado: boolean;
   informe_de_partida?: InformeDePartida;
 }
-

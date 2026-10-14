@@ -1,6 +1,6 @@
 <div class="mx-auto max-w-6xl px-8 py-6">
   <h1 class="m-0 mb-1 font-display text-3xl font-bold text-brand-hero">Almacén</h1>
-  <p class="mb-6 mt-0 text-xs italic text-sage-500">Vista de solo lectura sobre el stock que ya gestionan Lotes / Curado / CC final.</p>
+  <p class="mb-6 mt-0 text-xs italic text-sage-500">Vista de solo lectura sobre el stock disponible que ya gestionan Lotes / Curado / CC final / Pedidos.</p>
 
   <div *ngIf="errorMessage" class="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-red-700">{{ errorMessage }}</div>
 
@@ -41,8 +41,8 @@
           <tr>
             <th class="px-4 py-3 font-bold">Semilla</th>
             <th class="px-4 py-3 font-bold">Variedad</th>
-            <th class="px-4 py-3 font-bold">A granel</th>
-            <th class="px-4 py-3 font-bold">Envasado</th>
+            <th class="px-4 py-3 font-bold">A granel (disponible)</th>
+            <th class="px-4 py-3 font-bold">Envasado (disponible)</th>
             <th class="px-4 py-3 font-bold">Estado</th>
           </tr>
         </thead>
@@ -50,8 +50,16 @@
           <tr *ngFor="let s of stockPorVariedad; let odd = odd" [class.bg-sage-100]="odd" class="border-t border-sage-200 text-gray-900 hover:bg-brand-50">
             <td class="px-4 py-2.5">{{ s.semilla }}</td>
             <td class="px-4 py-2.5">{{ s.variedad }}</td>
-            <td class="px-4 py-2.5">{{ s.aGranelTn > 0 ? (s.aGranelTn + ' tn') : '—' }}</td>
-            <td class="px-4 py-2.5">{{ s.envasadoBolsas > 0 ? (s.envasadoBolsas + ' bolsas') : '—' }}</td>
+            <td class="px-4 py-2.5">
+              {{ s.aGranelTn > 0 ? ((s.aGranelTn | number: '1.0-2') + ' tn') : '—' }}
+              <div *ngIf="s.aGranelTotalTn > 0" class="text-[10px] text-sage-500">de {{ s.aGranelTotalTn | number: '1.0-2' }} tn ingresadas</div>
+            </td>
+            <td class="px-4 py-2.5">
+              {{ s.envasadoBolsas > 0 ? (s.envasadoBolsas + ' bolsas') : '—' }}
+              <div *ngIf="s.envasadoAptasBolsas > 0" class="text-[10px] text-sage-500">
+                {{ s.envasadoAptasBolsas }} aptas · {{ s.comprometidasBolsas }} en pedidos
+              </div>
+            </td>
             <td class="px-4 py-2.5">
               <span
                 class="inline-block min-w-[6rem] rounded-md px-3 py-1 text-center text-[11px] font-bold"

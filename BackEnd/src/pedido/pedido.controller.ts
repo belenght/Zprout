@@ -174,6 +174,14 @@ export async function cancelarPedido(req: Request, res: Response) {
     });
   }
 
+  // Libera las bolsas que habia reservado de forma parcial: un pedido cancelado
+  // no debe seguir restando stock. El renglon se conserva (que se habia pedido).
+  const renglones = await em.find(PedidoDetalle, { pedido: { id_pedido: pedido.id_pedido }, deleted_at: null });
+  for (const r of renglones) {
+    (r as any).partida_asignada = null;
+    (r as any).cantidad_asignada_bolsas = null;
+  }
+
   pedido.estado_pedido = EstadoPedido.CANCELADO;
   await em.flush();
   res.json(pedido);
