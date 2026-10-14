@@ -1,0 +1,101 @@
+<div class="mx-auto max-w-6xl px-8 py-6">
+  <div *ngIf="cargando" class="rounded-lg border border-sage-200 bg-white p-6 text-center text-gray-400">Cargando...</div>
+  <div *ngIf="errorMessage" class="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-red-700">{{ errorMessage }}</div>
+
+  <ng-container *ngIf="data && pedido as p">
+    <!-- Cabecera: nro de pedido + cliente + estado -->
+    <div class="mb-6 flex flex-wrap items-center gap-5">
+      <h1 class="m-0 font-display text-3xl font-bold text-brand-900">{{ p.nro_pedido }} — {{ p.comprador }}</h1>
+      <span class="rounded-md px-4 py-1.5 text-xs font-bold" [ngClass]="claseBadgeEstadoSolido(p.estado_pedido)">
+        {{ p.estado_pedido }}
+      </span>
+    </div>
+
+    <section class="mb-8 grid gap-5 lg:grid-cols-[1fr_280px]">
+      <!-- Datos del pedido -->
+      <article class="rounded-xl border border-brand-100 bg-white p-5">
+        <h2 class="mb-4 text-sm font-bold text-brand-900">Datos del pedido</h2>
+        <div class="grid gap-x-8 gap-y-1.5 text-[13px] text-gray-800 sm:grid-cols-2">
+          <p class="m-0">Cliente: <b>{{ p.comprador }}</b></p>
+          <p class="m-0">Tipo: <span class="capitalize">{{ p.tipo }}</span></p>
+          <p class="m-0">Fecha del pedido: {{ p.fecha_pedido | date: 'dd/MM/yyyy':'UTC' }}</p>
+          <p class="m-0">Fecha requerida: {{ p.fecha_requerida | date: 'dd/MM/yyyy':'UTC' }}</p>
+          <p class="m-0">Total solicitado: {{ totalSolicitadoKg | number: '1.0-2' }} kg</p>
+          <p class="m-0">Total asignado: {{ totalAsignadoKg | number: '1.0-2' }} kg</p>
+        </div>
+      </article>
+
+      <!-- Acciones (mismas reglas que el listado) -->
+      <div class="flex flex-col gap-3">
+        <ng-container *ngIf="auth.puede('pedidos.gestionar')">
+          <button
+            *ngIf="p.estado_pedido === 'Aprobado para despacho'"
+            type="button"
+            [disabled]="procesando"
+            (click)="despachar()"
+            class="rounded-lg bg-brand-700 px-4 py-3 text-sm font-bold text-white hover:bg-brand-800 disabled:opacity-60"
+          >
+            Despachar
+          </button>
+          <button
+            *ngIf="p.estado_pedido === 'Pendiente de stock'"
+            type="button"
+            [disabled]="procesando"
+            (click)="reintentar()"
+            class="rounded-lg border border-brand-700 bg-white px-4 py-3 text-sm font-bold text-brand-800 hover:bg-brand-50 disabled:opacity-60"
+          >
+            Reintentar asignación
+          </button>
+          <button
+            *ngIf="p.estado_pedido === 'Pendiente de stock'"
+            type="button"
+            [disabled]="procesando"
+            (click)="cancelar()"
+            class="rounded-lg border border-[#f3b3b3] bg-white px-4 py-3 text-sm font-bold text-[#9b2c2c] hover:bg-[#fbe1e1] disabled:opacity-60"
+          >
+            Cancelar pedido
+          </button>
+        </ng-container>
+      </div>
+    </section>
+
+    <!-- Que pidio el cliente y cuanto -->
+    <article class="rounded-xl border border-brand-100 bg-white p-5">
+      <h2 class="mb-4 text-sm font-bold text-brand-900">Detalle del pedido</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-[13px]">
+          <thead class="bg-brand-900 text-xs text-white">
+            <tr>
+              <th class="px-4 py-3 font-bold">Semilla / Variedad</th>
+              <th class="px-4 py-3 text-right font-bold">Cantidad pedida</th>
+              <th class="px-4 py-3 font-bold">Partida asignada</th>
+              <th class="px-4 py-3 text-right font-bold">Bolsas (20 kg)</th>
+              <th class="px-4 py-3 text-right font-bold">Kg asignados</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let d of data.detalle; let odd = odd" [class.bg-sage-100]="odd" class="border-t border-sage-200 text-gray-900">
+              <td class="px-4 py-2.5 font-bold">{{ nombreSemilla(d) }}</td>
+              <td class="px-4 py-2.5 text-right">{{ d.cantidad_solicitada_kg | number: '1.0-2' }} kg</td>
+              <td class="px-4 py-2.5">
+                <a *ngIf="d.partida_asignada" [routerLink]="['/calidad/partidas', d.partida_asignada.id_partida]" class="font-bold text-brand-700 hover:underline">
+                  {{ d.partida_asignada.nro_partida }}
+                </a>
+                <span *ngIf="!d.partida_asignada" class="text-gray-400">Sin asignar (falta stock)</span>
+              </td>
+              <td class="px-4 py-2.5 text-right">{{ d.cantidad_asignada_bolsas ?? '—' }}</td>
+              <td class="px-4 py-2.5 text-right">{{ d.cantidad_asignada_bolsas ? (kgAsignados(d) | number: '1.0-2') + ' kg' : '—' }}</td>
+            </tr>
+            <tr *ngIf="data.detalle.length === 0">
+              <td colspan="5" class="px-4 py-6 text-center text-gray-400">Este pedido no tiene renglones.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </ng-container>
+
+  <a routerLink="/pedidos" class="mt-8 inline-flex items-center gap-1 text-[13px] text-brand-700 hover:underline">
+    <i class="bi bi-arrow-left"></i> Volver al listado
+  </a>
+</div>

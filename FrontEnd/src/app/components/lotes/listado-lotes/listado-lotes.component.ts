@@ -26,7 +26,18 @@ export class ListadoLotesComponent implements OnInit {
   // el backend (ver estado_nombres.ts) para no inventar sinonimos.
   busqueda = '';
   estadoFiltro: string | null = null;
-  readonly estadosDisponibles = ESTADOS_LOTE;
+  // Los botones coinciden con lo que muestra la etiqueta de cada fila (ver etiquetaLote):
+  // "Para curar" = todavia sin curar; el avance de curado se filtra con sus propias opciones.
+  readonly estadosDisponibles: string[] = [
+    ...ESTADOS_LOTE.filter((e) => e !== 'No apto' && e !== 'Venta como grano' && e !== 'Descarte'),
+    'Curado parcial',
+    'Curado completo',
+    'Falta CC interm.',
+    'Falta CC final',
+    'No apto',
+    'Venta como grano',
+    'Descarte',
+  ];
   claseBadgeEstado = claseBadgeEstado;
   claseBadgeEstadoSolido = claseBadgeEstadoSolido;
   claseBadgeLote = claseBadgeLote;
@@ -69,7 +80,7 @@ export class ListadoLotesComponent implements OnInit {
   get lotesFiltrados(): Lote[] {
     const texto = this.busqueda.trim().toLowerCase();
     return this.lotes.filter((lote) => {
-      if (this.estadoFiltro && lote.estado_actual !== this.estadoFiltro) {
+      if (this.estadoFiltro && etiquetaLote(lote) !== this.estadoFiltro) {
         return false;
       }
       if (!texto) return true;

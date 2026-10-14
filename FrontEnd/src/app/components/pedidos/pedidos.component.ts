@@ -80,6 +80,10 @@ export class PedidosComponent implements OnInit {
     });
   }
 
+  verDetalle(p: Pedido): void {
+    this.router.navigate(['/pedidos', p.id_pedido]);
+  }
+
   nuevoPedido(): void {
     this.router.navigate(['/pedidos/nuevo']);
   }

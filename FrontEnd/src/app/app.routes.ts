@@ -13,6 +13,7 @@ import { RegistrarCuradoComponent } from './components/curado/registrar-curado/r
 import { RegistrarControlFinalComponent } from './components/curado/registrar-control-final/registrar-control-final.component';
 import { AlmacenComponent } from './components/almacen/almacen.component';
 import { PedidosComponent } from './components/pedidos/pedidos.component';
+import { DetallePedidoComponent } from './components/pedidos/detalle-pedido/detalle-pedido.component';
 import { GestionarPedidoComponent } from './components/pedidos/gestionar-pedido/gestionar-pedido.component';
 import { ReportesComponent } from './components/reportes/reportes.component';
 import { CatalogosComponent } from './components/catalogos/catalogos.component';
@@ -59,6 +60,7 @@ export const routes: Routes = [
       // Modulo Pedidos (CUU07)
       { path: 'pedidos', component: PedidosComponent },
       { path: 'pedidos/nuevo', component: GestionarPedidoComponent, canActivate: [RoleGuard], data: { roles: [ROL_ADMIN, ROL_COMERCIAL] } },
+      { path: 'pedidos/:id', component: DetallePedidoComponent },
 
       // Mi perfil (cualquier usuario logueado)
       { path: 'perfil', component: PerfilComponent },
