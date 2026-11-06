@@ -7,6 +7,8 @@ import { Partida } from '../partida/partida.entity.js';
 import { Estado } from '../estado/estado.entity.js';
 
 const KG_POR_BOLSA = 20;
+// Tope por item (en kg). Mismo limite que el front (1000 tn).
+const MAX_KG_POR_ITEM = 1_000_000;
 
 export async function listarPedidos(req: Request, res: Response) {
   const em = getEM();
@@ -39,14 +41,26 @@ async function stockDisponiblePorVariedad(em: any, tipoSemillaId: number) {
     { populate: ['lote'], orderBy: { fecha_envasado: 'ASC' } },
   );
 
+  if (partidas.length === 0) return [];
+
+  // Rendimiento: antes eran 2 consultas por partida (N+1). Ahora son 2 en total
+  // para todas las partidas de la variedad, y se cruzan en memoria.
+  const ids = partidas.map((p) => p.id_partida);
+  const estadosAbiertos: Estado[] = await em.find(Estado, { partida: { id_partida: { $in: ids } }, fecha_hasta: null, deleted_at: null });
+  const estadoPorPartida = new Map<number, string>();
+  for (const e of estadosAbiertos) if (e.partida) estadoPorPartida.set(e.partida.id_partida, e.nombre);
+
+  const asignaciones: PedidoDetalle[] = await em.find(PedidoDetalle, { partida_asignada: { id_partida: { $in: ids } }, deleted_at: null });
+  const comprometidasPorPartida = new Map<number, number>();
+  for (const d of asignaciones) {
+    const idPartida = d.partida_asignada!.id_partida;
+    comprometidasPorPartida.set(idPartida, (comprometidasPorPartida.get(idPartida) ?? 0) + (d.cantidad_asignada_bolsas ?? 0));
+  }
+
   const aptas: { partida: Partida; bolsasDisponibles: number }[] = [];
   for (const partida of partidas) {
-    const estado = await em.findOne(Estado, { partida: partida.id_partida, fecha_hasta: null, deleted_at: null });
-    if (estado?.nombre !== 'Apto para comercializacion') continue;
-
-    const comprometidas = await em.find(PedidoDetalle, { partida_asignada: { id_partida: partida.id_partida }, deleted_at: null });
-    const bolsasComprometidas = comprometidas.reduce((acc: number, d: PedidoDetalle) => acc + (d.cantidad_asignada_bolsas ?? 0), 0);
-    const bolsasDisponibles = (partida.cantidad_bolsas_20kg ?? 0) - bolsasComprometidas;
+    if (estadoPorPartida.get(partida.id_partida) !== 'Apto para comercializacion') continue;
+    const bolsasDisponibles = (partida.cantidad_bolsas_20kg ?? 0) - (comprometidasPorPartida.get(partida.id_partida) ?? 0);
     if (bolsasDisponibles > 0) aptas.push({ partida, bolsasDisponibles });
   }
   return aptas;
@@ -70,6 +84,28 @@ export async function gestionarPedido(req: Request, res: Response) {
   }
   if (!Object.values(TipoPedido).includes(tipo)) {
     return res.status(400).json({ error: `tipo debe ser uno de: ${Object.values(TipoPedido).join(', ')}` });
+  }
+
+  // fecha_requerida: fecha valida y no anterior a hoy.
+  const fechaReq = new Date(fecha_requerida);
+  if (Number.isNaN(fechaReq.getTime())) {
+    return res.status(400).json({ error: 'fecha_requerida no es una fecha valida' });
+  }
+  const hoy = new Date();
+  const hoyUtc = Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+  const reqUtc = Date.UTC(fechaReq.getUTCFullYear(), fechaReq.getUTCMonth(), fechaReq.getUTCDate());
+  if (reqUtc < hoyUtc) {
+    return res.status(400).json({ error: 'fecha_requerida no puede ser anterior a hoy' });
+  }
+  // Cada item: variedad + cantidad numerica > 0 y dentro del tope.
+  for (const item of items) {
+    const kg = Number(item?.cantidad_solicitada_kg);
+    if (!item?.tipo_semilla_id || !Number.isFinite(kg) || kg <= 0) {
+      return res.status(400).json({ error: 'Cada item necesita tipo_semilla_id y una cantidad_solicitada_kg mayor a 0' });
+    }
+    if (kg > MAX_KG_POR_ITEM) {
+      return res.status(400).json({ error: `La cantidad por item no puede superar ${MAX_KG_POR_ITEM / 1000} tn` });
+    }
   }
 
   const nroPedido = `PED-${Date.now()}`;
@@ -310,12 +346,22 @@ export async function demandaCurado(_req: Request, res: Response) {
     bolsas_faltantes: number; pedidos: Set<string>; pedido_mas_antiguo: Date | null; fecha_requerida_mas_proxima: Date | null;
   }>();
 
+  // Rendimiento: un solo find para el detalle de todos los pedidos pendientes.
+  const detallesPendientes: PedidoDetalle[] = pendientes.length
+    ? await em.find(
+        PedidoDetalle,
+        { pedido: { id_pedido: { $in: pendientes.map((p) => p.id_pedido) } }, deleted_at: null },
+        { populate: ['tipo_semilla'] },
+      )
+    : [];
+  const detallePorPedido = new Map<number, PedidoDetalle[]>();
+  for (const d of detallesPendientes) {
+    const k = d.pedido.id_pedido;
+    detallePorPedido.set(k, [...(detallePorPedido.get(k) ?? []), d]);
+  }
+
   for (const pedido of pendientes) {
-    const detalle: PedidoDetalle[] = await em.find(
-      PedidoDetalle,
-      { pedido: { id_pedido: pedido.id_pedido }, deleted_at: null },
-      { populate: ['tipo_semilla'] },
-    );
+    const detalle: PedidoDetalle[] = detallePorPedido.get(pedido.id_pedido) ?? [];
     const porTipo = new Map<number, { ts: TipoDeSemilla; kg: number; asignadas: number }>();
     for (const d of detalle) {
       const acc = porTipo.get(d.tipo_semilla.id_semilla) ?? { ts: d.tipo_semilla, kg: Number(d.cantidad_solicitada_kg), asignadas: 0 };
@@ -340,13 +386,18 @@ export async function demandaCurado(_req: Request, res: Response) {
   // Toneladas a granel esperando curado, por variedad.
   const paraCurar: Estado[] = await em.find(Estado, { nombre: 'Para curar', fecha_hasta: null, deleted_at: null }, { populate: ['lote', 'lote.tipo_semilla'] });
   const tnPorVariedad = new Map<number, number>();
+  const idsLotes = paraCurar.filter((e) => e.lote && !e.lote.deleted_at).map((e) => e.lote!.id_lote);
+  const partidasDeLotes: Partida[] = idsLotes.length
+    ? await em.find(Partida, { lote: { id_lote: { $in: idsLotes } }, deleted_at: null })
+    : [];
+  const curadoPorLote = new Map<number, number>();
+  for (const p of partidasDeLotes) curadoPorLote.set(p.lote.id_lote, (curadoPorLote.get(p.lote.id_lote) ?? 0) + Number(p.volumen_en_tn));
   for (const e of paraCurar) {
     const lote = e.lote;
     if (!lote || lote.deleted_at) continue;
     const id = lote.tipo_semilla.id_semilla;
     // Disponible = volumen del lote menos lo ya fraccionado en partidas (igual que la pantalla de Curado).
-    const partidas = await em.find(Partida, { lote: { id_lote: lote.id_lote }, deleted_at: null });
-    const yaCurado = partidas.reduce((acc, p) => acc + Number(p.volumen_en_tn), 0);
+    const yaCurado = curadoPorLote.get(lote.id_lote) ?? 0;
     const disponible = Math.max(Number(lote.cantidad_semillas_en_tn) - yaCurado, 0);
     tnPorVariedad.set(id, (tnPorVariedad.get(id) ?? 0) + disponible);
   }

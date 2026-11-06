@@ -83,6 +83,19 @@
         Falta el CC final de la partida
       </span>
       <button
+        *ngIf="auth.puede('estimaciones.gestionar') && loteEditando !== fila.loteId"
+        type="button"
+        (click)="abrirEstimacion(fila)"
+        class="rounded-lg border border-sage-200 bg-white px-5 py-2.5 text-xs font-bold text-brand-700 hover:bg-brand-50"
+      >
+        {{ fila.estimacion_tn != null ? 'Editar estimación' : 'Cargar estimación' }}
+      </button>
+      <form *ngIf="loteEditando === fila.loteId" (ngSubmit)="guardarEstimacion(fila)" class="flex items-center gap-2">
+        <input type="number" step="0.01" min="0.01" name="volumenEstimado" [(ngModel)]="volumenEstimado" placeholder="tn" class="w-24 rounded-lg border border-sage-200 bg-sage-100 px-3 py-2 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/30">
+        <button type="submit" [disabled]="guardandoEstimacion" class="rounded-lg bg-brand-700 px-4 py-2 text-xs font-bold text-white hover:bg-brand-800 disabled:opacity-60">Guardar</button>
+        <button type="button" (click)="cancelarEstimacion()" class="rounded-lg border border-sage-200 bg-white px-3 py-2 text-xs text-gray-800 hover:bg-brand-50">Cancelar</button>
+      </form>
+      <button
         *ngIf="auth.puede('curado.registrar') && !fila.falta_cc_intermedio && !fila.falta_cc_final"
         type="button"
         (click)="registrarCurado(fila)"

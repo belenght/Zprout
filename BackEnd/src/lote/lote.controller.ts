@@ -235,6 +235,7 @@ export async function registrarIngresoLote(req: Request, res: Response) {
       nivel_de_pureza: '0',
       descripcion: 'CC inicial superado automaticamente por origen externo (informe de proveedor adjunto).',
       lote,
+      usuario,
     });
     em.persist(ccAutomatico);
     // 4.a.3: saltea clasificacion y curado -> directo a la cola de CC final,

@@ -18,4 +18,11 @@ export class EstimacionVentaService {
     const url = loteId ? `${this.apiUrl}?lote_id=${loteId}` : this.apiUrl;
     return this.http.get<EstimacionVenta[]>(url).pipe(catchError(handleHttpError));
   }
+  
+  // CUU04/CUU05: carga una estimacion de venta para un lote en la campaña indicada.
+    crearEstimacion(loteId: number, campanaId: number, volumenTn: number): Observable<EstimacionVenta> {
+    return this.http
+      .post<EstimacionVenta>(this.apiUrl, { lote_id: loteId, campana_id: campanaId, volumen_estimado_tn: volumenTn })
+      .pipe(catchError(handleHttpError));
+  }
 }

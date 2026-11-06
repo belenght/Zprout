@@ -9,6 +9,7 @@ export interface LimpiezaClasificacion {
   merma_tn: string;
   observaciones?: string;
   fecha?: string;
+  operario?: { nombre: string; apellido: string } | null;
 }
 
 // Body que espera POST /api/limpiezas (CUU03)

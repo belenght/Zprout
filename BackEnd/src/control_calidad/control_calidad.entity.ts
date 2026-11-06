@@ -3,6 +3,7 @@ import { Entity, PrimaryKey, Property, ManyToOne, Enum } from '@mikro-orm/decora
 import { OptionalProps } from '@mikro-orm/core';
 import { Lote } from '../lote/lote.entity.js';
 import { Partida } from '../partida/partida.entity.js';
+import { Usuario } from '../usuario/usuario.entity.js';
 
 export enum TipoControl {
   INICIAL = 'inicial',
@@ -48,6 +49,10 @@ export class ControlDeCalidad {
 
   @ManyToOne(() => Partida, { nullable: true })
   partida?: Partida;
+
+  // Quién registró el control (trazabilidad: fecha + usuario).
+  @ManyToOne(() => Usuario, { nullable: true })
+  usuario?: Usuario;
 
   @Property({ type: 'datetime' })
   created_at: Date = new Date();

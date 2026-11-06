@@ -106,7 +106,10 @@ export class RegistrarCuradoComponent implements OnInit {
     });
     this.estimacionVentaService.getEstimaciones(loteId).subscribe({
       next: (estimaciones) => {
-        const ultima = estimaciones.sort((a, b) => (a.fecha_carga! < b.fecha_carga! ? 1 : -1))[0];
+        // La mas reciente: por fecha de carga y, si es el mismo dia, por id mas alto.
+        const ultima = [...estimaciones].sort((a, b) =>
+          (a.fecha_carga! < b.fecha_carga! ? 1 : a.fecha_carga! > b.fecha_carga! ? -1 : (b.id_estimacion ?? 0) - (a.id_estimacion ?? 0))
+        )[0];
         this.estimacionTn = ultima ? Number(ultima.volumen_estimado_tn) : null;
         if (this.estimacionTn != null && !this.form.value.volumen_a_curar_tn) {
           this.form.patchValue({ volumen_a_curar_tn: Math.min(this.estimacionTn, this.disponibleTn || this.estimacionTn) });
@@ -210,6 +213,10 @@ export class RegistrarCuradoComponent implements OnInit {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       this.toastr.warning('Revisa los campos marcados en rojo antes de guardar', 'Formulario incompleto');
+      return;
+    }
+    if (this.excedeDisponible) {
+      this.toastr.warning('El volumen supera el stock disponible del lote', 'Volumen excedido');
       return;
     }
     if (this.insumosSeleccionados.length === 0) {

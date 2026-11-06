@@ -58,6 +58,47 @@ async function clientesDePartida(em: EM, idPartida: number) {
     }));
 }
 
+/** Version en lote de clientesDePartida: una sola consulta para varias partidas. */
+async function clientesDePartidas(em: EM, ids: number[]) {
+  const mapa = new Map<number, ReturnType<typeof dtoCliente>[]>();
+  if (ids.length === 0) return mapa;
+  const detalles = await em.find(
+    PedidoDetalle,
+    { partida_asignada: { id_partida: { $in: ids } }, deleted_at: null },
+    { populate: ['pedido'] },
+  );
+  for (const d of detalles) {
+    if (d.pedido.deleted_at || d.pedido.estado_pedido === 'Cancelado') continue;
+    const k = d.partida_asignada!.id_partida;
+    mapa.set(k, [...(mapa.get(k) ?? []), dtoCliente(d)]);
+  }
+  return mapa;
+}
+
+function dtoCliente(d: PedidoDetalle) {
+  return {
+    id_pedido: d.pedido.id_pedido,
+    nro_pedido: d.pedido.nro_pedido,
+    comprador: d.pedido.comprador,
+    estado_pedido: d.pedido.estado_pedido,
+    fecha_pedido: d.pedido.fecha_pedido,
+    bolsas: d.cantidad_asignada_bolsas ?? 0,
+  };
+}
+
+/** Estado actual de varias partidas en una sola consulta (el abierto; si no hay, el ultimo). */
+async function estadosActualesDePartidas(em: EM, ids: number[]) {
+  const mapa = new Map<number, string>();
+  if (ids.length === 0) return mapa;
+  const todos = await em.find(Estado, { partida: { id_partida: { $in: ids } }, deleted_at: null }, { orderBy: { fecha_desde: 'ASC' } });
+  // Orden ascendente: el ultimo que se escribe en el mapa es el mas reciente; el abierto pisa a los cerrados.
+  for (const e of todos) {
+    const k = e.partida!.id_partida;
+    if (e.fecha_hasta == null || !mapa.has(k)) mapa.set(k, e.nombre);
+  }
+  return mapa;
+}
+
 export async function buscar(req: Request, res: Response) {
   const em = getEM();
   const q = String(req.query.q ?? '').trim();
@@ -99,18 +140,31 @@ export async function porLote(req: Request, res: Response) {
   const estados = await em.find(Estado, { lote: { id_lote: lote.id_lote }, deleted_at: null }, { orderBy: { fecha_desde: 'ASC' }, populate: ['usuario'] });
   const partidas = await em.find(Partida, { lote: { id_lote: lote.id_lote }, deleted_at: null }, { orderBy: { id_partida: 'ASC' } });
 
+  // Rendimiento: controles y clientes de todas las partidas en 2 consultas (antes, 2+ por partida).
+  const idsPartidas = partidas.map((p) => p.id_partida);
+  const controlesTodas = idsPartidas.length
+    ? await em.find(ControlDeCalidad, { partida: { id_partida: { $in: idsPartidas } }, deleted_at: null }, { orderBy: { fecha: 'ASC' } })
+    : [];
+  const controlesPorPartida = new Map<number, ControlDeCalidad[]>();
+  for (const c of controlesTodas) {
+    const k = c.partida!.id_partida;
+    controlesPorPartida.set(k, [...(controlesPorPartida.get(k) ?? []), c]);
+  }
+  const clientesPorPartida = await clientesDePartidas(em, idsPartidas);
+  const estadoPorPartida = await estadosActualesDePartidas(em, idsPartidas);
+
   const partidasDto = [];
   for (const p of partidas) {
-    const controlesFinal = await em.find(ControlDeCalidad, { partida: { id_partida: p.id_partida }, deleted_at: null }, { orderBy: { fecha: 'ASC' } });
+    const controlesFinal = controlesPorPartida.get(p.id_partida) ?? [];
     partidasDto.push({
       id_partida: p.id_partida,
       nro_partida: p.nro_partida,
       volumen_en_tn: Number(p.volumen_en_tn),
       cantidad_bolsas_20kg: p.cantidad_bolsas_20kg ?? 0,
       fecha_envasado: p.fecha_envasado ?? null,
-      estado_actual: await estadoActualDe(em, { partida: p.id_partida }),
+      estado_actual: estadoPorPartida.get(p.id_partida) ?? null,
       controles: controlesFinal.map(resumenControl),
-      clientes: await clientesDePartida(em, p.id_partida),
+      clientes: clientesPorPartida.get(p.id_partida) ?? [],
     });
   }
 
@@ -172,13 +226,22 @@ export async function porCliente(req: Request, res: Response) {
   if (!nombre) return res.status(400).json({ error: 'nombre es requerido' });
 
   const pedidos = await em.find(Pedido, { comprador: nombre, deleted_at: null }, { orderBy: { fecha_pedido: 'DESC' } });
+  // Rendimiento: todos los renglones de todos los pedidos del cliente en una consulta.
+  const todosDetalles = pedidos.length
+    ? await em.find(
+        PedidoDetalle,
+        { pedido: { id_pedido: { $in: pedidos.map((p) => p.id_pedido) } }, deleted_at: null },
+        { populate: ['tipo_semilla', 'partida_asignada', 'partida_asignada.lote'] },
+      )
+    : [];
+  const detallesPorPedido = new Map<number, PedidoDetalle[]>();
+  for (const d of todosDetalles) {
+    const k = d.pedido.id_pedido;
+    detallesPorPedido.set(k, [...(detallesPorPedido.get(k) ?? []), d]);
+  }
   const dto = [];
   for (const pedido of pedidos) {
-    const detalles = await em.find(
-      PedidoDetalle,
-      { pedido: { id_pedido: pedido.id_pedido }, deleted_at: null },
-      { populate: ['tipo_semilla', 'partida_asignada', 'partida_asignada.lote'] },
-    );
+    const detalles = detallesPorPedido.get(pedido.id_pedido) ?? [];
     dto.push({
       id_pedido: pedido.id_pedido, nro_pedido: pedido.nro_pedido, fecha_pedido: pedido.fecha_pedido,
       estado_pedido: pedido.estado_pedido,

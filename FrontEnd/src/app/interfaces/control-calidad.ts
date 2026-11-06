@@ -17,6 +17,7 @@ export interface ControlDeCalidad {
   // listarControles popula lote (+ tipo_semilla) o partida segun el tipo de control
   lote?: Lote | number | null;
   partida?: Partida | number | null;
+  usuario?: { nombre: string; apellido: string } | null;
 }
 
 // Body que espera POST /api/controles-calidad/lote (CUU02, sobre Lote:

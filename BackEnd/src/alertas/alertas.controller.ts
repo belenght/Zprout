@@ -100,7 +100,7 @@ export async function listarAlertas(_req: Request, res: Response) {
         tipo: 'partida_sin_cc_final',
         severidad: 'media',
         mensaje: `Partida ${e.partida.nro_partida} envasada hace ${d} dias sin control final`,
-        ruta: `/partidas/${e.partida.id_partida}`,
+        ruta: `/calidad/partidas/${e.partida.id_partida}`,
         id: e.partida.id_partida,
         dias: d,
       });

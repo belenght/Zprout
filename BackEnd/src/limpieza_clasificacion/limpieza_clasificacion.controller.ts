@@ -13,7 +13,7 @@ export async function listarLimpiezasPorLote(req: Request, res: Response) {
   const registros = await em.find(
     LimpiezaClasificacion,
     { lote: { id_lote: Number(req.params.loteId) }, deleted_at: null },
-    { orderBy: { fecha: 'ASC' } },
+    { populate: ['operario'], orderBy: { fecha: 'ASC' } },
   );
   res.json(registros);
 }

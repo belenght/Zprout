@@ -3,7 +3,7 @@
   <div class="mb-6 flex flex-wrap items-center gap-5">
     <h1 class="m-0 font-display text-3xl font-bold text-brand-900">{{ lote.nro_lote }} — {{ nombreSemilla }}</h1>
     <span class="rounded-md px-4 py-1.5 text-xs font-bold text-white" [ngClass]="claseBadgeCabecera">
-      {{ lote.estado_actual || 'Sin estado' }}
+      {{ etiquetaCabecera }}
     </span>
   </div>
 
@@ -114,6 +114,7 @@
               <th class="px-2.5 py-2 font-semibold">PG</th>
               <th class="px-2.5 py-2 font-semibold">Pureza</th>
               <th class="px-2.5 py-2 font-semibold">Resultado</th>
+              <th class="px-2.5 py-2 font-semibold">Registró</th>
             </tr>
           </thead>
           <tbody>
@@ -129,11 +130,12 @@
                   [ngClass]="claseResultado(c.resultado)"
                 >
                   {{ c.resultado }}
+                   <td class="px-2.5 py-1.5 text-gray-600">{{ c.usuario ? c.usuario.nombre + ' ' + c.usuario.apellido : '—' }}</td>
                 </span>
               </td>
             </tr>
             <tr *ngIf="controles.length === 0">
-              <td colspan="6" class="px-2.5 py-4 text-center text-gray-400">
+               <td colspan="7" class="px-2.5 py-4 text-center text-gray-400">
                 Todavía no hay controles de calidad registrados.
               </td>
             </tr>
@@ -259,6 +261,7 @@
           Vol. restante: <strong>{{ l.volumen_restante_tn | number: '1.1-1' }} tn</strong> · Merma:
           <strong>{{ l.merma_tn | number: '1.1-1' }} tn</strong>
           <span class="text-gray-500"> ({{ l.fecha | date: 'dd/MM/yyyy':'UTC' }})</span>
+                    <div *ngIf="l.operario" class="text-gray-500">Operario: {{ l.operario.nombre }} {{ l.operario.apellido }}</div>
           <div *ngIf="l.observaciones" class="text-gray-500">{{ l.observaciones }}</div>
         </li>
       </ul>

@@ -98,7 +98,7 @@
         </div>
 
         <div class="flex flex-wrap gap-3 pt-2">
-          <button type="submit" [disabled]="guardando" class="inline-flex items-center gap-2 rounded-lg bg-brand-700 px-8 py-3 text-sm font-bold text-white hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60">
+          <button type="submit" [disabled]="guardando || excedeDisponible" class="inline-flex items-center gap-2 rounded-lg bg-brand-700 px-8 py-3 text-sm font-bold text-white hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60">
             <span *ngIf="guardando" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
             <i class="bi bi-check-lg"></i> Confirmar curado
           </button>

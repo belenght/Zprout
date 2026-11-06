@@ -15,7 +15,7 @@ export async function listarControlesPorLote(req: Request, res: Response) {
   const controles = await em.find(
     ControlDeCalidad,
     { lote: { id_lote: Number(req.params.loteId) }, deleted_at: null },
-    { orderBy: { fecha: 'ASC' } },
+    { populate: ['usuario'], orderBy: { fecha: 'ASC' } },
   );
   res.json(controles);
 }
@@ -142,6 +142,7 @@ export async function registrarControlCalidadLote(req: Request, res: Response) {
     humedad: String(humedadNum), poder_germinativo: String(pgNum), nivel_de_pureza: String(purezaNum),
     descripcion,
     lote,
+    usuario,
   });
   em.persist(control);
 

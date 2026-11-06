@@ -1,6 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormGroup, FormArray, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { PedidoService } from '../../../services/pedido.service';
@@ -8,6 +8,18 @@ import { PartidaService } from '../../../services/partida.service';
 import { TipoSemillaService } from '../../../services/tipo-semilla.service';
 import { TipoDeSemilla } from '../../../interfaces/catalogos';
 import { GestionarPedidoPayload, ResultadoGestionarPedido, TipoPedido } from '../../../interfaces/pedido';
+
+// Tope por item (tn): evita cargar cantidades absurdas por error de tipeo. Mismo valor en el backend.
+export const MAX_TN_POR_ITEM = 1000;
+
+// La fecha requerida de entrega no puede ser anterior a hoy.
+function fechaNoPasada(control: AbstractControl): ValidationErrors | null {
+  const v = control.value;
+  if (!v) return null;
+  const hoy = new Date();
+  const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+  return String(v) < hoyStr ? { fechaPasada: true } : null;
+}
 
 /**
  * GUI-17 - "Gestionar pedido" (Nuevo pedido) + GUI-18 (confirmacion). CUU07.
@@ -22,6 +34,9 @@ import { GestionarPedidoPayload, ResultadoGestionarPedido, TipoPedido } from '..
 export class GestionarPedidoComponent implements OnInit {
   form: FormGroup;
   tiposSemilla: TipoDeSemilla[] = [];
+  readonly maxTn = MAX_TN_POR_ITEM;
+  // Fecha minima del selector (hoy, en horario local).
+  readonly hoyIso = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
 
   // Kg aptos "para comercializacion" por tipo_semilla_id. Aproximado: suma
   // el stock de partidas ya envasadas y con CC final aprobado, SIN restar lo
@@ -47,7 +62,7 @@ export class GestionarPedidoComponent implements OnInit {
   ) {
     this.form = this.fb.group({
       comprador: ['', Validators.required],
-      fecha_requerida: ['', Validators.required],
+      fecha_requerida: ['', [Validators.required, fechaNoPasada]],
       tipo: ['hibrida' as TipoPedido, Validators.required],
       items: this.fb.array([this.crearItem()]),
     });
@@ -93,7 +108,7 @@ export class GestionarPedidoComponent implements OnInit {
   private crearItem(): FormGroup {
     return this.fb.group({
       tipo_semilla_id: [null, Validators.required],
-      cantidad_tn: [null, [Validators.required, Validators.min(0.01)]],
+      cantidad_tn: [null, [Validators.required, Validators.min(0.01), Validators.max(MAX_TN_POR_ITEM)]],
     });
   }
 

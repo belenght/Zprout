@@ -290,6 +290,7 @@ export async function registrarControlFinalYGenerarInforme(req: Request, res: Re
     resultado: dentroDeRango ? ResultadoControl.APTO : ResultadoControl.NO_APTO,
     humedad: String(humedadNum), poder_germinativo: String(pgNum), nivel_de_pureza: String(purezaNum),
     partida,
+    usuario,
   });
   em.persist(control);
 

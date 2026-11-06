@@ -18,7 +18,7 @@ import { Partida } from '../../../interfaces/partida';
 import { EstadoHistorial } from '../../../interfaces/estado';
 import { Almacen } from '../../../interfaces/almacen';
 import { AuthService } from '../../../services/auth.service';
-import { claseBadgeEstado } from '../../../shared/estado-badge';
+import { claseBadgeEstado, etiquetaLote } from '../../../shared/estado-badge';
 
 // Estados en los que el lote ya no avanza por el flujo normal (no hay etapa
 // "actual" en el stepper).
@@ -401,6 +401,10 @@ export class DetalleLoteComponent implements OnInit {
 
   // ---- Estilos --------------------------------------------------------------
 
+  get etiquetaCabecera(): string {
+    return this.lote ? etiquetaLote(this.lote) : 'Sin estado';
+  }
+  
   // Badge solido de la cabecera (boceto GUI-06: "Para curar" en dorado).
   get claseBadgeCabecera(): string {
     const porEstado: Record<string, string> = {

@@ -1,10 +1,13 @@
 import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { ToastrService } from 'ngx-toastr';
 import { forkJoin } from 'rxjs';
 import { LoteService } from '../../services/lote.service';
 import { PartidaService } from '../../services/partida.service';
 import { EstimacionVentaService } from '../../services/estimacion-venta.service';
+import { CampanaService } from '../../services/campana.service';
 import { DemandaCuradoService } from '../../services/extras.service';
 import { AuthService } from '../../services/auth.service';
 import { DemandaCurado } from '../../interfaces/extras';
@@ -27,7 +30,7 @@ interface FilaCurado {
 @Component({
   selector: 'app-curado',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './curado.component.html',
   styleUrl: './curado.component.css'
 })
@@ -36,6 +39,10 @@ export class CuradoComponent implements OnInit {
   partidasEnProcesoDeEnvasado = 0;
   // Demanda insatisfecha: pedidos "Pendiente de stock" agrupados por variedad.
   demanda: DemandaCurado[] = [];
+  // Carga de estimacion de venta (inline, por lote).
+  loteEditando: number | null = null;
+  volumenEstimado: number | null = null;
+  guardandoEstimacion = false;
   cargando = true;
   errorMessage: string | null = null;
 
@@ -49,6 +56,8 @@ export class CuradoComponent implements OnInit {
     private estimacionVentaService: EstimacionVentaService,
     private router: Router,
     private demandaService: DemandaCuradoService,
+    private campanaService: CampanaService,
+    private toastr: ToastrService,
     public auth: AuthService
   ) {}
 
@@ -98,7 +107,10 @@ export class CuradoComponent implements OnInit {
               .reduce((acc, p) => acc + Number(p.volumen_en_tn), 0);
             const disponible = Number(l.cantidad_semillas_en_tn) - yaCurado;
 
-            const estimacion = estimaciones.find((e) => (e.lote as any)?.id_lote === l.id_lote);
+            // La estimacion mas reciente del lote (id mas alto).
+            const estimacion = estimaciones
+              .filter((e) => (e.lote as any)?.id_lote === l.id_lote)
+              .sort((a, b) => (b.id_estimacion ?? 0) - (a.id_estimacion ?? 0))[0];
             const estimacionTn = estimacion ? Number(estimacion.volumen_estimado_tn) : null;
 
             return {
@@ -137,6 +149,47 @@ export class CuradoComponent implements OnInit {
 
   get pendientesCurar(): number {
     return this.lotesParaCurar.filter((f) => !f.falta_cc_intermedio && !f.falta_cc_final).length;
+  }
+
+  abrirEstimacion(fila: FilaCurado): void {
+    this.loteEditando = fila.loteId;
+    this.volumenEstimado = fila.estimacion_tn;
+  }
+
+  cancelarEstimacion(): void {
+    this.loteEditando = null;
+    this.volumenEstimado = null;
+  }
+
+  guardarEstimacion(fila: FilaCurado): void {
+    const vol = Number(this.volumenEstimado);
+    if (!Number.isFinite(vol) || vol <= 0) {
+      this.toastr.warning('Ingresá un volumen mayor a 0', 'Dato inválido');
+      return;
+    }
+    this.guardandoEstimacion = true;
+    this.campanaService.getCampanaVigente().subscribe({
+      next: (campana) => {
+        this.estimacionVentaService.crearEstimacion(fila.loteId, campana.id_campana, vol).subscribe({
+          next: () => {
+            this.guardandoEstimacion = false;
+            this.toastr.success(`Estimación de ${vol} tn cargada para ${fila.nro_lote}`, 'Registrada');
+            this.cancelarEstimacion();
+            this.cargarListado();
+          },
+          error: (err) => {
+            this.guardandoEstimacion = false;
+            this.toastr.error(err.message, 'No se pudo cargar la estimación');
+            this.cd.detectChanges();
+          }
+        });
+      },
+      error: () => {
+        this.guardandoEstimacion = false;
+        this.toastr.error('No hay una campaña vigente. Marcá una como vigente antes de cargar estimaciones.', 'Sin campaña');
+        this.cd.detectChanges();
+      }
+    });
   }
 
   registrarCurado(fila: FilaCurado): void {

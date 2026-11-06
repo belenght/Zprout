@@ -22,7 +22,10 @@
       <p class="m-0 flex justify-between"><span>Cliente:</span> <strong>{{ resultado.pedido.comprador }}</strong></p>
       <p class="m-0 flex justify-between"><span>Estado:</span> <strong>{{ resultado.pedido.estado_pedido }}</strong></p>
     </div>
-    <a routerLink="/pedidos" class="inline-block rounded-lg bg-brand-700 px-8 py-2.5 text-sm font-bold text-white hover:bg-brand-800">Ir a pedidos</a>
+    <div class="flex justify-center gap-3">
+      <a [routerLink]="['/pedidos', resultado.pedido.id_pedido]" class="rounded-lg bg-brand-700 px-6 py-2.5 text-sm font-bold text-white hover:bg-brand-800">Ver pedido</a>
+      <a routerLink="/pedidos" class="rounded-lg border border-sage-200 bg-white px-6 py-2.5 text-sm text-gray-800 hover:bg-brand-50">Ir a pedidos</a>
+    </div>
   </div>
   </div>
 
@@ -45,7 +48,8 @@
             </div>
             <div>
               <label class="mb-1.5 block text-xs font-bold text-gray-800">Fecha requerida de entrega</label>
-              <input type="date" formControlName="fecha_requerida" class="w-full rounded-lg border border-sage-200 bg-sage-100 px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/30 [&.ng-invalid.ng-touched]:border-red-500">
+              <input type="date" formControlName="fecha_requerida" [min]="hoyIso" class="w-full rounded-lg border border-sage-200 bg-sage-100 px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/30 [&.ng-invalid.ng-touched]:border-red-500">
+              <p *ngIf="form.get('fecha_requerida')?.touched && form.get('fecha_requerida')?.errors?.['fechaPasada']" class="mb-0 mt-1 text-xs text-[#9b2c2c]">La fecha no puede ser anterior a hoy.</p>
             </div>
           </div>
 
@@ -87,7 +91,9 @@
                       </select>
                     </td>
                     <td class="px-4 py-2">
-                      <input type="number" step="0.01" formControlName="cantidad_tn" placeholder="0.0" class="w-24 rounded-lg border border-sage-200 bg-white px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-brand-600/30 [&.ng-invalid.ng-touched]:border-red-500">
+                      <input type="number" step="0.01" min="0.01" [max]="maxTn" formControlName="cantidad_tn" placeholder="0.0" class="w-24 rounded-lg border border-sage-200 bg-white px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-brand-600/30 [&.ng-invalid.ng-touched]:border-red-500">
+                      <p *ngIf="item.get('cantidad_tn')?.touched && item.get('cantidad_tn')?.errors?.['max']" class="mb-0 mt-1 text-[11px] text-[#9b2c2c]">Máximo {{ maxTn }} tn.</p>
+                      <p *ngIf="item.get('cantidad_tn')?.touched && item.get('cantidad_tn')?.errors?.['min']" class="mb-0 mt-1 text-[11px] text-[#9b2c2c]">Debe ser mayor a 0.</p>
                     </td>
                     <td class="px-4 py-2 whitespace-nowrap">
                       {{ stockAptoTn(item.get('tipo_semilla_id')?.value) | number: '1.1-1' }} tn
